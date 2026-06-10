@@ -7,6 +7,7 @@ import {
   calculateInspectionScores,
 } from "@/lib/ai/functions";
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
+import { checkReportQuota } from "@/lib/quota";
 import { logActivity } from "@/lib/activity";
 import { scoreToRiskLevel } from "@/lib/constants";
 import type { InspectionPhoto, PhotoAnalysisResult } from "@/types";
@@ -29,6 +30,26 @@ export async function POST(
     .eq("id", sessionId)
     .single();
   if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
+
+  // Enforce the monthly report quota — but allow regenerating an existing
+  // report for this session without consuming another unit.
+  const { data: existingReport } = await supabase
+    .from("inspection_reports")
+    .select("id")
+    .eq("inspection_session_id", sessionId)
+    .maybeSingle();
+  if (!existingReport) {
+    const quota = await checkReportQuota(supabase, user.id);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: `You have reached your monthly report limit (${quota.used}/${quota.limit}) on the ${quota.plan} plan. Upgrade to generate more reports.`,
+          code: "quota_exceeded",
+        },
+        { status: 402 },
+      );
+    }
+  }
 
   const { data: photos } = await supabase
     .from("inspection_photos")

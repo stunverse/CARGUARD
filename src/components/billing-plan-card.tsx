@@ -73,6 +73,33 @@ export function BillingPlanCard({
   );
 }
 
+export function ManageBillingButton() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function openPortal() {
+    setLoading(true);
+    setError(null);
+    const res = await fetch("/api/billing/portal", { method: "POST" });
+    const data = await res.json();
+    setLoading(false);
+    if (res.ok && data.url) {
+      window.location.href = data.url;
+    } else {
+      setError(data.error ?? "Unable to open billing portal.");
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <Button variant="outline" onClick={openPortal} disabled={loading}>
+        {loading ? "Opening…" : "Manage subscription"}
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
 export function UsageLimitBanner({
   used,
   limit,

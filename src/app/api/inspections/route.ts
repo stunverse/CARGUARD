@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity";
+import { checkInspectionQuota } from "@/lib/quota";
 
 // POST /api/inspections — create a vehicle + draft inspection session.
 export async function POST(request: NextRequest) {
@@ -9,6 +10,18 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Enforce the monthly inspection quota for the user's plan.
+  const quota = await checkInspectionQuota(supabase, user.id);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: `You have reached your monthly inspection limit (${quota.used}/${quota.limit}) on the ${quota.plan} plan. Upgrade to continue.`,
+        code: "quota_exceeded",
+      },
+      { status: 402 },
+    );
+  }
 
   const body = await request.json();
   const { goal, ...vehicleInput } = body ?? {};

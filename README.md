@@ -79,6 +79,24 @@ src/types               Domain + AI JSON contracts
 supabase/migrations     Schema, RLS, seed, storage
 ```
 
+## Billing (Stripe)
+
+Fully wired when the Stripe env vars are set (otherwise the app degrades to a
+read-only pricing preview):
+
+1. Create 3 recurring products in Stripe (Starter, Plus, Pro) and copy their
+   price IDs into `STRIPE_PRICE_STARTER` / `_PLUS` / `_PRO`.
+2. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+3. Point a webhook at `/api/billing/webhook` for: `checkout.session.completed`,
+   `customer.subscription.created|updated|deleted`, `invoice.payment_failed`.
+
+Flow: **Checkout** (`/api/billing/checkout`, subscription mode) →
+**webhook** syncs `public.subscriptions` → **Customer Portal**
+(`/api/billing/portal`) for upgrade/downgrade/cancel/payment method.
+Monthly **quotas** (`src/lib/quota.ts`) are enforced on inspection creation
+and report generation per `usage_limits`.
+
 ## Roadmap (scaffolded, not in MVP)
 
 VIN/Carfax APIs, listing import, market price comparison, model knowledge base
