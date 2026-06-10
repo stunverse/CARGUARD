@@ -6,6 +6,8 @@ import {
   calculateInspectionScores,
   generateFollowUpPhotoRequests,
 } from "@/lib/ai/functions";
+import { getModelKnowledge } from "@/lib/ai/model-knowledge";
+import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import type {
   DetectedIssue,
@@ -37,6 +39,15 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit: full-inspection analysis is the most expensive AI action.
+  const rl = rateLimit(`analyze:${user.id}`, { limit: 10, windowMs: 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Too many analyses. Try again in ${rl.retryAfterSeconds}s.` },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
+  }
 
   const { data: session } = await supabase
     .from("inspection_sessions")
@@ -100,10 +111,26 @@ export async function POST(
     });
   }
 
-  // Global analysis + scores.
+  // Global analysis + scores, enriched with model knowledge when available.
   const vehicle = (session as { vehicles?: unknown }).vehicles ?? {};
+  const knowledge = await getModelKnowledge(supabase, vehicle as never);
   const global = await analyzeFullInspection(vehicle as never, results);
-  const scores = calculateInspectionScores(results);
+  const scores = calculateInspectionScores(results, knowledge.model_risk_score);
+
+  // Merge model-specific vigilance points and seller questions.
+  if (knowledge.matched) {
+    global.model_risk_score = knowledge.model_risk_score;
+    global.suspicious_points = [
+      ...global.suspicious_points,
+      ...knowledge.vigilance_points,
+    ];
+    global.questions_to_ask_seller = Array.from(
+      new Set([
+        ...global.questions_to_ask_seller,
+        ...knowledge.extra_seller_questions,
+      ]),
+    );
+  }
 
   // Persist follow-up photo requests.
   const followUps = generateFollowUpPhotoRequests(results);

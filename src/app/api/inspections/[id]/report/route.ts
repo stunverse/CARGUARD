@@ -6,6 +6,7 @@ import {
   analyzeFullInspection,
   calculateInspectionScores,
 } from "@/lib/ai/functions";
+import { getModelKnowledge } from "@/lib/ai/model-knowledge";
 import { logActivity } from "@/lib/activity";
 import { scoreToRiskLevel } from "@/lib/constants";
 import type { InspectionPhoto, PhotoAnalysisResult } from "@/types";
@@ -47,8 +48,22 @@ export async function POST(
   }
 
   const vehicle = (session as { vehicles?: unknown }).vehicles ?? {};
-  const scores = calculateInspectionScores(results);
+  const knowledge = await getModelKnowledge(supabase, vehicle as never);
+  const scores = calculateInspectionScores(results, knowledge.model_risk_score);
   const global = await analyzeFullInspection(vehicle as never, results);
+  if (knowledge.matched) {
+    global.model_risk_score = knowledge.model_risk_score;
+    global.suspicious_points = [
+      ...global.suspicious_points,
+      ...knowledge.vigilance_points,
+    ];
+    global.questions_to_ask_seller = Array.from(
+      new Set([
+        ...global.questions_to_ask_seller,
+        ...knowledge.extra_seller_questions,
+      ]),
+    );
+  }
 
   const report = generateFinalReport({
     vehicle: vehicle as never,

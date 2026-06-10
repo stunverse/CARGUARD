@@ -37,12 +37,34 @@ export function GenerateReportButton({ sessionId }: { sessionId: string }) {
   );
 }
 
-// Browser print-to-PDF (dependency-free). A server PDF renderer can
-// replace this later — see TODO in lib/report.ts.
-export function PdfExportButton() {
+// Server-rendered PDF (pdfkit). Falls back to browser print if the user
+// prefers; the primary action downloads a real PDF file.
+export function PdfExportButton({ sessionId }: { sessionId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  async function download() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/inspections/${sessionId}/report/pdf`);
+      if (!res.ok) throw new Error("PDF export failed.");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `carguard-report-${sessionId.slice(0, 8)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: browser print dialog.
+      window.print();
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <Button variant="outline" onClick={() => window.print()}>
-      <Download className="size-4" /> Export PDF
+    <Button variant="outline" onClick={download} disabled={loading}>
+      <Download className="size-4" /> {loading ? "Preparing…" : "Export PDF"}
     </Button>
   );
 }

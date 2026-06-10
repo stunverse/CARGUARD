@@ -24,6 +24,7 @@ import {
   riskLevelToRecommendation,
 } from "@/lib/constants";
 import type {
+  DetectedIssue,
   FullInspectionResult,
   PhotoAnalysisResult,
   PhotoPointCode,
@@ -209,6 +210,7 @@ export interface InspectionScores {
 
 export function calculateInspectionScores(
   photoResults: PhotoAnalysisResult[],
+  modelRiskScore = 75,
 ): InspectionScores {
   if (photoResults.length === 0) {
     return {
@@ -219,7 +221,7 @@ export function calculateInspectionScores(
       symmetry_score: 0,
       bumpers_lights_score: 0,
       overall_consistency_score: 0,
-      model_risk_score: 75,
+      model_risk_score: modelRiskScore,
     };
   }
 
@@ -274,8 +276,8 @@ export function calculateInspectionScores(
       overall_consistency_score,
     ]),
   );
-  // No model knowledge yet → neutral.
-  const model_risk_score = 75;
+  // Supplied by the vehicle model knowledge base (neutral 75 when absent).
+  const model_risk_score = clamp(modelRiskScore);
 
   const global_score = clamp(
     accident_repair_score * 0.6 + overall_consistency_score * 0.25 + symmetry_score * 0.15,
@@ -371,4 +373,43 @@ export function generateFollowUpPhotoRequests(
 
 export function recommendationFromScore(score: number): Recommendation {
   return riskLevelToRecommendation(scoreToRiskLevel(score));
+}
+
+// ---------------------------------------------------------------------
+// Follow-up close-up analysis (optional photos requested by the AI).
+// ---------------------------------------------------------------------
+export interface FollowUpAnalysis {
+  summary: string;
+  suspicious_observations: string[];
+  detected_issues: DetectedIssue[];
+  confidence: number;
+}
+
+export async function analyzeFollowUpPhoto(
+  imageUrl: string,
+  targetArea: string,
+): Promise<FollowUpAnalysis> {
+  if (!isAIConfigured()) {
+    return {
+      summary: `${MOCK_NOTICE} Close-up of "${targetArea}" recorded; no detailed analysis in demo mode.`,
+      suspicious_observations: [],
+      detected_issues: [],
+      confidence: 40,
+    };
+  }
+  try {
+    return await runStructuredVision<FollowUpAnalysis>({
+      system: photoAnalysisPrompt(),
+      userText: `This is a close-up follow-up photo of "${targetArea}". Analyze it for signs of repair/repaint/damage and return JSON with keys: summary (string), suspicious_observations (string[]), detected_issues (array as in the schema), confidence (number).`,
+      imageUrls: [imageUrl],
+    });
+  } catch (err) {
+    console.error("analyzeFollowUpPhoto failed, falling back:", err);
+    return {
+      summary: "Automated close-up analysis was unavailable.",
+      suspicious_observations: [],
+      detected_issues: [],
+      confidence: 20,
+    };
+  }
 }

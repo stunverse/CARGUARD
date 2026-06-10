@@ -60,7 +60,7 @@ export default async function ReportPage({
             shareToken={report.share_token}
             isPublic={report.is_public}
           />
-          <PdfExportButton />
+          <PdfExportButton sessionId={id} />
         </div>
       </div>
 

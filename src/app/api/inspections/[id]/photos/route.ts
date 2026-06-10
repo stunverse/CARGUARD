@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkPhotoQuality } from "@/lib/ai/functions";
+import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import {
   ALLOWED_IMAGE_TYPES,
@@ -23,6 +24,15 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Rate limit photo uploads (each runs an AI quality check).
+  const rl = rateLimit(`photo:${user.id}`, { limit: 40, windowMs: 60_000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Too many uploads. Try again in ${rl.retryAfterSeconds}s.` },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
+  }
 
   const form = await request.formData();
   const file = form.get("file") as File | null;
