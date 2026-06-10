@@ -274,4 +274,137 @@ export interface FinalReport {
   negotiation_arguments: string[];
   recommended_next_steps: string[];
   disclaimer: string;
+  // Optional engine-start audio module (null when no audio was provided).
+  engine_audio?: EngineAudioReportSection | null;
+}
+
+// ---------------------------------------------------------------------
+// Engine Start Audio Analysis (optional module)
+// ---------------------------------------------------------------------
+export type EngineAudioRiskLevel =
+  | "low"
+  | "moderate"
+  | "high"
+  | "very_high"
+  | "insufficient_audio";
+
+export type EngineAudioRecommendation =
+  | "normal_sound"
+  | "monitor"
+  | "ask_seller_questions"
+  | "professional_inspection"
+  | "avoid_without_diagnosis"
+  | "insufficient_audio";
+
+export type EngineSoundType =
+  | "hard_start"
+  | "knocking"
+  | "metallic_rattling"
+  | "timing_chain_rattle"
+  | "belt_squeal"
+  | "rough_idle"
+  | "misfire_like_sound"
+  | "starter_issue"
+  | "exhaust_leak_suspicion"
+  | "air_leak_suspicion"
+  | "turbo_whistle_abnormal"
+  | "normal_startup"
+  | "other";
+
+export interface DetectedEngineSound {
+  sound_type: EngineSoundType;
+  severity: "low" | "moderate" | "high" | "critical";
+  confidence: number;
+  timestamp_start: number;
+  timestamp_end: number;
+  explanation: string;
+  possible_causes: string[];
+  recommended_action: string;
+}
+
+export interface EngineAudioQualityCheck {
+  is_usable: boolean;
+  audio_quality_score: number;
+  duration_seconds: number;
+  engine_start_detected: boolean;
+  engine_idle_detected: boolean;
+  background_noise_level: "low" | "moderate" | "high";
+  volume_level: "too_low" | "good" | "too_high" | "saturated";
+  issues: { type: string; explanation: string }[];
+  retake_required: boolean;
+  retake_instructions: string;
+  confidence: number;
+}
+
+export interface EngineAudioAnalysis {
+  summary: string;
+  engine_audio_score: number;
+  startup_quality_score: number;
+  idle_stability_score: number;
+  mechanical_noise_score: number;
+  belt_chain_noise_score: number;
+  exhaust_noise_score: number;
+  risk_level: EngineAudioRiskLevel;
+  recommendation: EngineAudioRecommendation;
+  detected_sounds: DetectedEngineSound[];
+  positive_observations: string[];
+  suspicious_observations: string[];
+  seller_questions: string[];
+  mechanic_questions: string[];
+  next_steps: string[];
+  disclaimer: string;
+  confidence_score: number;
+}
+
+export type EngineAudioUploadStatus = "pending" | "uploaded" | "failed";
+export type EngineAudioQualityStatus = "pending" | "passed" | "failed" | "needs_retake";
+export type EngineAudioAnalysisStatus = "pending" | "analyzing" | "completed" | "failed";
+
+export interface EngineAudioCheck {
+  id: string;
+  user_id: string;
+  inspection_session_id: string;
+  vehicle_id: string | null;
+  file_url: string | null;
+  storage_path: string | null;
+  original_file_name: string | null;
+  file_type: string | null;
+  mime_type: string | null;
+  file_size: number | null;
+  duration_seconds: number | null;
+  upload_status: EngineAudioUploadStatus;
+  quality_status: EngineAudioQualityStatus;
+  analysis_status: EngineAudioAnalysisStatus;
+  audio_quality_score: number | null;
+  engine_audio_score: number | null;
+  startup_quality_score: number | null;
+  idle_stability_score: number | null;
+  mechanical_noise_score: number | null;
+  belt_chain_noise_score: number | null;
+  exhaust_noise_score: number | null;
+  confidence_score: number | null;
+  risk_level: EngineAudioRiskLevel | null;
+  recommendation: EngineAudioRecommendation | null;
+  ai_quality_check: EngineAudioQualityCheck | null;
+  ai_analysis: EngineAudioAnalysis | null;
+  detected_sounds: DetectedEngineSound[] | null;
+  seller_questions: string[] | null;
+  mechanic_questions: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Embedded in the final report.
+export interface EngineAudioReportSection {
+  file_name: string | null;
+  duration_seconds: number | null;
+  audio_quality_score: number | null;
+  engine_audio_score: number | null;
+  risk_level: EngineAudioRiskLevel;
+  recommendation: EngineAudioRecommendation;
+  detected_sounds: DetectedEngineSound[];
+  summary: string;
+  seller_questions: string[];
+  mechanic_questions: string[];
+  disclaimer: string;
 }

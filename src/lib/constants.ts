@@ -275,3 +275,112 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/webp",
 ];
 export const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // 15 MB
+
+// ---------------------------------------------------------------------
+// Engine Start Audio Analysis (optional module)
+// ---------------------------------------------------------------------
+export const ALLOWED_AUDIO_TYPES = [
+  "audio/mp3",
+  "audio/mpeg",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/m4a",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/ogg",
+  "audio/webm",
+];
+export const ALLOWED_VIDEO_TYPES = [
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+];
+export const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB
+export const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
+
+export const ENGINE_AUDIO_DISCLAIMER =
+  "This engine-sound analysis is based only on the uploaded audio and its quality. CarGuard AI is not a certified mechanic and cannot diagnose or guarantee the condition of the engine. Always confirm with a professional mechanic before purchase.";
+
+export const ENGINE_SOUND_LABELS: Record<string, string> = {
+  hard_start: "Hard start",
+  knocking: "Knocking",
+  metallic_rattling: "Metallic rattling",
+  timing_chain_rattle: "Timing chain rattle",
+  belt_squeal: "Belt squeal",
+  rough_idle: "Rough idle",
+  misfire_like_sound: "Misfire-like sound",
+  starter_issue: "Starter issue",
+  exhaust_leak_suspicion: "Exhaust leak suspicion",
+  air_leak_suspicion: "Air / vacuum leak suspicion",
+  turbo_whistle_abnormal: "Abnormal turbo whistle",
+  normal_startup: "Normal startup",
+  other: "Other",
+};
+
+export const ENGINE_AUDIO_RISK_COPY: Record<string, string> = {
+  low: "Normal sound",
+  moderate: "Low to moderate risk",
+  high: "Moderate to high risk",
+  very_high: "High risk",
+  insufficient_audio: "Insufficient audio",
+};
+
+export const ENGINE_AUDIO_RECOMMENDATION_COPY: Record<string, string> = {
+  normal_sound:
+    "The startup sound appears normal in the provided audio. No obvious suspicious noise was detected. This does not guarantee engine condition.",
+  monitor:
+    "A few sounds are worth monitoring, but nothing critical was detected. Keep them in mind and ask the seller for context.",
+  ask_seller_questions:
+    "Some sounds should be clarified with the seller before purchase. Use the questions below.",
+  professional_inspection:
+    "Suspicious sounds may suggest a mechanical issue. A professional mechanic inspection is recommended before purchase.",
+  avoid_without_diagnosis:
+    "Concerning sounds were detected. Do not buy without a professional mechanical diagnosis.",
+  insufficient_audio:
+    "The audio is not sufficient for a reliable analysis. Please re-record in a quieter place with the engine clearly audible from startup.",
+};
+
+export function engineAudioScoreToRisk(
+  score: number,
+): "low" | "moderate" | "high" | "very_high" {
+  if (score >= 85) return "low";
+  if (score >= 65) return "moderate";
+  if (score >= 40) return "high";
+  return "very_high";
+}
+
+export function engineAudioRiskToRecommendation(
+  level: "low" | "moderate" | "high" | "very_high",
+): "normal_sound" | "monitor" | "professional_inspection" | "avoid_without_diagnosis" {
+  switch (level) {
+    case "low":
+      return "normal_sound";
+    case "moderate":
+      return "monitor";
+    case "high":
+      return "professional_inspection";
+    case "very_high":
+      return "avoid_without_diagnosis";
+  }
+}
+
+export const DEFAULT_SELLER_AUDIO_QUESTIONS = [
+  "Has the engine always sounded like this at startup?",
+  "When was the last oil change?",
+  "Has the timing chain or timing belt ever been replaced?",
+  "Has the starter motor ever been replaced?",
+  "Are there any dashboard warning lights?",
+  "Does the engine make this noise only when cold?",
+  "Has the vehicle had any engine repairs?",
+  "Can I have the car inspected by a mechanic before purchase?",
+];
+
+export const DEFAULT_MECHANIC_QUESTIONS = [
+  "Can you check for timing chain noise at cold start?",
+  "Can you inspect the belt tensioner and pulleys?",
+  "Can you check for engine misfires?",
+  "Can you inspect for exhaust leaks?",
+  "Can you scan the vehicle for fault codes?",
+  "Can you check the engine mounts?",
+  "Can you verify oil pressure and maintenance history?",
+];

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InspectionCard } from "@/components/inspection-card";
 import { EmptyState } from "@/components/empty-state";
-import type { InspectionSession, Vehicle } from "@/types";
+import type { EngineAudioCheck, InspectionSession, Vehicle } from "@/types";
 
 export const metadata = { title: "Dashboard — CarGuard AI" };
 
@@ -24,6 +24,18 @@ export default async function DashboardPage() {
   const vehicleById = new Map(
     (vehicles ?? []).map((v: Vehicle) => [v.id, v]),
   );
+
+  // Latest engine-audio check per session (for the dashboard indicator).
+  const { data: audioChecks } = await supabase
+    .from("engine_audio_checks")
+    .select("*")
+    .order("created_at", { ascending: false });
+  const audioBySession = new Map<string, EngineAudioCheck>();
+  for (const a of (audioChecks ?? []) as EngineAudioCheck[]) {
+    if (!audioBySession.has(a.inspection_session_id)) {
+      audioBySession.set(a.inspection_session_id, a);
+    }
+  }
 
   const list = (sessions ?? []) as InspectionSession[];
   const reportsCount = list.filter((s) => s.status === "report_generated").length;
@@ -93,6 +105,7 @@ export default async function DashboardPage() {
                   key={s.id}
                   session={s}
                   vehicle={s.vehicle_id ? vehicleById.get(s.vehicle_id) ?? null : null}
+                  engineAudio={audioBySession.get(s.id) ?? null}
                 />
               ))}
             </div>

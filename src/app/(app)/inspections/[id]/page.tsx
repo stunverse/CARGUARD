@@ -8,6 +8,7 @@ import {
 import { InspectionTabs } from "@/components/inspection-tabs";
 import { vehicleLabel } from "@/lib/utils";
 import type {
+  EngineAudioCheck,
   FinalReport,
   InspectionPhoto,
   InspectionSession,
@@ -33,24 +34,36 @@ export default async function InspectionDetailPage({
   const session = s as InspectionSession & { vehicles: Vehicle | null };
   const vehicle = session.vehicles;
 
-  const [{ data: photos }, { data: followUps }, { data: logs }, { data: reportRow }] =
-    await Promise.all([
-      supabase.from("inspection_photos").select("*").eq("inspection_session_id", id),
-      supabase.from("follow_up_photo_requests").select("*").eq("inspection_session_id", id),
-      supabase
-        .from("activity_logs")
-        .select("*")
-        .eq("inspection_session_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50),
-      supabase
-        .from("inspection_reports")
-        .select("report_content")
-        .eq("inspection_session_id", id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+  const [
+    { data: photos },
+    { data: followUps },
+    { data: logs },
+    { data: reportRow },
+    { data: audioRow },
+  ] = await Promise.all([
+    supabase.from("inspection_photos").select("*").eq("inspection_session_id", id),
+    supabase.from("follow_up_photo_requests").select("*").eq("inspection_session_id", id),
+    supabase
+      .from("activity_logs")
+      .select("*")
+      .eq("inspection_session_id", id)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("inspection_reports")
+      .select("report_content")
+      .eq("inspection_session_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("engine_audio_checks")
+      .select("*")
+      .eq("inspection_session_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const report =
     (reportRow?.report_content as FinalReport | null) ??
@@ -74,6 +87,7 @@ export default async function InspectionDetailPage({
         followUps={(followUps ?? []) as never}
         logs={(logs ?? []) as never}
         report={report}
+        engineAudio={(audioRow ?? null) as EngineAudioCheck | null}
       />
     </div>
   );

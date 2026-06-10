@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { randomBytes } from "crypto";
 import { createClient } from "@/lib/supabase/server";
-import { generateFinalReport } from "@/lib/report";
+import { generateFinalReport, engineAudioToReportSection } from "@/lib/report";
 import {
   analyzeFullInspection,
   calculateInspectionScores,
@@ -86,12 +86,32 @@ export async function POST(
     );
   }
 
+  // Attach the latest completed engine-audio analysis, if any (optional module).
+  const { data: audioCheck } = await supabase
+    .from("engine_audio_checks")
+    .select("*")
+    .eq("inspection_session_id", sessionId)
+    .eq("analysis_status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const engineAudio = engineAudioToReportSection(audioCheck as never);
+
   const report = generateFinalReport({
     vehicle: vehicle as never,
     photos: photoList,
     global,
     globalScore: scores.global_score,
+    engineAudio,
   });
+
+  if (engineAudio) {
+    await logActivity(supabase, {
+      userId: user.id,
+      sessionId,
+      action: "engine_audio_added_to_report",
+    });
+  }
 
   const shareToken = randomBytes(16).toString("hex");
 

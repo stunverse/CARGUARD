@@ -7,6 +7,7 @@
 import PDFDocument from "pdfkit";
 import type { FinalReport } from "@/types";
 import { vehicleLabel } from "@/lib/utils";
+import { ENGINE_SOUND_LABELS } from "@/lib/constants";
 
 const RED = "#b91c1c";
 const MUTED = "#6b7280";
@@ -103,6 +104,33 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
     bullets(report.negotiation_arguments);
     h1("9. Recommended next steps");
     bullets(report.recommended_next_steps);
+
+    // 10. Engine start audio (optional module)
+    h1("10. Engine Start Audio Analysis");
+    const ea = report.engine_audio;
+    if (!ea) {
+      muted("No engine start audio was provided for this inspection.");
+    } else {
+      body(
+        `Risk: ${ea.risk_level.toUpperCase()} • Engine audio score: ${ea.engine_audio_score ?? "—"}/100 • Quality: ${ea.audio_quality_score ?? "—"}/100`,
+      );
+      if (ea.file_name) muted(`File: ${ea.file_name}`);
+      body(ea.summary);
+      ea.detected_sounds.forEach((s) =>
+        body(
+          `• [${s.severity}, ${s.confidence}%] ${ENGINE_SOUND_LABELS[s.sound_type] ?? s.sound_type}: ${s.explanation}`,
+        ),
+      );
+      if (ea.seller_questions.length) {
+        doc.fontSize(10).font("Helvetica-Bold").text("Questions for the seller");
+        bullets(ea.seller_questions);
+      }
+      if (ea.mechanic_questions.length) {
+        doc.fontSize(10).font("Helvetica-Bold").text("Questions for the mechanic");
+        bullets(ea.mechanic_questions);
+      }
+      doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(ea.disclaimer).fillColor("#111");
+    }
 
     // Disclaimer
     doc.moveDown(0.8);

@@ -55,6 +55,23 @@ check per photo → AI analysis per photo → global analysis → scores +
 recommendation + seller questions + negotiation arguments → final report
 (preview, print-to-PDF, secure share link).
 
+## Engine Start Audio Analysis (optional module)
+
+A separate, optional check on the inspection detail page (**Engine Audio** tab):
+record or upload a short audio/video of the engine starting; the AI listens for
+suspicious startup noises (knocking, rattling, timing-chain, belt squeal, rough
+idle, misfire, starter, exhaust/air leak, turbo whistle…). It produces an
+`engine_audio_score`, sub-scores, detected sounds with severity, a cautious
+recommendation, and seller/mechanic questions — appended to the final report
+(section 10) and the PDF. An inspection can be completed **without** audio.
+
+- Table: `engine_audio_checks` (migration `0005`); private bucket `engine-audio`.
+- AI: `src/lib/ai/engine-audio.ts` (`checkEngineAudioQuality`, `analyzeEngineAudio`,
+  `generateEngineAudioSummary`). Real analysis uses `OPENAI_AUDIO_MODEL`
+  (`gpt-4o-audio-preview`) and accepts **MP3/WAV**; other formats are stored and
+  handled in a limited/demo mode.
+- Env: `STORAGE_BUCKET_ENGINE_AUDIO`, `OPENAI_AUDIO_MODEL`.
+
 ## AI functions (`src/lib/ai/functions.ts`)
 
 `checkPhotoQuality` · `analyzeInspectionPhoto` · `analyzeFullInspection` ·

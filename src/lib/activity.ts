@@ -12,7 +12,13 @@ export type ActivityAction =
   | "global_analysis_completed"
   | "report_generated"
   | "pdf_exported"
-  | "report_shared";
+  | "report_shared"
+  | "engine_audio_uploaded"
+  | "engine_audio_quality_checked"
+  | "engine_audio_retake_requested"
+  | "engine_audio_analysis_started"
+  | "engine_audio_analysis_completed"
+  | "engine_audio_added_to_report";
 
 export async function logActivity(
   supabase: SupabaseClient,

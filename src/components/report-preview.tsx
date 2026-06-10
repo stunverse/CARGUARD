@@ -7,6 +7,7 @@ import {
   ScoreBreakdown,
 } from "@/components/risk-indicators";
 import { Badge } from "@/components/ui/badge";
+import { EngineAudioReportSection } from "@/components/engine-audio-report-section";
 import { formatPrice, vehicleLabel } from "@/lib/utils";
 import type { FinalReport } from "@/types";
 
@@ -119,6 +120,9 @@ export function ReportPreview({ report }: { report: FinalReport }) {
       <Section title="7. Questions to ask the seller" items={report.questions_to_ask_seller} />
       <Section title="8. Negotiation arguments" items={report.negotiation_arguments} empty="None." />
       <Section title="9. Recommended next steps" items={report.recommended_next_steps} />
+
+      {/* 10. Engine start audio (optional module) */}
+      <EngineAudioReportSection section={report.engine_audio} />
 
       {/* Disclaimer */}
       <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">

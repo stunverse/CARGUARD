@@ -6,6 +6,8 @@
 
 import { PHOTO_POINTS, REPORT_DISCLAIMER } from "@/lib/constants";
 import type {
+  EngineAudioCheck,
+  EngineAudioReportSection,
   FinalReport,
   FullInspectionResult,
   InspectionPhoto,
@@ -13,13 +15,37 @@ import type {
   Vehicle,
 } from "@/types";
 
+// Build the embedded report section from a completed engine-audio check.
+export function engineAudioToReportSection(
+  check: EngineAudioCheck | null | undefined,
+): EngineAudioReportSection | null {
+  if (!check || check.analysis_status !== "completed" || !check.ai_analysis) {
+    return null;
+  }
+  const a = check.ai_analysis;
+  return {
+    file_name: check.original_file_name,
+    duration_seconds: check.duration_seconds,
+    audio_quality_score: check.audio_quality_score,
+    engine_audio_score: check.engine_audio_score,
+    risk_level: a.risk_level,
+    recommendation: a.recommendation,
+    detected_sounds: a.detected_sounds ?? [],
+    summary: a.summary,
+    seller_questions: a.seller_questions ?? [],
+    mechanic_questions: a.mechanic_questions ?? [],
+    disclaimer: a.disclaimer,
+  };
+}
+
 export function generateFinalReport(params: {
   vehicle: Partial<Vehicle>;
   photos: InspectionPhoto[];
   global: FullInspectionResult;
   globalScore: number;
+  engineAudio?: EngineAudioReportSection | null;
 }): FinalReport {
-  const { vehicle, photos, global, globalScore } = params;
+  const { vehicle, photos, global, globalScore, engineAudio } = params;
 
   const titleFor = (code: PhotoPointCode) =>
     PHOTO_POINTS.find((p) => p.code === code)?.title ?? code;
@@ -70,6 +96,7 @@ export function generateFinalReport(params: {
     negotiation_arguments: global.negotiation_arguments,
     recommended_next_steps: global.recommended_next_steps,
     disclaimer: global.disclaimer || REPORT_DISCLAIMER,
+    engine_audio: engineAudio ?? null,
   };
 }
 
