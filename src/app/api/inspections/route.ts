@@ -1,0 +1,75 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/activity";
+
+// POST /api/inspections — create a vehicle + draft inspection session.
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json();
+  const { goal, ...vehicleInput } = body ?? {};
+
+  if (!vehicleInput.make || !vehicleInput.model) {
+    return NextResponse.json(
+      { error: "Make and model are required." },
+      { status: 400 },
+    );
+  }
+
+  // Coerce numeric fields.
+  const num = (v: unknown) =>
+    v === "" || v == null ? null : Number(v);
+
+  const { data: vehicle, error: vErr } = await supabase
+    .from("vehicles")
+    .insert({
+      user_id: user.id,
+      make: vehicleInput.make,
+      model: vehicleInput.model,
+      year: num(vehicleInput.year),
+      generation: vehicleInput.generation || null,
+      trim: vehicleInput.trim || null,
+      engine: vehicleInput.engine || null,
+      fuel_type: vehicleInput.fuel_type || null,
+      transmission: vehicleInput.transmission || null,
+      mileage: num(vehicleInput.mileage),
+      asking_price: num(vehicleInput.asking_price),
+      currency: vehicleInput.currency || "USD",
+      seller_type: vehicleInput.seller_type || "unknown",
+      listing_url: vehicleInput.listing_url || null,
+      vin: vehicleInput.vin || null,
+      country: vehicleInput.country || null,
+      city: vehicleInput.city || null,
+      notes: vehicleInput.notes || null,
+    })
+    .select()
+    .single();
+
+  if (vErr) return NextResponse.json({ error: vErr.message }, { status: 500 });
+
+  const { data: session, error: sErr } = await supabase
+    .from("inspection_sessions")
+    .insert({
+      user_id: user.id,
+      vehicle_id: vehicle.id,
+      goal: goal || null,
+      status: "waiting_for_photos",
+    })
+    .select()
+    .single();
+
+  if (sErr) return NextResponse.json({ error: sErr.message }, { status: 500 });
+
+  await logActivity(supabase, {
+    userId: user.id,
+    sessionId: session.id,
+    action: "inspection_created",
+    description: `${vehicle.year ?? ""} ${vehicle.make} ${vehicle.model}`.trim(),
+  });
+
+  return NextResponse.json({ sessionId: session.id });
+}
