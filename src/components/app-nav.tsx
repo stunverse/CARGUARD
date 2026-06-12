@@ -34,7 +34,7 @@ export function AppNav({ isAdmin = false }: { isAdmin?: boolean }) {
   }
 
   return (
-    <aside className="flex w-full flex-col gap-2 border-b bg-background p-4 md:h-screen md:w-60 md:border-b-0 md:border-r">
+    <aside className="pt-safe flex w-full flex-col gap-2 border-b bg-background p-4 md:h-screen md:w-60 md:border-b-0 md:border-r">
       <Link href="/dashboard" className="mb-4 flex items-center gap-2 font-bold">
         <ShieldCheck className="size-6 text-primary" />
         CarGuard <span className="text-accent">AI</span>

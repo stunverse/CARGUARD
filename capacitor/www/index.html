@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>CarGuard AI</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #b91c1c;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      .box { padding: 24px; }
+      h1 { margin: 0 0 8px; font-size: 22px; }
+      p { opacity: 0.85; font-size: 14px; max-width: 320px; }
+      .spinner {
+        margin: 20px auto 0;
+        width: 28px; height: 28px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <!--
+      Offline fallback. The native shell normally loads the live app from
+      capacitor.config.ts `server.url`. This screen shows only when the
+      device has no connection at launch.
+    -->
+    <div class="box">
+      <h1>CarGuard <span style="opacity:.8">AI</span></h1>
+      <p>You appear to be offline. Connect to the internet to run an inspection.</p>
+      <div class="spinner"></div>
+    </div>
+  </body>
+</html>

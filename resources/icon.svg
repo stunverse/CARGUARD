@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="CarGuard AI">
+  <rect width="512" height="512" rx="112" fill="#b91c1c"/>
+  <!-- Shield -->
+  <path d="M256 96l120 44v104c0 92-62 142-120 172-58-30-120-80-120-172V140l120-44z"
+        fill="none" stroke="#ffffff" stroke-width="26" stroke-linejoin="round"/>
+  <!-- Check mark -->
+  <path d="M206 258l36 36 72-78" fill="none" stroke="#ffffff" stroke-width="26"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- AI accent dot -->
+  <circle cx="372" cy="150" r="30" fill="#14b8a6"/>
+</svg>

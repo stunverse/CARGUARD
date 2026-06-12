@@ -67,5 +67,21 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Prevent iOS bounce/overscroll feeling like a webpage in the shell. */
+    overscroll-behavior-y: none;
+  }
+}
+
+@layer utilities {
+  /* Respect device safe areas (iOS notch / Android cutout / home bar).
+     No-ops on desktop where the insets are 0. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .min-h-screen-safe {
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }

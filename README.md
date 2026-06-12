@@ -23,6 +23,9 @@ The app runs end-to-end **without** OpenAI or Stripe keys: AI functions fall
 back to cautious, deterministic placeholders ("demo mode") so the full flow is
 demonstrable.
 
+> **Mobile (App Store & Google Play):** CarGuard ships to the stores as a
+> native app via Capacitor that wraps the deployed web app. See **[MOBILE.md](./MOBILE.md)**.
+
 ## Getting started
 
 ```bash
