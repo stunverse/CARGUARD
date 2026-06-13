@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { AppNav } from "@/components/app-nav";
+import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { createClient } from "@/lib/supabase/server";
 
+// Mobile-first app shell: a centered phone-width canvas with a fixed
+// bottom navigation. The premium white/red look lives in the pages.
 export default async function AppLayout({
   children,
 }: {
@@ -11,19 +13,26 @@ export default async function AppLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <AppNav isAdmin={Boolean(profile?.is_admin)} />
-      <main className="flex-1 overflow-x-hidden">{children}</main>
+    <div
+      className="relative min-h-screen w-full"
+      style={{
+        backgroundImage:
+          "linear-gradient(135deg,#FFFFFF 0%,#FAFAFA 45%,#FFF5F5 100%)",
+      }}
+    >
+      {/* Subtle red glow (decorative, non-interactive). */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed right-[-120px] top-[-80px] h-72 w-72 rounded-full blur-3xl"
+        style={{ background: "rgba(229,9,20,0.10)" }}
+      />
+      <div className="relative mx-auto min-h-screen w-full max-w-md pb-28">
+        {children}
+      </div>
+      <BottomNavigation />
     </div>
   );
 }
