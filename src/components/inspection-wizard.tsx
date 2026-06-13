@@ -22,6 +22,14 @@ import {
   PHOTO_POINTS,
   SELLER_TYPE_OPTIONS,
 } from "@/lib/constants";
+import {
+  catalogYears,
+  FUEL_OPTIONS,
+  MILEAGE_BRACKETS,
+  POPULAR_MAKES,
+  PRICE_BRACKETS,
+  TRANSMISSION_OPTIONS,
+} from "@/lib/vehicle-catalog";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -29,23 +37,27 @@ import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
 type Phase = "vehicle" | "photos" | "mech-prompt" | "mech" | "review" | "finishing";
 
-interface VehicleField {
-  key: string;
-  question: string;
-  type: "text" | "number" | "select";
+type VKind = "vin" | "make" | "year" | "model" | "select" | "range";
+interface VStepDef {
+  kind: VKind;
+  key?: string;
+  question?: string;
   required?: boolean;
-  placeholder?: string;
   options?: readonly { value: string; label: string }[];
+  ranges?: { value: number; label: string }[];
 }
 
-const VEHICLE_FIELDS: VehicleField[] = [
-  { key: "make", question: "What's the make?", type: "text", required: true, placeholder: "e.g. Toyota" },
-  { key: "model", question: "What's the model?", type: "text", required: true, placeholder: "e.g. Corolla" },
-  { key: "year", question: "What year is it?", type: "number", placeholder: "e.g. 2018" },
-  { key: "mileage", question: "What's the mileage?", type: "number", placeholder: "e.g. 85000" },
-  { key: "asking_price", question: "What's the asking price?", type: "number", placeholder: "e.g. 12000" },
-  { key: "seller_type", question: "Who is selling it?", type: "select", options: SELLER_TYPE_OPTIONS },
-  { key: "goal", question: "What do you want to check?", type: "select", options: INSPECTION_GOAL_OPTIONS },
+const VEHICLE_STEPS: VStepDef[] = [
+  { kind: "vin" },
+  { kind: "make", required: true },
+  { kind: "year", required: true },
+  { kind: "model", required: true },
+  { kind: "select", key: "fuel_type", question: "Fuel / engine type?", options: FUEL_OPTIONS },
+  { kind: "select", key: "transmission", question: "Transmission?", options: TRANSMISSION_OPTIONS },
+  { kind: "range", key: "mileage", question: "What's the mileage?", ranges: MILEAGE_BRACKETS },
+  { kind: "range", key: "asking_price", question: "What's the asking price?", ranges: PRICE_BRACKETS },
+  { kind: "select", key: "seller_type", question: "Who is selling it?", options: SELLER_TYPE_OPTIONS },
+  { kind: "select", key: "goal", question: "What do you want to check?", options: INSPECTION_GOAL_OPTIONS },
 ];
 
 export function InspectionWizard() {
@@ -66,7 +78,7 @@ export function InspectionWizard() {
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState<CaptureMode | null>(null);
 
-  const vehicleStepCount = 1 + VEHICLE_FIELDS.length;
+  const vehicleStepCount = VEHICLE_STEPS.length;
   const total =
     vehicleStepCount + PHOTO_POINTS.length + 1 + (includeMech ? MECHANICAL_POINTS.length : 0) + 1;
 
@@ -248,6 +260,10 @@ export function InspectionWizard() {
             vehicle={vehicle}
             setField={setField}
             onAutoFill={(data) => setVehicle((v) => ({ ...v, ...data }))}
+            onPick={(updates) => {
+              setVehicle((v) => ({ ...v, ...updates }));
+              nextVehicle();
+            }}
           />
         )}
 
@@ -351,8 +367,104 @@ function VehicleStep({
   vehicle,
   setField,
   onAutoFill,
+  onPick,
 }: {
   vIndex: number;
+  vehicle: Record<string, string>;
+  setField: (k: string, v: string) => void;
+  onAutoFill: (data: Record<string, string>) => void;
+  onPick: (updates: Record<string, string>) => void;
+}) {
+  const step = VEHICLE_STEPS[vIndex];
+
+  if (step.kind === "vin") return <VinStep vehicle={vehicle} setField={setField} onAutoFill={onAutoFill} />;
+
+  if (step.kind === "make") {
+    return (
+      <StepShell kicker="Vehicle" question="What's the make?">
+        <SearchableList
+          options={POPULAR_MAKES}
+          current={vehicle.make}
+          onPick={(make) => onPick({ make })}
+          placeholder="Search make…"
+        />
+      </StepShell>
+    );
+  }
+
+  if (step.kind === "year") {
+    return (
+      <StepShell kicker="Vehicle" question="What year is it?">
+        <div className="grid max-h-[55vh] grid-cols-3 gap-2 overflow-y-auto">
+          {catalogYears().map((y) => {
+            const active = vehicle.year === String(y);
+            return (
+              <button
+                key={y}
+                type="button"
+                onClick={() => onPick({ year: String(y) })}
+                className={cn(
+                  "rounded-xl border py-3 text-sm font-medium transition-colors",
+                  active ? "border-[#E50914] bg-[rgba(229,9,20,0.06)] text-[#E50914]" : "border-[#E5E7EB] hover:bg-secondary",
+                )}
+              >
+                {y}
+              </button>
+            );
+          })}
+        </div>
+      </StepShell>
+    );
+  }
+
+  if (step.kind === "model") {
+    return (
+      <StepShell kicker="Vehicle" question="Which model?">
+        <ModelStep
+          make={vehicle.make}
+          year={vehicle.year}
+          current={vehicle.model}
+          onPick={(model) => onPick({ model })}
+        />
+      </StepShell>
+    );
+  }
+
+  // select / range → tappable option list
+  const opts =
+    step.kind === "range"
+      ? step.ranges!.map((r) => ({ value: String(r.value), label: r.label }))
+      : step.options!;
+  return (
+    <StepShell kicker="Vehicle" question={step.question!}>
+      <div className="space-y-2">
+        {opts.map((o) => {
+          const active = vehicle[step.key!] === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onPick({ [step.key!]: o.value })}
+              className={cn(
+                "flex w-full items-center justify-between rounded-xl border p-4 text-left text-sm transition-colors",
+                active ? "border-[#E50914] bg-[rgba(229,9,20,0.05)]" : "border-[#E5E7EB] hover:bg-secondary",
+              )}
+            >
+              {o.label}
+              {active && <CheckCircle2 className="size-5 text-[#E50914]" aria-hidden />}
+            </button>
+          );
+        })}
+      </div>
+    </StepShell>
+  );
+}
+
+function VinStep({
+  vehicle,
+  setField,
+  onAutoFill,
+}: {
   vehicle: Record<string, string>;
   setField: (k: string, v: string) => void;
   onAutoFill: (data: Record<string, string>) => void;
@@ -360,79 +472,151 @@ function VehicleStep({
   const [looking, setLooking] = useState(false);
   const [vinMsg, setVinMsg] = useState<string | null>(null);
 
-  if (vIndex === 0) {
-    // VIN step
-    async function autofill() {
-      if (!vehicle.vin?.trim()) return;
-      setLooking(true);
-      setVinMsg(null);
-      const res = await fetch(`/api/vehicle-lookup?q=${encodeURIComponent(vehicle.vin.trim())}`);
-      const d = await res.json();
-      setLooking(false);
-      if (d.ok && d.data) {
-        const data: Record<string, string> = {};
-        for (const k of ["make", "model", "year", "trim", "engine", "fuel_type", "transmission"]) {
-          if (d.data[k] != null) data[k] = String(d.data[k]);
-        }
-        onAutoFill(data);
-        setVinMsg(`Pre-filled from ${d.data.source}.`);
-        toast.success("Vehicle details pre-filled.");
-      } else {
-        setVinMsg(d.message ?? "No match — you can fill the details manually.");
+  async function autofill() {
+    if (!vehicle.vin?.trim()) return;
+    setLooking(true);
+    setVinMsg(null);
+    const res = await fetch(`/api/vehicle-lookup?q=${encodeURIComponent(vehicle.vin.trim())}`);
+    const d = await res.json();
+    setLooking(false);
+    if (d.ok && d.data) {
+      const data: Record<string, string> = {};
+      for (const k of ["make", "model", "year", "trim", "engine", "fuel_type", "transmission"]) {
+        if (d.data[k] != null) data[k] = String(d.data[k]);
       }
+      onAutoFill(data);
+      setVinMsg(`Pre-filled from ${d.data.source}. Tap Continue to review.`);
+      toast.success("Vehicle details pre-filled.");
+    } else {
+      setVinMsg(d.message ?? "No match — you can pick the details manually.");
     }
+  }
+
+  return (
+    <StepShell kicker="Vehicle" question="Do you have the VIN?" helper="Optional — we'll auto-fill the details for you. Or skip and pick them.">
+      <Input
+        autoFocus
+        placeholder="17-character VIN"
+        value={vehicle.vin ?? ""}
+        onChange={(e) => setField("vin", e.target.value)}
+        className="h-14 text-base"
+      />
+      <Button type="button" variant="accent" className="mt-3 w-full" onClick={autofill} disabled={looking}>
+        <Sparkles className="size-4" /> {looking ? "Looking…" : "Auto-fill from VIN"}
+      </Button>
+      {vinMsg && <p className="mt-2 text-xs text-[#6B7280]">{vinMsg}</p>}
+    </StepShell>
+  );
+}
+
+function ModelStep({
+  make,
+  year,
+  current,
+  onPick,
+}: {
+  make?: string;
+  year?: string;
+  current?: string;
+  onPick: (model: string) => void;
+}) {
+  const [models, setModels] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setModels(null);
+    const params = new URLSearchParams();
+    if (make) params.set("make", make);
+    if (year) params.set("year", year);
+    fetch(`/api/vehicle-catalog?${params.toString()}`)
+      .then((r) => r.json())
+      .then((d) => !cancelled && setModels(Array.isArray(d.models) ? d.models : []))
+      .catch(() => !cancelled && setModels([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [make, year]);
+
+  if (models === null) {
     return (
-      <StepShell kicker="Vehicle" question="Do you have the VIN?" helper="Optional — we'll auto-fill the details for you. You can skip this.">
-        <Input
-          autoFocus
-          placeholder="17-character VIN"
-          value={vehicle.vin ?? ""}
-          onChange={(e) => setField("vin", e.target.value)}
-          className="h-14 text-base"
-        />
-        <Button type="button" variant="accent" className="mt-3 w-full" onClick={autofill} disabled={looking}>
-          <Sparkles className="size-4" /> {looking ? "Looking…" : "Auto-fill from VIN"}
-        </Button>
-        {vinMsg && <p className="mt-2 text-xs text-[#6B7280]">{vinMsg}</p>}
-      </StepShell>
+      <div className="flex items-center gap-2 py-8 text-sm text-[#6B7280]">
+        <RefreshCw className="size-4 animate-spin" /> Loading models for {make} {year}…
+      </div>
     );
   }
 
-  const field = VEHICLE_FIELDS[vIndex - 1];
   return (
-    <StepShell kicker="Vehicle" question={field.question}>
-      {field.type === "select" ? (
-        <div className="space-y-2">
-          {field.options!.map((o) => {
-            const active = vehicle[field.key] === o.value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => setField(field.key, o.value)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-xl border p-4 text-left text-sm transition-colors",
-                  active ? "border-[#E50914] bg-[rgba(229,9,20,0.05)]" : "border-[#E5E7EB] hover:bg-secondary",
-                )}
-              >
-                {o.label}
-                {active && <CheckCircle2 className="size-5 text-[#E50914]" aria-hidden />}
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <Input
-          autoFocus
-          type={field.type}
-          inputMode={field.type === "number" ? "numeric" : undefined}
-          placeholder={field.placeholder}
-          value={vehicle[field.key] ?? ""}
-          onChange={(e) => setField(field.key, e.target.value)}
-          className="h-14 text-base"
-        />
-      )}
-    </StepShell>
+    <SearchableList
+      options={models}
+      current={current}
+      onPick={onPick}
+      placeholder="Search model…"
+      emptyHint="No models found — type the model name."
+    />
+  );
+}
+
+// Searchable, tappable list with an "use typed value" fallback.
+function SearchableList({
+  options,
+  current,
+  onPick,
+  placeholder,
+  emptyHint,
+}: {
+  options: string[];
+  current?: string;
+  onPick: (value: string) => void;
+  placeholder: string;
+  emptyHint?: string;
+}) {
+  const [q, setQ] = useState("");
+  const filtered = q.trim()
+    ? options.filter((o) => o.toLowerCase().includes(q.trim().toLowerCase()))
+    : options;
+  const exact = options.some((o) => o.toLowerCase() === q.trim().toLowerCase());
+
+  return (
+    <div>
+      <Input
+        autoFocus
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={placeholder}
+        className="h-12 text-base"
+      />
+      <div className="mt-3 max-h-[48vh] space-y-2 overflow-y-auto">
+        {filtered.map((o) => {
+          const active = current === o;
+          return (
+            <button
+              key={o}
+              type="button"
+              onClick={() => onPick(o)}
+              className={cn(
+                "flex w-full items-center justify-between rounded-xl border p-3.5 text-left text-sm transition-colors",
+                active ? "border-[#E50914] bg-[rgba(229,9,20,0.05)]" : "border-[#E5E7EB] hover:bg-secondary",
+              )}
+            >
+              {o}
+              {active && <CheckCircle2 className="size-5 text-[#E50914]" aria-hidden />}
+            </button>
+          );
+        })}
+        {q.trim() && !exact && (
+          <button
+            type="button"
+            onClick={() => onPick(q.trim())}
+            className="flex w-full items-center gap-2 rounded-xl border border-dashed border-[#E5E7EB] p-3.5 text-left text-sm text-[#E50914]"
+          >
+            <ChevronRight className="size-4" /> Use “{q.trim()}”
+          </button>
+        )}
+        {filtered.length === 0 && !q.trim() && emptyHint && (
+          <p className="py-4 text-center text-sm text-[#6B7280]">{emptyHint}</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -648,12 +832,31 @@ function Footer({
   onFinish: () => void;
 }) {
   if (phase === "vehicle") {
-    const field = vIndex === 0 ? null : VEHICLE_FIELDS[vIndex - 1];
-    const canContinue = !field?.required || Boolean(vehicle[field.key]?.trim());
+    if (busy) {
+      return (
+        <PrimaryButton onClick={() => {}} disabled loading>
+          Starting…
+        </PrimaryButton>
+      );
+    }
+    const step = VEHICLE_STEPS[vIndex];
+    if (step.kind === "vin") {
+      return (
+        <PrimaryButton onClick={onVehicleNext}>
+          {vehicle.vin?.trim() ? "Continue" : "Skip — I don't have the VIN"}
+        </PrimaryButton>
+      );
+    }
+    // Option steps auto-advance on tap. Required → no button; optional → Skip.
+    if (step.required) return null;
     return (
-      <PrimaryButton onClick={onVehicleNext} disabled={!canContinue || busy} loading={busy}>
-        {vIndex === 0 && !vehicle.vin?.trim() ? "Skip — I don't have the VIN" : "Continue"}
-      </PrimaryButton>
+      <button
+        type="button"
+        onClick={onVehicleNext}
+        className="w-full py-3 text-sm font-medium text-[#6B7280]"
+      >
+        Skip
+      </button>
     );
   }
   if (phase === "photos") {
