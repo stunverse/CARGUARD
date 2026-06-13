@@ -106,7 +106,7 @@ export function InspectionTabs({
 
       {/* Overview */}
       <TabsContent value="overview">
-        <div className="grid gap-6 md:grid-cols-[1fr_300px]">
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">

@@ -157,12 +157,12 @@ export function HiddenDamageScanner({
   const activeState = states[activeCode];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+    <div className="space-y-6">
       {analyzing && <AnalyzingOverlay />}
-      {/* Progress rail */}
-      <div className="space-y-3">
+      {/* Progress (horizontal strip) */}
+      <div>
         <EightPhotoProgress states={states} activeCode={activeCode} onSelect={setActiveCode} />
-        <div className="rounded-lg border p-3 text-center text-sm">
+        <div className="mt-2 text-center text-sm">
           <span className="font-semibold">
             {completed}/{REQUIRED_PHOTO_COUNT}
           </span>{" "}
@@ -287,36 +287,45 @@ function EightPhotoProgress({
   onSelect: (code: PhotoPointCode) => void;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
       {PHOTO_POINTS.map((p) => {
         const st = states[p.code];
         const done = ["passed", "skipped"].includes(st.status);
+        const active = p.code === activeCode;
         return (
           <button
             key={p.code}
             onClick={() => onSelect(p.code)}
+            aria-label={`${p.order_index}. ${p.title}`}
             className={cn(
-              "flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors",
-              p.code === activeCode
-                ? "border-primary bg-primary/5"
-                : "hover:bg-secondary",
+              "flex shrink-0 flex-col items-center gap-1 rounded-xl border px-3 py-2 transition-colors",
+              active ? "border-primary bg-primary/5" : "hover:bg-secondary",
             )}
           >
             <span
               className={cn(
-                "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                "inline-flex size-7 items-center justify-center rounded-full text-xs font-semibold",
                 st.status === "passed"
                   ? "bg-risk-low text-white"
                   : st.status === "skipped"
                     ? "bg-muted-foreground text-white"
                     : st.status === "needs_retake"
                       ? "bg-risk-moderate text-white"
-                      : "bg-muted text-muted-foreground",
+                      : active
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground",
               )}
             >
               {done ? <CheckCircle2 className="size-4" /> : p.order_index}
             </span>
-            <span className="flex-1 truncate">{p.title}</span>
+            <span
+              className={cn(
+                "text-[10px] font-medium",
+                active ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              {p.order_index}
+            </span>
           </button>
         );
       })}
