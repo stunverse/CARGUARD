@@ -15,6 +15,9 @@ const ITEMS = [
 export function BottomNavigation() {
   const pathname = usePathname();
 
+  // Hide during the full-screen guided inspection wizard.
+  if (pathname === "/inspections/new") return null;
+
   return (
     <nav
       aria-label="Primary"

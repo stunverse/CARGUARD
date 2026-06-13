@@ -1,0 +1,721 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Camera,
+  CheckCircle2,
+  ChevronRight,
+  RefreshCw,
+  Sparkles,
+  Video,
+  Wrench,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MediaCapture, type CaptureMode } from "@/components/media-capture";
+import { AnalyzingOverlay } from "@/components/analyzing-overlay";
+import {
+  INSPECTION_GOAL_OPTIONS,
+  PHOTO_POINTS,
+  SELLER_TYPE_OPTIONS,
+} from "@/lib/constants";
+import { MECHANICAL_POINTS } from "@/lib/mechanical";
+import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
+import type { MechanicalPoint, PhotoPointCode } from "@/types";
+
+type Phase = "vehicle" | "photos" | "mech-prompt" | "mech" | "review" | "finishing";
+
+interface VehicleField {
+  key: string;
+  question: string;
+  type: "text" | "number" | "select";
+  required?: boolean;
+  placeholder?: string;
+  options?: readonly { value: string; label: string }[];
+}
+
+const VEHICLE_FIELDS: VehicleField[] = [
+  { key: "make", question: "What's the make?", type: "text", required: true, placeholder: "e.g. Toyota" },
+  { key: "model", question: "What's the model?", type: "text", required: true, placeholder: "e.g. Corolla" },
+  { key: "year", question: "What year is it?", type: "number", placeholder: "e.g. 2018" },
+  { key: "mileage", question: "What's the mileage?", type: "number", placeholder: "e.g. 85000" },
+  { key: "asking_price", question: "What's the asking price?", type: "number", placeholder: "e.g. 12000" },
+  { key: "seller_type", question: "Who is selling it?", type: "select", options: SELLER_TYPE_OPTIONS },
+  { key: "goal", question: "What do you want to check?", type: "select", options: INSPECTION_GOAL_OPTIONS },
+];
+
+export function InspectionWizard() {
+  const router = useRouter();
+
+  const [phase, setPhase] = useState<Phase>("vehicle");
+  const [vIndex, setVIndex] = useState(0); // 0 = VIN, then VEHICLE_FIELDS at 1..n
+  const [vehicle, setVehicle] = useState<Record<string, string>>({});
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const [pIndex, setPIndex] = useState(0);
+  const [photoState, setPhotoState] = useState<Record<string, { status: string; url: string | null }>>({});
+
+  const [includeMech, setIncludeMech] = useState(false);
+  const [mIndex, setMIndex] = useState(0);
+
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [capture, setCapture] = useState<CaptureMode | null>(null);
+
+  const vehicleStepCount = 1 + VEHICLE_FIELDS.length;
+  const total =
+    vehicleStepCount + PHOTO_POINTS.length + 1 + (includeMech ? MECHANICAL_POINTS.length : 0) + 1;
+
+  const stepNumber = useMemo(() => {
+    switch (phase) {
+      case "vehicle":
+        return vIndex;
+      case "photos":
+        return vehicleStepCount + pIndex;
+      case "mech-prompt":
+        return vehicleStepCount + PHOTO_POINTS.length;
+      case "mech":
+        return vehicleStepCount + PHOTO_POINTS.length + 1 + mIndex;
+      case "review":
+      case "finishing":
+        return total - 1;
+    }
+  }, [phase, vIndex, pIndex, mIndex, vehicleStepCount, total]);
+
+  const progress = Math.round(((stepNumber + 1) / total) * 100);
+
+  function setField(key: string, value: string) {
+    setVehicle((v) => ({ ...v, [key]: value }));
+  }
+
+  // ---- Navigation -------------------------------------------------
+  function back() {
+    setError(null);
+    if (phase === "vehicle") {
+      if (vIndex === 0) router.push("/dashboard");
+      else setVIndex((i) => i - 1);
+    } else if (phase === "photos") {
+      if (pIndex === 0) setPhase("vehicle"), setVIndex(vehicleStepCount - 1);
+      else setPIndex((i) => i - 1);
+    } else if (phase === "mech-prompt") {
+      setPhase("photos");
+      setPIndex(PHOTO_POINTS.length - 1);
+    } else if (phase === "mech") {
+      if (mIndex === 0) setPhase("mech-prompt");
+      else setMIndex((i) => i - 1);
+    } else if (phase === "review") {
+      if (includeMech) {
+        setPhase("mech");
+        setMIndex(MECHANICAL_POINTS.length - 1);
+      } else setPhase("mech-prompt");
+    }
+  }
+
+  async function createSessionAndStartPhotos() {
+    if (sessionId) {
+      setPhase("photos");
+      setPIndex(0);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/inspections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...vehicle, goal: vehicle.goal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not start the inspection.");
+      setSessionId(data.sessionId);
+      setPhase("photos");
+      setPIndex(0);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function nextVehicle() {
+    if (vIndex < vehicleStepCount - 1) {
+      setVIndex((i) => i + 1);
+    } else {
+      createSessionAndStartPhotos();
+    }
+  }
+
+  function nextPhoto() {
+    if (pIndex < PHOTO_POINTS.length - 1) setPIndex((i) => i + 1);
+    else setPhase("mech-prompt");
+  }
+
+  function nextMech() {
+    if (mIndex < MECHANICAL_POINTS.length - 1) setMIndex((i) => i + 1);
+    else setPhase("review");
+  }
+
+  // ---- Uploads ----------------------------------------------------
+  async function uploadPhoto(code: PhotoPointCode, file: File) {
+    if (!sessionId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("photo_point_code", code);
+      const res = await fetch(`/api/inspections/${sessionId}/photos`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      const status = data.photo.quality_status as string;
+      setPhotoState((s) => ({ ...s, [code]: { status, url: data.imageUrl ?? data.photo.image_url } }));
+      if (status === "passed") toast.success("Photo looks good.");
+      else if (status === "needs_retake") toast.error("This photo needs a retake.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Upload failed.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function skipPhoto(code: PhotoPointCode) {
+    if (!sessionId) return;
+    await fetch(`/api/inspections/${sessionId}/photos`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ photo_point_code: code }),
+    });
+    setPhotoState((s) => ({ ...s, [code]: { status: "skipped", url: null } }));
+    nextPhoto();
+  }
+
+  async function finish() {
+    if (!sessionId) return;
+    setPhase("finishing");
+    setError(null);
+    try {
+      const a = await fetch(`/api/inspections/${sessionId}/analyze`, { method: "POST" });
+      const ad = await a.json();
+      if (!a.ok) throw new Error(ad.error ?? "Analysis failed.");
+      const r = await fetch(`/api/inspections/${sessionId}/report`, { method: "POST" });
+      const rd = await r.json();
+      if (!r.ok) throw new Error(rd.error ?? "Could not generate the report.");
+      toast.success("Your report is ready.");
+      router.push(`/inspections/${sessionId}/report?generated=1`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
+      toast.error(msg);
+      setPhase("review");
+    }
+  }
+
+  const passedCount = PHOTO_POINTS.filter((p) => photoState[p.code]?.status === "passed").length;
+
+  return (
+    <div className="flex min-h-[calc(100vh-7rem)] flex-col px-5 pt-4">
+      {phase === "finishing" && <AnalyzingOverlay label="Building your report" />}
+
+      {/* Top bar: progress + close */}
+      <div className="mb-6 flex items-center gap-3">
+        <button onClick={back} aria-label="Back" className="text-[#6B7280]">
+          {phase === "vehicle" && vIndex === 0 ? <X className="size-6" /> : <ArrowLeft className="size-6" />}
+        </button>
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#F2F3F5]">
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${progress}%`, backgroundImage: "linear-gradient(90deg,#FF2A2A,#E50914)" }}
+          />
+        </div>
+        <span className="w-12 text-right text-xs font-medium text-[#6B7280]">
+          {Math.min(stepNumber + 1, total)}/{total}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className="flex flex-1 flex-col">
+        {phase === "vehicle" && (
+          <VehicleStep
+            vIndex={vIndex}
+            vehicle={vehicle}
+            setField={setField}
+            onAutoFill={(data) => setVehicle((v) => ({ ...v, ...data }))}
+          />
+        )}
+
+        {phase === "photos" && (
+          <CaptureStep
+            kicker={`Photo ${pIndex + 1} of ${PHOTO_POINTS.length}`}
+            title={PHOTO_POINTS[pIndex].title}
+            instruction={PHOTO_POINTS[pIndex].instruction}
+            why={PHOTO_POINTS[pIndex].why_it_matters}
+            previewUrl={photoState[PHOTO_POINTS[pIndex].code]?.url ?? null}
+            status={photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending"}
+            busy={busy}
+            mode="photo"
+            onOpenCapture={() => setCapture("photo")}
+          />
+        )}
+
+        {phase === "mech-prompt" && (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <span className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-[rgba(229,9,20,0.10)] text-[#E50914]">
+              <Wrench className="size-8" aria-hidden />
+            </span>
+            <h2 className="text-2xl font-extrabold text-[#111827]">Add the engine &amp; mechanical check?</h2>
+            <p className="mt-3 max-w-xs text-sm text-[#6B7280]">
+              Recommended. A few guided steps (cold start, smoke, oil, coolant,
+              leaks, sounds…) to catch hidden engine problems. You can skip it.
+            </p>
+          </div>
+        )}
+
+        {phase === "mech" && (
+          <MechStep
+            point={MECHANICAL_POINTS[mIndex]}
+            busy={busy}
+            onOpenCapture={(m) => setCapture(m)}
+            onSaved={nextMech}
+            sessionId={sessionId!}
+            setBusy={setBusy}
+          />
+        )}
+
+        {phase === "review" && (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <span className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-risk-low/15 text-risk-low">
+              <CheckCircle2 className="size-8" aria-hidden />
+            </span>
+            <h2 className="text-2xl font-extrabold text-[#111827]">All set!</h2>
+            <p className="mt-3 max-w-xs text-sm text-[#6B7280]">
+              {passedCount} exterior photo{passedCount > 1 ? "s" : ""} captured
+              {includeMech ? " + engine & mechanical checks" : ""}. CarGuard AI
+              will now analyze everything and produce your report with a
+              confidence score.
+            </p>
+          </div>
+        )}
+
+        {error && <p className="mt-4 text-center text-sm text-destructive">{error}</p>}
+      </div>
+
+      {/* Footer actions */}
+      <div className="sticky bottom-0 -mx-5 mt-4 border-t border-[#EFEFEF] bg-white/90 px-5 py-4 backdrop-blur">
+        <Footer
+          phase={phase}
+          vehicle={vehicle}
+          vIndex={vIndex}
+          busy={busy}
+          photoStatus={phase === "photos" ? photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending" : undefined}
+          onVehicleNext={nextVehicle}
+          onPhotoNext={nextPhoto}
+          onPhotoSkip={() => skipPhoto(PHOTO_POINTS[pIndex].code)}
+          onMechYes={() => {
+            setIncludeMech(true);
+            setPhase("mech");
+            setMIndex(0);
+          }}
+          onMechNo={() => setPhase("review")}
+          onFinish={finish}
+        />
+      </div>
+
+      {/* Capture modal */}
+      {capture && (
+        <MediaCapture
+          mode={capture}
+          title={phase === "photos" ? PHOTO_POINTS[pIndex].title : MECHANICAL_POINTS[mIndex]?.title ?? "Capture"}
+          onClose={() => setCapture(null)}
+          onCapture={(file) => {
+            if (phase === "photos") uploadPhoto(PHOTO_POINTS[pIndex].code, file);
+            // mech capture handled inside MechStep via window event
+            else window.dispatchEvent(new CustomEvent("mech-capture", { detail: file }));
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+function VehicleStep({
+  vIndex,
+  vehicle,
+  setField,
+  onAutoFill,
+}: {
+  vIndex: number;
+  vehicle: Record<string, string>;
+  setField: (k: string, v: string) => void;
+  onAutoFill: (data: Record<string, string>) => void;
+}) {
+  const [looking, setLooking] = useState(false);
+  const [vinMsg, setVinMsg] = useState<string | null>(null);
+
+  if (vIndex === 0) {
+    // VIN step
+    async function autofill() {
+      if (!vehicle.vin?.trim()) return;
+      setLooking(true);
+      setVinMsg(null);
+      const res = await fetch(`/api/vehicle-lookup?q=${encodeURIComponent(vehicle.vin.trim())}`);
+      const d = await res.json();
+      setLooking(false);
+      if (d.ok && d.data) {
+        const data: Record<string, string> = {};
+        for (const k of ["make", "model", "year", "trim", "engine", "fuel_type", "transmission"]) {
+          if (d.data[k] != null) data[k] = String(d.data[k]);
+        }
+        onAutoFill(data);
+        setVinMsg(`Pre-filled from ${d.data.source}.`);
+        toast.success("Vehicle details pre-filled.");
+      } else {
+        setVinMsg(d.message ?? "No match — you can fill the details manually.");
+      }
+    }
+    return (
+      <StepShell kicker="Vehicle" question="Do you have the VIN?" helper="Optional — we'll auto-fill the details for you. You can skip this.">
+        <Input
+          autoFocus
+          placeholder="17-character VIN"
+          value={vehicle.vin ?? ""}
+          onChange={(e) => setField("vin", e.target.value)}
+          className="h-14 text-base"
+        />
+        <Button type="button" variant="accent" className="mt-3 w-full" onClick={autofill} disabled={looking}>
+          <Sparkles className="size-4" /> {looking ? "Looking…" : "Auto-fill from VIN"}
+        </Button>
+        {vinMsg && <p className="mt-2 text-xs text-[#6B7280]">{vinMsg}</p>}
+      </StepShell>
+    );
+  }
+
+  const field = VEHICLE_FIELDS[vIndex - 1];
+  return (
+    <StepShell kicker="Vehicle" question={field.question}>
+      {field.type === "select" ? (
+        <div className="space-y-2">
+          {field.options!.map((o) => {
+            const active = vehicle[field.key] === o.value;
+            return (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => setField(field.key, o.value)}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-xl border p-4 text-left text-sm transition-colors",
+                  active ? "border-[#E50914] bg-[rgba(229,9,20,0.05)]" : "border-[#E5E7EB] hover:bg-secondary",
+                )}
+              >
+                {o.label}
+                {active && <CheckCircle2 className="size-5 text-[#E50914]" aria-hidden />}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <Input
+          autoFocus
+          type={field.type}
+          inputMode={field.type === "number" ? "numeric" : undefined}
+          placeholder={field.placeholder}
+          value={vehicle[field.key] ?? ""}
+          onChange={(e) => setField(field.key, e.target.value)}
+          className="h-14 text-base"
+        />
+      )}
+    </StepShell>
+  );
+}
+
+function CaptureStep({
+  kicker,
+  title,
+  instruction,
+  why,
+  previewUrl,
+  status,
+  busy,
+  onOpenCapture,
+}: {
+  kicker: string;
+  title: string;
+  instruction: string;
+  why: string;
+  previewUrl: string | null;
+  status: string;
+  busy: boolean;
+  mode: CaptureMode;
+  onOpenCapture: () => void;
+}) {
+  return (
+    <StepShell kicker={kicker} question={title}>
+      <p className="text-sm text-[#374151]">{instruction}</p>
+      <p className="mt-2 rounded-lg bg-accent/5 p-3 text-xs text-[#6B7280]">
+        <strong className="text-[#111827]">Why it matters: </strong>
+        {why}
+      </p>
+
+      <button
+        type="button"
+        onClick={onOpenCapture}
+        disabled={busy}
+        className="relative mt-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[#E5E7EB] bg-[#F7F8FA]"
+      >
+        {previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={previewUrl} alt={title} className="h-full w-full object-cover" />
+        ) : (
+          <span className="flex flex-col items-center gap-2 text-[#9AA3AF]">
+            <Camera className="size-10" aria-hidden />
+            <span className="text-sm font-medium">Tap to open the camera</span>
+          </span>
+        )}
+        {busy && (
+          <span className="absolute inset-0 flex items-center justify-center bg-white/70">
+            <RefreshCw className="size-6 animate-spin text-[#E50914]" aria-hidden />
+          </span>
+        )}
+      </button>
+
+      {status === "passed" && (
+        <p className="mt-2 flex items-center gap-1 text-sm text-risk-low">
+          <CheckCircle2 className="size-4" /> Looks good
+        </p>
+      )}
+      {status === "needs_retake" && (
+        <p className="mt-2 text-sm text-risk-moderate">This photo needs a retake — tap to try again.</p>
+      )}
+    </StepShell>
+  );
+}
+
+function MechStep({
+  point,
+  busy,
+  onOpenCapture,
+  onSaved,
+  sessionId,
+  setBusy,
+}: {
+  point: MechanicalPoint;
+  busy: boolean;
+  onOpenCapture: (mode: CaptureMode) => void;
+  onSaved: () => void;
+  sessionId: string;
+  setBusy: (b: boolean) => void;
+}) {
+  const [obs, setObs] = useState<Record<string, boolean>>({});
+  const [file, setFile] = useState<File | null>(null);
+
+  // Receive the captured file from the parent's MediaCapture.
+  useEffect(() => {
+    function onCap(e: Event) {
+      setFile((e as CustomEvent).detail as File);
+    }
+    window.addEventListener("mech-capture", onCap);
+    return () => window.removeEventListener("mech-capture", onCap);
+  }, []);
+
+  async function save() {
+    setBusy(true);
+    const fd = new FormData();
+    fd.append("observations", JSON.stringify(obs));
+    if (file) fd.append("file", file);
+    const res = await fetch(`/api/inspections/${sessionId}/mechanical/${point.code}`, {
+      method: "POST",
+      body: fd,
+    });
+    setBusy(false);
+    if (res.ok) {
+      setObs({});
+      setFile(null);
+      onSaved();
+    } else {
+      toast.error("Could not save this step.");
+    }
+  }
+
+  const captureMode: CaptureMode = point.media_type === "video" ? "video" : "photo";
+
+  return (
+    <StepShell kicker={`Engine check ${point.order_index}`} question={point.title}>
+      <p className="text-sm text-[#374151]">{point.instruction}</p>
+      <p className="mt-2 rounded-lg bg-accent/5 p-3 text-xs text-[#6B7280]">
+        <strong className="text-[#111827]">Why it matters: </strong>
+        {point.why_it_matters}
+      </p>
+
+      {point.media_type !== "questionnaire" && point.media_type !== "docs" && (
+        <button
+          type="button"
+          onClick={() => onOpenCapture(captureMode)}
+          className={cn(
+            "mt-4 flex w-full items-center gap-2 rounded-xl border border-dashed p-3 text-left text-sm",
+            file ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB]",
+          )}
+        >
+          <span className={cn("flex size-9 items-center justify-center rounded-lg", file ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]")}>
+            {file ? <CheckCircle2 className="size-5" /> : point.media_type === "video" ? <Video className="size-5" /> : <Camera className="size-5" />}
+          </span>
+          <span className="font-medium text-[#111827]">
+            {file ? "Captured — tap to retake" : point.media_type === "video" ? "Film (video + sound)" : "Open camera"}
+          </span>
+        </button>
+      )}
+
+      <p className="mt-4 text-xs font-semibold text-[#6B7280]">What did you observe?</p>
+      <div className="mt-1 space-y-1.5">
+        {point.observations.map((o) => (
+          <label key={o.key} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={!!obs[o.key]}
+              onChange={() => setObs((p) => ({ ...p, [o.key]: !p[o.key] }))}
+            />
+            <span className={o.kind === "good" ? "text-risk-low" : undefined}>{o.label}</span>
+          </label>
+        ))}
+      </div>
+
+      <Button className="mt-5 w-full" onClick={save} disabled={busy}>
+        {busy ? "Saving…" : "Save & continue"}
+      </Button>
+      <button
+        type="button"
+        onClick={onSaved}
+        disabled={busy}
+        className="mt-2 w-full py-2 text-sm font-medium text-[#6B7280]"
+      >
+        Skip this step
+      </button>
+    </StepShell>
+  );
+}
+
+function StepShell({
+  kicker,
+  question,
+  helper,
+  children,
+}: {
+  kicker: string;
+  question: string;
+  helper?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#E50914]">{kicker}</div>
+      <h2 className="text-2xl font-extrabold leading-tight text-[#111827]">{question}</h2>
+      {helper && <p className="mt-2 text-sm text-[#6B7280]">{helper}</p>}
+      <div className="mt-5">{children}</div>
+    </div>
+  );
+}
+
+function Footer({
+  phase,
+  vehicle,
+  vIndex,
+  busy,
+  photoStatus,
+  onVehicleNext,
+  onPhotoNext,
+  onPhotoSkip,
+  onMechYes,
+  onMechNo,
+  onFinish,
+}: {
+  phase: Phase;
+  vehicle: Record<string, string>;
+  vIndex: number;
+  busy: boolean;
+  photoStatus?: string;
+  onVehicleNext: () => void;
+  onPhotoNext: () => void;
+  onPhotoSkip: () => void;
+  onMechYes: () => void;
+  onMechNo: () => void;
+  onFinish: () => void;
+}) {
+  if (phase === "vehicle") {
+    const field = vIndex === 0 ? null : VEHICLE_FIELDS[vIndex - 1];
+    const canContinue = !field?.required || Boolean(vehicle[field.key]?.trim());
+    return (
+      <PrimaryButton onClick={onVehicleNext} disabled={!canContinue || busy} loading={busy}>
+        {vIndex === 0 && !vehicle.vin?.trim() ? "Skip — I don't have the VIN" : "Continue"}
+      </PrimaryButton>
+    );
+  }
+  if (phase === "photos") {
+    const done = photoStatus === "passed";
+    return (
+      <div className="flex gap-2">
+        <PrimaryButton onClick={onPhotoNext} disabled={!done || busy} className="flex-1">
+          Continue
+        </PrimaryButton>
+        <Button variant="ghost" onClick={onPhotoSkip} disabled={busy}>
+          Can&apos;t take it
+        </Button>
+      </div>
+    );
+  }
+  if (phase === "mech-prompt") {
+    return (
+      <div className="flex gap-2">
+        <PrimaryButton onClick={onMechYes} className="flex-1">
+          Yes, add it
+        </PrimaryButton>
+        <Button variant="outline" onClick={onMechNo}>
+          Skip
+        </Button>
+      </div>
+    );
+  }
+  if (phase === "review" || phase === "finishing") {
+    return (
+      <PrimaryButton onClick={onFinish} disabled={busy || phase === "finishing"} loading={phase === "finishing"}>
+        Get my report
+      </PrimaryButton>
+    );
+  }
+  return null; // mech phase uses its own in-body Save button
+}
+
+function PrimaryButton({
+  children,
+  onClick,
+  disabled,
+  loading,
+  className,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex h-14 items-center justify-center gap-2 rounded-2xl px-6 text-base font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-50",
+        className,
+      )}
+      style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
+    >
+      {loading ? <RefreshCw className="size-5 animate-spin" /> : <ChevronRight className="size-5" />}
+      {children}
+    </button>
+  );
+}
