@@ -3,9 +3,12 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Camera,
   CheckCircle2,
+  CheckCircle,
   Info,
   Upload,
+  Video,
   Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { RiskScoreCircle } from "@/components/risk-indicators";
+import { MediaCapture, type CaptureMode } from "@/components/media-capture";
 import {
   MECHANICAL_DISCLAIMER,
   MECHANICAL_POINTS,
@@ -103,9 +107,12 @@ function StepCard({
   initial: MechanicalCheckItem | null;
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const file2Ref = useRef<HTMLInputElement>(null);
   const docsRef = useRef<HTMLInputElement>(null);
+
+  // Captured media (in-app camera/mic).
+  const [primaryFile, setPrimaryFile] = useState<File | null>(null);
+  const [secondaryFile, setSecondaryFile] = useState<File | null>(null);
+  const [capture, setCapture] = useState<null | { slot: "primary" | "secondary"; mode: CaptureMode }>(null);
 
   const [obs, setObs] = useState<Record<string, boolean>>(
     (initial?.observations as Record<string, boolean>) ?? {},
@@ -132,14 +139,8 @@ function StepCard({
     setError(null);
     const fd = new FormData();
     fd.append("observations", JSON.stringify(obs));
-    if (point.media_type === "photo" || point.media_type === "photo_pair" || point.media_type === "video") {
-      const f = fileRef.current?.files?.[0];
-      if (f) fd.append("file", f);
-    }
-    if (point.media_type === "photo_pair") {
-      const f2 = file2Ref.current?.files?.[0];
-      if (f2) fd.append("file2", f2);
-    }
+    if (primaryFile) fd.append("file", primaryFile);
+    if (secondaryFile) fd.append("file2", secondaryFile);
     if (point.media_type === "docs") {
       for (const f of Array.from(docsRef.current?.files ?? [])) fd.append("files", f);
     }
@@ -173,12 +174,7 @@ function StepCard({
     router.refresh();
   }
 
-  const accept =
-    point.media_type === "video"
-      ? "video/mp4,video/quicktime,video/webm"
-      : point.media_type === "docs"
-        ? "image/*,application/pdf"
-        : "image/jpeg,image/png,image/heic,image/webp";
+  const captureMode: CaptureMode = point.media_type === "video" ? "video" : "photo";
 
   return (
     <Card className={cn(result && "border-accent/30")}>
@@ -202,33 +198,36 @@ function StepCard({
           <span>{point.why_it_matters}</span>
         </div>
 
-        {/* Media inputs */}
-        {point.media_type !== "questionnaire" && (
-          <div className="flex flex-wrap gap-2">
-            {point.media_type === "photo_pair" ? (
-              <>
-                <label className="flex-1">
-                  <span className="mb-1 block text-xs font-medium">Ignition ON / engine OFF</span>
-                  <input ref={fileRef} type="file" accept={accept} capture="environment" className="text-xs" />
-                </label>
-                <label className="flex-1">
-                  <span className="mb-1 block text-xs font-medium">Engine running</span>
-                  <input ref={file2Ref} type="file" accept={accept} capture="environment" className="text-xs" />
-                </label>
-              </>
-            ) : point.media_type === "docs" ? (
-              <input ref={docsRef} type="file" accept={accept} multiple className="text-xs" />
-            ) : (
-              <input
-                ref={fileRef}
-                type="file"
-                accept={accept}
-                capture="environment"
-                className="text-xs"
-              />
-            )}
+        {/* Media capture (in-app camera / mic) */}
+        {point.media_type === "docs" ? (
+          <div>
+            <p className="mb-1 text-xs font-medium">Upload invoices / logbook photos</p>
+            <input ref={docsRef} type="file" accept="image/*,application/pdf" multiple className="text-xs" />
           </div>
-        )}
+        ) : point.media_type === "photo_pair" ? (
+          <div className="grid grid-cols-2 gap-2">
+            <CaptureTile
+              label="Ignition ON / engine OFF"
+              file={primaryFile}
+              icon={Camera}
+              onClick={() => setCapture({ slot: "primary", mode: "photo" })}
+            />
+            <CaptureTile
+              label="Engine running"
+              file={secondaryFile}
+              icon={Camera}
+              onClick={() => setCapture({ slot: "secondary", mode: "photo" })}
+            />
+          </div>
+        ) : point.media_type !== "questionnaire" ? (
+          <CaptureTile
+            label={point.media_type === "video" ? "Film (video + sound)" : "Take a photo"}
+            file={primaryFile}
+            icon={point.media_type === "video" ? Video : Camera}
+            onClick={() => setCapture({ slot: "primary", mode: captureMode })}
+            full
+          />
+        ) : null}
 
         {/* Observations */}
         <div className="space-y-1.5">
@@ -258,6 +257,57 @@ function StepCard({
           </Button>
         </div>
       </CardContent>
+
+      {capture && (
+        <MediaCapture
+          mode={capture.mode}
+          title={`${point.order_index}. ${point.title}`}
+          onClose={() => setCapture(null)}
+          onCapture={(file) => {
+            if (capture.slot === "primary") setPrimaryFile(file);
+            else setSecondaryFile(file);
+          }}
+        />
+      )}
     </Card>
+  );
+}
+
+function CaptureTile({
+  label,
+  file,
+  icon: Icon,
+  onClick,
+  full = false,
+}: {
+  label: string;
+  file: File | null;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+  full?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-2 rounded-xl border border-dashed p-3 text-left text-sm transition-colors hover:bg-secondary",
+        file ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB]",
+        full && "w-full",
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-lg",
+          file ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]",
+        )}
+      >
+        {file ? <CheckCircle className="size-5" aria-hidden /> : <Icon className="size-5" aria-hidden />}
+      </span>
+      <span className="min-w-0">
+        <span className="block font-medium text-[#111827]">{file ? "Captured — tap to retake" : label}</span>
+        {!file && <span className="block text-xs text-muted-foreground">Tap to open the camera</span>}
+      </span>
+    </button>
   );
 }
