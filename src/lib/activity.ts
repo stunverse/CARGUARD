@@ -18,7 +18,10 @@ export type ActivityAction =
   | "engine_audio_retake_requested"
   | "engine_audio_analysis_started"
   | "engine_audio_analysis_completed"
-  | "engine_audio_added_to_report";
+  | "engine_audio_added_to_report"
+  | "mechanical_item_saved"
+  | "mechanical_item_skipped"
+  | "mechanical_added_to_report";
 
 export async function logActivity(
   supabase: SupabaseClient,

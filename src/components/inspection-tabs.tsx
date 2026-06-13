@@ -21,23 +21,22 @@ import {
 import { PhotoAnalysisCard } from "@/components/photo-analysis-card";
 import { FollowUpPhotoRequestCard } from "@/components/follow-up-photo-request-card";
 import { EngineAudioTab } from "@/components/engine-audio-tab";
+import { MechanicalCheckTab } from "@/components/mechanical-check-tab";
 import { ReportPreview } from "@/components/report-preview";
 import {
   GenerateReportButton,
   PdfExportButton,
 } from "@/components/report-actions";
 import { EmptyState } from "@/components/empty-state";
-import {
-  ENGINE_AUDIO_RISK_COPY,
-  PHOTO_POINTS,
-  RECOMMENDATION_COPY,
-} from "@/lib/constants";
+import { PHOTO_POINTS, RECOMMENDATION_COPY } from "@/lib/constants";
+import { MECHANICAL_RISK_COPY } from "@/lib/mechanical";
 import { formatDate, formatPrice } from "@/lib/utils";
 import type {
   EngineAudioCheck,
   FinalReport,
   InspectionPhoto,
   InspectionSession,
+  MechanicalCheckItem,
   Vehicle,
 } from "@/types";
 
@@ -59,11 +58,13 @@ export function InspectionTabs({
   logs,
   report,
   engineAudio,
+  mechanicalItems,
 }: {
   session: InspectionSession;
   vehicle: Vehicle | null;
   photos: InspectionPhoto[];
   engineAudio: EngineAudioCheck | null;
+  mechanicalItems: MechanicalCheckItem[];
   followUps: {
     id: string;
     title: string;
@@ -97,7 +98,7 @@ export function InspectionTabs({
         <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
         <TabsTrigger value="scores">Scores</TabsTrigger>
         <TabsTrigger value="followups">Follow-up photos</TabsTrigger>
-        <TabsTrigger value="engine-audio">Engine Audio</TabsTrigger>
+        <TabsTrigger value="engine-mechanical">Engine &amp; Mechanical</TabsTrigger>
         <TabsTrigger value="report">Report</TabsTrigger>
         <TabsTrigger value="activity">Activity log</TabsTrigger>
       </TabsList>
@@ -153,18 +154,37 @@ export function InspectionTabs({
               </Card>
             )}
 
-            {/* Engine Start Audio (optional) */}
+            {/* Engine & Mechanical (optional) */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Volume2 className="size-4 text-accent" /> Engine Start Audio
+                  <Volume2 className="size-4 text-accent" /> Engine &amp; Mechanical
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <EngineAudioStatus engineAudio={engineAudio} />
+                {session.mechanical_score != null ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant={
+                        ["high", "very_high"].includes(session.mechanical_risk_level ?? "")
+                          ? "critical"
+                          : "low"
+                      }
+                    >
+                      {session.mechanical_score}/100
+                    </Badge>
+                    <span className="text-muted-foreground">
+                      {session.mechanical_risk_level
+                        ? MECHANICAL_RISK_COPY[session.mechanical_risk_level]
+                        : ""}
+                    </span>
+                  </div>
+                ) : (
+                  <Badge variant="secondary">Not started</Badge>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Optional: record or upload the engine starting to check for
-                  unusual startup noises.
+                  Optional: guided engine checks (cold start, smoke, oil, coolant,
+                  leaks, noises…) + AI startup-sound analysis.
                 </p>
               </CardContent>
             </Card>
@@ -281,9 +301,24 @@ export function InspectionTabs({
         )}
       </TabsContent>
 
-      {/* Engine Audio (optional module) */}
-      <TabsContent value="engine-audio">
-        <EngineAudioTab sessionId={session.id} initialCheck={engineAudio} />
+      {/* Engine & Mechanical (unified optional module) */}
+      <TabsContent value="engine-mechanical">
+        <div className="space-y-8">
+          <MechanicalCheckTab
+            sessionId={session.id}
+            initialItems={mechanicalItems}
+            mechanicalScore={session.mechanical_score}
+            mechanicalRisk={session.mechanical_risk_level}
+          />
+          <div>
+            <h3 className="mb-1 text-lg font-semibold">Deep engine-sound analysis (AI)</h3>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Optional: upload an MP3/WAV of the cold start for an AI analysis of
+              the startup sound (complements the cold-start step above).
+            </p>
+            <EngineAudioTab sessionId={session.id} initialCheck={engineAudio} />
+          </div>
+        </div>
       </TabsContent>
 
       {/* Report */}
@@ -332,23 +367,3 @@ function Info({ label, value }: { label: string; value: unknown }) {
   );
 }
 
-function EngineAudioStatus({ engineAudio }: { engineAudio: EngineAudioCheck | null }) {
-  if (!engineAudio) {
-    return <Badge variant="secondary">Not added</Badge>;
-  }
-  if (engineAudio.analysis_status === "completed" && engineAudio.risk_level) {
-    const riskDetected = ["high", "very_high"].includes(engineAudio.risk_level);
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={riskDetected ? "critical" : "low"}>
-          {riskDetected ? "Risk detected" : "Completed"}
-        </Badge>
-        <span className="text-muted-foreground">
-          {engineAudio.engine_audio_score ?? "—"}/100 ·{" "}
-          {ENGINE_AUDIO_RISK_COPY[engineAudio.risk_level]}
-        </span>
-      </div>
-    );
-  }
-  return <Badge variant="moderate">Pending analysis</Badge>;
-}

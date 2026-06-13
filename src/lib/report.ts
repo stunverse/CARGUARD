@@ -11,6 +11,7 @@ import type {
   FinalReport,
   FullInspectionResult,
   InspectionPhoto,
+  MechanicalReportSection,
   PhotoPointCode,
   Vehicle,
 } from "@/types";
@@ -44,8 +45,9 @@ export function generateFinalReport(params: {
   global: FullInspectionResult;
   globalScore: number;
   engineAudio?: EngineAudioReportSection | null;
+  mechanical?: MechanicalReportSection | null;
 }): FinalReport {
-  const { vehicle, photos, global, globalScore, engineAudio } = params;
+  const { vehicle, photos, global, globalScore, engineAudio, mechanical } = params;
 
   const titleFor = (code: PhotoPointCode) =>
     PHOTO_POINTS.find((p) => p.code === code)?.title ?? code;
@@ -97,6 +99,7 @@ export function generateFinalReport(params: {
     recommended_next_steps: global.recommended_next_steps,
     disclaimer: global.disclaimer || REPORT_DISCLAIMER,
     engine_audio: engineAudio ?? null,
+    mechanical: mechanical ?? null,
   };
 }
 

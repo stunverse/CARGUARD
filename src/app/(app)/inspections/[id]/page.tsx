@@ -12,6 +12,7 @@ import type {
   FinalReport,
   InspectionPhoto,
   InspectionSession,
+  MechanicalCheckItem,
   Vehicle,
 } from "@/types";
 
@@ -40,6 +41,7 @@ export default async function InspectionDetailPage({
     { data: logs },
     { data: reportRow },
     { data: audioRow },
+    { data: mechanicalRows },
   ] = await Promise.all([
     supabase.from("inspection_photos").select("*").eq("inspection_session_id", id),
     supabase.from("follow_up_photo_requests").select("*").eq("inspection_session_id", id),
@@ -63,6 +65,10 @@ export default async function InspectionDetailPage({
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("mechanical_checks")
+      .select("*")
+      .eq("inspection_session_id", id),
   ]);
 
   const report =
@@ -88,6 +94,7 @@ export default async function InspectionDetailPage({
         logs={(logs ?? []) as never}
         report={report}
         engineAudio={(audioRow ?? null) as EngineAudioCheck | null}
+        mechanicalItems={(mechanicalRows ?? []) as MechanicalCheckItem[]}
       />
     </div>
   );

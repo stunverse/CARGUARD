@@ -7,6 +7,7 @@ import {
   calculateInspectionScores,
 } from "@/lib/ai/functions";
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
+import { aggregateMechanical } from "@/lib/ai/mechanical";
 import { checkReportQuota } from "@/lib/quota";
 import { logActivity } from "@/lib/activity";
 import { scoreToRiskLevel } from "@/lib/constants";
@@ -97,12 +98,20 @@ export async function POST(
     .maybeSingle();
   const engineAudio = engineAudioToReportSection(audioCheck as never);
 
+  // Attach the engine & mechanical check, if performed.
+  const { data: mechItems } = await supabase
+    .from("mechanical_checks")
+    .select("*")
+    .eq("inspection_session_id", sessionId);
+  const mechanical = aggregateMechanical((mechItems ?? []) as never);
+
   const report = generateFinalReport({
     vehicle: vehicle as never,
     photos: photoList,
     global,
     globalScore: scores.global_score,
     engineAudio,
+    mechanical,
   });
 
   if (engineAudio) {
@@ -110,6 +119,13 @@ export async function POST(
       userId: user.id,
       sessionId,
       action: "engine_audio_added_to_report",
+    });
+  }
+  if (mechanical) {
+    await logActivity(supabase, {
+      userId: user.id,
+      sessionId,
+      action: "mechanical_added_to_report",
     });
   }
 

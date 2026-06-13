@@ -132,6 +132,30 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(ea.disclaimer).fillColor("#111");
     }
 
+    // 11. Engine & mechanical check (optional module)
+    h1("11. Engine & Mechanical Check");
+    const me = report.mechanical;
+    if (!me) {
+      muted("No engine & mechanical check was performed for this inspection.");
+    } else {
+      body(`Risk: ${me.risk_level.toUpperCase()} • Mechanical score: ${me.mechanical_score}/100`);
+      body(me.summary);
+      me.items.forEach((it) =>
+        body(
+          `• ${it.title}: ${it.score ?? "—"}/100${it.suspicious_observations.length ? ` — ${it.suspicious_observations.join("; ")}` : ""}`,
+        ),
+      );
+      if (me.seller_questions.length) {
+        doc.fontSize(10).font("Helvetica-Bold").text("Questions for the seller");
+        bullets(me.seller_questions);
+      }
+      if (me.mechanic_questions.length) {
+        doc.fontSize(10).font("Helvetica-Bold").text("Questions for the mechanic");
+        bullets(me.mechanic_questions);
+      }
+      doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(me.disclaimer).fillColor("#111");
+    }
+
     // Disclaimer
     doc.moveDown(0.8);
     doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(report.disclaimer);

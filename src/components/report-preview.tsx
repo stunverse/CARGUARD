@@ -8,6 +8,7 @@ import {
 } from "@/components/risk-indicators";
 import { Badge } from "@/components/ui/badge";
 import { EngineAudioReportSection } from "@/components/engine-audio-report-section";
+import { MechanicalReportSection } from "@/components/mechanical-report-section";
 import { formatPrice, vehicleLabel } from "@/lib/utils";
 import type { FinalReport } from "@/types";
 
@@ -123,6 +124,9 @@ export function ReportPreview({ report }: { report: FinalReport }) {
 
       {/* 10. Engine start audio (optional module) */}
       <EngineAudioReportSection section={report.engine_audio} />
+
+      {/* 11. Engine & mechanical check (optional module) */}
+      <MechanicalReportSection section={report.mechanical} />
 
       {/* Disclaimer */}
       <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">

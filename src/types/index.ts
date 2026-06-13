@@ -118,6 +118,10 @@ export interface InspectionSession {
   ai_summary: string | null;
   final_report: FinalReport | null;
   report_pdf_url: string | null;
+  // Unified engine & mechanical module (optional).
+  mechanical_score: number | null;
+  mechanical_risk_level: MechanicalRiskLevel | null;
+  mechanical_recommendation: MechanicalRecommendation | null;
   created_at: string;
   updated_at: string;
 }
@@ -276,6 +280,8 @@ export interface FinalReport {
   disclaimer: string;
   // Optional engine-start audio module (null when no audio was provided).
   engine_audio?: EngineAudioReportSection | null;
+  // Optional engine & mechanical module (null when not performed).
+  mechanical?: MechanicalReportSection | null;
 }
 
 // ---------------------------------------------------------------------
@@ -404,6 +410,126 @@ export interface EngineAudioReportSection {
   recommendation: EngineAudioRecommendation;
   detected_sounds: DetectedEngineSound[];
   summary: string;
+  seller_questions: string[];
+  mechanic_questions: string[];
+  disclaimer: string;
+}
+
+// ---------------------------------------------------------------------
+// Engine & Mechanical Check (unified optional module, points 2-15)
+// ---------------------------------------------------------------------
+export type MechanicalPointCode =
+  | "cold_start"
+  | "dashboard_lights"
+  | "exhaust_smoke"
+  | "oil_dipstick"
+  | "oil_cap"
+  | "coolant"
+  | "leaks_under_engine"
+  | "idle_noise"
+  | "acceleration"
+  | "engine_temperature"
+  | "turbo"
+  | "fluid_after_test"
+  | "road_test"
+  | "maintenance_records";
+
+export type MechanicalMediaType =
+  | "photo"
+  | "photo_pair"
+  | "video"
+  | "questionnaire"
+  | "docs";
+
+export type MechanicalRiskLevel =
+  | "low"
+  | "moderate"
+  | "high"
+  | "very_high"
+  | "insufficient_data";
+
+export type MechanicalRecommendation =
+  | "normal"
+  | "monitor"
+  | "ask_seller_questions"
+  | "professional_inspection"
+  | "avoid_without_diagnosis"
+  | "insufficient_data";
+
+// A guided checkbox/question on a mechanical step.
+export interface MechanicalObservation {
+  key: string;
+  label: string;
+  // "suspect" lowers the score by `weight`; "good" is reassuring (weight 0).
+  kind: "suspect" | "good";
+  weight: number; // 0-40 severity contribution
+}
+
+export interface MechanicalPoint {
+  code: MechanicalPointCode;
+  title: string;
+  order_index: number;
+  media_type: MechanicalMediaType;
+  required: boolean;
+  instruction: string;
+  why_it_matters: string;
+  observations: MechanicalObservation[];
+  ai_targets?: string[];
+}
+
+export interface MechanicalItemAnalysis {
+  summary: string;
+  score: number; // 0-100, higher = safer
+  severity: Severity;
+  detected_issues: DetectedIssue[];
+  suspicious_observations: string[];
+  confidence: number;
+}
+
+export interface MechanicalCheckItem {
+  id: string;
+  user_id: string;
+  inspection_session_id: string;
+  vehicle_id: string | null;
+  point_code: MechanicalPointCode;
+  media_type: MechanicalMediaType | null;
+  image_url: string | null;
+  image_url_2: string | null;
+  video_url: string | null;
+  storage_path: string | null;
+  storage_path_2: string | null;
+  video_storage_path: string | null;
+  doc_urls: string[] | null;
+  mime_type: string | null;
+  file_size: number | null;
+  duration_seconds: number | null;
+  observations: Record<string, boolean> | null;
+  questionnaire_answers: Record<string, string> | null;
+  upload_status: "pending" | "uploaded" | "failed";
+  quality_status: "pending" | "passed" | "failed" | "needs_retake" | "skipped";
+  analysis_status: "pending" | "analyzing" | "completed" | "failed";
+  score: number | null;
+  severity: Severity | null;
+  confidence: number | null;
+  ai_analysis: MechanicalItemAnalysis | null;
+  detected_issues: DetectedIssue[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MechanicalReportSection {
+  mechanical_score: number;
+  risk_level: MechanicalRiskLevel;
+  recommendation: MechanicalRecommendation;
+  summary: string;
+  items: Array<{
+    point_code: MechanicalPointCode;
+    title: string;
+    score: number | null;
+    severity: Severity | null;
+    suspicious_observations: string[];
+    summary: string | null;
+  }>;
   seller_questions: string[];
   mechanic_questions: string[];
   disclaimer: string;
