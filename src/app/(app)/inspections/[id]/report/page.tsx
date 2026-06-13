@@ -31,7 +31,7 @@ export default async function ReportPage({
 
   if (!report) {
     return (
-      <div className="container max-w-3xl py-8">
+      <div className="px-5 py-6">
         <EmptyState
           title="No report yet"
           description="Run the analysis and generate a report first."
@@ -46,7 +46,7 @@ export default async function ReportPage({
   if (!content) notFound();
 
   return (
-    <div className="container max-w-3xl py-8">
+    <div className="px-5 py-6">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link
           href={`/inspections/${id}`}

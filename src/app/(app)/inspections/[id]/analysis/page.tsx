@@ -52,7 +52,7 @@ export default async function AnalysisPage({
 
   if (session.global_score == null) {
     return (
-      <div className="container max-w-3xl py-8">
+      <div className="px-5 py-6">
         <EmptyState
           title="No analysis yet"
           description="Upload the 8 photos and run the AI analysis from the scanner."
@@ -67,7 +67,7 @@ export default async function AnalysisPage({
   const rec = session.recommendation;
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="px-5 py-6">
       <Link
         href={`/inspections/${id}`}
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

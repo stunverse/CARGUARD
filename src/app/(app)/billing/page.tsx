@@ -54,7 +54,7 @@ export default async function BillingPage({
   const hasCustomer = Boolean(subscription?.stripe_customer_id);
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="px-5 py-6">
       <h1 className="mb-2 text-2xl font-bold">Billing &amp; plan</h1>
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <p className="text-muted-foreground">

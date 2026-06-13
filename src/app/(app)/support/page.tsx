@@ -29,7 +29,7 @@ export default async function SupportPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="container max-w-3xl py-8">
+    <div className="px-5 py-6">
       <h1 className="mb-6 text-2xl font-bold">Support</h1>
 
       <Card className="mb-6">

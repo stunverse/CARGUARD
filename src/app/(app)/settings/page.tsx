@@ -17,7 +17,7 @@ export default async function SettingsPage() {
     .single();
 
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="px-5 py-6">
       <h1 className="mb-6 text-2xl font-bold">Settings</h1>
       <SettingsForm profile={(profile ?? { email: user!.email }) as Partial<Profile>} />
     </div>

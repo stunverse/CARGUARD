@@ -6,7 +6,7 @@ export const metadata = { title: "New inspection — CarGuard AI" };
 
 export default function NewInspectionPage() {
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="px-5 py-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">New inspection</h1>
         <p className="text-muted-foreground">

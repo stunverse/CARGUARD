@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { SiteHeader } from "@/components/site-header";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MobileShell } from "@/components/mobile/mobile-shell";
 import { PLANS, REPORT_PACKS } from "@/lib/billing";
 import { cn } from "@/lib/utils";
 
@@ -10,72 +8,78 @@ export const metadata = { title: "Pricing — CarGuard AI" };
 
 export default function PricingPage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-      <main className="container py-16">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-4xl font-bold">Simple, transparent pricing</h1>
-          <p className="mt-3 text-muted-foreground">
-            Start free. Upgrade when you need more inspections and reports.
-          </p>
-        </div>
+    <MobileShell>
+      <div className="text-center">
+        <h1 className="text-2xl font-extrabold text-[#111827]">Simple pricing</h1>
+        <p className="mt-2 text-sm text-[#6B7280]">
+          Start free. Upgrade when you need more inspections and reports.
+        </p>
+      </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-4">
-          {PLANS.map((plan) => (
-            <Card
+      <div className="mt-6 space-y-4">
+        {PLANS.map((plan) => {
+          const popular = plan.name === "plus";
+          return (
+            <div
               key={plan.name}
-              className={cn(plan.name === "plus" && "border-primary shadow-md")}
+              className={cn(
+                "rounded-2xl border bg-white p-4 shadow-sm",
+                popular ? "border-[#E50914]" : "border-[#E5E7EB]",
+              )}
             >
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  {plan.label}
-                  {plan.name === "plus" && (
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-                      Popular
-                    </span>
-                  )}
-                </CardTitle>
-                <div className="text-3xl font-bold">
-                  ${plan.priceMonthly}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    /mo
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-[#111827]">{plan.label}</h2>
+                {popular && (
+                  <span className="rounded-full bg-[#E50914] px-2 py-0.5 text-xs font-semibold text-white">
+                    Popular
                   </span>
-                </div>
-                <p className="text-sm text-muted-foreground">{plan.description}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-2 text-sm">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <Check className="mt-0.5 size-4 shrink-0 text-accent" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild className="w-full" variant={plan.name === "plus" ? "default" : "outline"}>
-                  <Link href="/signup">
-                    {plan.name === "free" ? "Get started" : "Choose plan"}
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+              <div className="mt-1 text-2xl font-extrabold text-[#111827]">
+                ${plan.priceMonthly}
+                <span className="text-sm font-normal text-[#6B7280]">/mo</span>
+              </div>
+              <p className="text-sm text-[#6B7280]">{plan.description}</p>
+              <ul className="mt-3 space-y-2">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-[#374151]">
+                    <Check className="mt-0.5 size-4 shrink-0 text-[#1FAEB3]" aria-hidden />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/signup"
+                className={cn(
+                  "mt-4 flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold transition-transform active:scale-[0.98]",
+                  popular
+                    ? "text-white"
+                    : "border border-[#E5E7EB] bg-white text-[#111827]",
+                )}
+                style={
+                  popular
+                    ? { backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }
+                    : undefined
+                }
+              >
+                {plan.name === "free" ? "Get started" : "Choose plan"}
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-center text-lg font-bold text-[#111827]">Prefer pay-per-report?</h2>
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {REPORT_PACKS.map((pack) => (
+            <div key={pack.id} className="rounded-2xl border border-[#E5E7EB] bg-white p-3 text-center">
+              <div className="text-sm font-semibold text-[#111827]">{pack.label}</div>
+              <div className="mt-1 text-lg font-extrabold text-[#111827]">${pack.price}</div>
+            </div>
           ))}
         </div>
-
-        <div className="mx-auto mt-16 max-w-2xl text-center">
-          <h2 className="text-2xl font-bold">Prefer pay-per-report?</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {REPORT_PACKS.map((pack) => (
-              <Card key={pack.id}>
-                <CardContent className="pt-6 text-center">
-                  <div className="text-lg font-semibold">{pack.label}</div>
-                  <div className="mt-1 text-2xl font-bold">${pack.price}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </MobileShell>
   );
 }

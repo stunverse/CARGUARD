@@ -31,7 +31,7 @@ export default async function PhotosPage({
   const vehicle = (session as { vehicles?: never }).vehicles ?? {};
 
   return (
-    <div className="container max-w-5xl py-8">
+    <div className="px-5 py-6">
       <Link
         href={`/inspections/${id}`}
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

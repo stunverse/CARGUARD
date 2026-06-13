@@ -76,7 +76,7 @@ export default async function InspectionDetailPage({
     (session.final_report as FinalReport | null);
 
   return (
-    <div className="container max-w-5xl py-8">
+    <div className="px-5 py-6">
       <div className="mb-4">
         <h1 className="text-2xl font-bold">{vehicleLabel(vehicle ?? {})}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2">

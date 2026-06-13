@@ -32,7 +32,7 @@ export default async function AdminLayout({
   if (!profile?.is_admin) redirect("/dashboard");
 
   return (
-    <div className="container max-w-6xl py-8">
+    <div className="px-5 py-6">
       <h1 className="mb-4 text-2xl font-bold">Admin</h1>
       <nav className="mb-6 flex flex-wrap gap-2 border-b pb-3 text-sm">
         {ADMIN_NAV.map((n) => (
