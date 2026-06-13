@@ -3,11 +3,16 @@ import {
   AlignVerticalJustifyCenter,
   Camera,
   Car,
+  Droplets,
   FileText,
+  Flame,
+  Gauge,
   Lightbulb,
   Palette,
   ScanSearch,
   ShieldCheck,
+  Volume2,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,21 +21,28 @@ import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { createClient } from "@/lib/supabase/server";
 
 const HOW_IT_WORKS = [
-  { icon: Car, title: "Enter the vehicle details", text: "Make, model, year, mileage, price and seller." },
-  { icon: Camera, title: "Take 8 guided exterior photos", text: "We guide you through every required angle." },
-  { icon: ScanSearch, title: "Get AI-powered damage risk analysis", text: "Quality checks then a per-photo analysis." },
-  { icon: FileText, title: "Receive a clear report before buying", text: "Score, suspicious points, and seller questions." },
+  { icon: Car, title: "Enter the vehicle details", text: "Type it in, or auto-fill instantly from the VIN." },
+  { icon: Camera, title: "Take 8 guided exterior photos", text: "We guide each angle to check the bodywork." },
+  { icon: Wrench, title: "Add the engine & mechanical checks", text: "Cold start, smoke, oil, coolant, leaks, sounds — optional." },
+  { icon: FileText, title: "Get a clear AI report before buying", text: "Risk score, suspicious points, questions, PDF." },
 ];
 
-const CHECKS = [
-  "Panel alignment",
-  "Color differences",
-  "Bumper fitment",
-  "Hood and trunk alignment",
-  "Headlights and taillights",
-  "Side panel consistency",
-  "Signs of repainting",
-  "Possible previous body repairs",
+const BODYWORK_CHECKS = [
+  { label: "Panel alignment", icon: AlignVerticalJustifyCenter },
+  { label: "Color & repaint differences", icon: Palette },
+  { label: "Bumper fitment", icon: ShieldCheck },
+  { label: "Hood & trunk alignment", icon: AlignVerticalJustifyCenter },
+  { label: "Headlights & taillights", icon: ShieldCheck },
+  { label: "Signs of previous body repairs", icon: ScanSearch },
+];
+
+const ENGINE_CHECKS = [
+  { label: "Cold-start noises (knocking, rattling)", icon: Volume2 },
+  { label: "Exhaust smoke (white / blue / black)", icon: Flame },
+  { label: "Oil & coolant condition (mayonnaise)", icon: Droplets },
+  { label: "Leaks under the engine", icon: Droplets },
+  { label: "Dashboard warning lights", icon: Gauge },
+  { label: "Rough idle & acceleration", icon: Wrench },
 ];
 
 export default async function HomePage() {
@@ -54,16 +66,18 @@ export default async function HomePage() {
         <div className="container flex flex-col items-center gap-6 py-20 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border bg-background px-4 py-1.5 text-sm font-medium">
             <ShieldCheck className="size-4 text-primary" />
-            AI-powered hidden damage detection
+            AI-powered hidden-defect detection
           </div>
-          <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-            Detect hidden accident damage{" "}
-            <span className="text-primary">before buying</span> a used car.
+          <h1 className="max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+            Spot a <span className="text-primary">hidden defect</span> the seller
+            may be hiding — <span className="text-primary">before you buy</span> a
+            used car.
           </h1>
           <p className="max-w-2xl text-lg text-muted-foreground">
-            CarGuard AI guides you through 8 exterior photos and helps identify
-            possible signs of previous accidents, repainting, body repairs, or
-            suspicious panel alignment.
+            CarGuard AI guides you through exterior photos and engine &amp;
+            mechanical checks, then uses AI to flag possible signs of past
+            accidents, body repairs, repainting and engine problems — so you can
+            negotiate, or walk away, with confidence.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
@@ -75,12 +89,19 @@ export default async function HomePage() {
               <Link href="/#how">See how it works</Link>
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Bodywork + engine checks · AI risk score · shareable PDF report
+          </p>
         </div>
       </section>
 
       {/* How it works */}
       <section id="how" className="container py-20">
-        <h2 className="mb-12 text-center text-3xl font-bold">How it works</h2>
+        <h2 className="mb-3 text-center text-3xl font-bold">How it works</h2>
+        <p className="mx-auto mb-12 max-w-xl text-center text-muted-foreground">
+          A guided inspection anyone can do with a phone — no mechanical
+          knowledge required.
+        </p>
         <div className="grid gap-6 md:grid-cols-4">
           {HOW_IT_WORKS.map((step, i) => (
             <Card key={step.title} className="relative">
@@ -102,19 +123,24 @@ export default async function HomePage() {
       {/* What we check */}
       <section id="checks" className="border-y bg-muted/30 py-20">
         <div className="container">
-          <h2 className="mb-12 text-center text-3xl font-bold">
+          <h2 className="mb-3 text-center text-3xl font-bold">
             What CarGuard AI checks
           </h2>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {CHECKS.map((c) => (
-              <div
-                key={c}
-                className="flex items-center gap-3 rounded-lg border bg-background p-4"
-              >
-                <CheckIcon label={c} />
-                <span className="text-sm font-medium">{c}</span>
-              </div>
-            ))}
+          <p className="mx-auto mb-12 max-w-xl text-center text-muted-foreground">
+            Two complementary modules: the bodywork (accident &amp; repair signs)
+            and the engine &amp; mechanical condition.
+          </p>
+          <div className="grid gap-8 md:grid-cols-2">
+            <CheckGroup
+              title="Bodywork & accident signs"
+              icon={Camera}
+              items={BODYWORK_CHECKS}
+            />
+            <CheckGroup
+              title="Engine & mechanical"
+              icon={Wrench}
+              items={ENGINE_CHECKS}
+            />
           </div>
         </div>
       </section>
@@ -125,11 +151,13 @@ export default async function HomePage() {
           <Lightbulb className="mx-auto mb-4 size-10 text-accent" />
           <h2 className="text-3xl font-bold">Why it matters</h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Some used cars are repaired quickly before resale. CarGuard AI helps
-            you spot visual warning signs before you pay.
+            Some used cars are repaired or patched up quickly before resale — a
+            repainted panel, a head-gasket issue, a warning light cleared just
+            before the viewing. CarGuard AI helps you spot the warning signs
+            before you pay.
           </p>
           <div className="mt-10">
-            <DisclaimerBanner text="CarGuard AI does not replace a professional inspection." />
+            <DisclaimerBanner text="CarGuard AI provides a preliminary, photo- and sound-based screening. It does not replace a professional inspection or a certified mechanic." />
           </div>
           <div className="mt-10">
             <Button asChild size="lg">
@@ -153,17 +181,35 @@ export default async function HomePage() {
   );
 }
 
-function CheckIcon({ label }: { label: string }) {
-  // Vary icon per check for a bit of life.
-  const Icon =
-    label.includes("Color") || label.includes("repaint")
-      ? Palette
-      : label.includes("alignment") || label.includes("consistency")
-        ? AlignVerticalJustifyCenter
-        : ShieldCheck;
+function CheckGroup({
+  title,
+  icon: Icon,
+  items,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: { label: string; icon: React.ComponentType<{ className?: string }> }[];
+}) {
   return (
-    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
-      <Icon className="size-4" />
-    </span>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="inline-flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Icon className="size-5" />
+          </span>
+          <h3 className="text-lg font-semibold">{title}</h3>
+        </div>
+        <ul className="space-y-3">
+          {items.map((it) => (
+            <li key={it.label} className="flex items-center gap-3">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+                <it.icon className="size-4" />
+              </span>
+              <span className="text-sm font-medium">{it.label}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
