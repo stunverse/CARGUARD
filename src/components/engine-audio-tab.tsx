@@ -23,6 +23,7 @@ import {
   ENGINE_SOUND_LABELS,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import type {
   DetectedEngineSound,
   EngineAudioCheck,
@@ -130,8 +131,10 @@ export function EngineAudioTab({
     setAnalyzing(false);
     if (!res.ok) {
       setError(data.error ?? "Analysis failed.");
+      toast.error(data.error ?? "Engine audio analysis failed.");
       return;
     }
+    toast.success("Engine audio analyzed.");
     setCheck(data.check);
     router.refresh();
   }

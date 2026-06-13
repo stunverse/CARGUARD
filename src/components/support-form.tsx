@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/lib/toast";
 
 export function SupportForm() {
   const router = useRouter();
@@ -28,8 +29,10 @@ export function SupportForm() {
     setLoading(false);
     if (!res.ok) {
       setError(data.error ?? "Could not submit.");
+      toast.error(data.error ?? "Could not submit your ticket.");
       return;
     }
+    toast.success("Ticket submitted.");
     setDone(true);
     setSubject("");
     setMessage("");

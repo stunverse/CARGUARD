@@ -19,6 +19,7 @@ import {
   MECHANICAL_RISK_COPY,
 } from "@/lib/mechanical";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import type {
   MechanicalCheckItem,
   MechanicalPoint,
@@ -150,8 +151,10 @@ function StepCard({
     setSaving(false);
     if (!res.ok) {
       setError(data.error ?? "Save failed.");
+      toast.error(data.error ?? "Could not save this check.");
       return;
     }
+    toast.success(`${point.title} saved.`);
     setSkipped(false);
     setResult({
       score: data.analysis.score,

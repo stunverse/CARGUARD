@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ReportPreview } from "@/components/report-preview";
 import { EmptyState } from "@/components/empty-state";
@@ -15,10 +15,13 @@ export const metadata = { title: "Report — CarGuard AI" };
 
 export default async function ReportPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ generated?: string }>;
 }) {
   const { id } = await params;
+  const { generated } = await searchParams;
   const supabase = await createClient();
 
   const { data: report } = await supabase
@@ -47,6 +50,17 @@ export default async function ReportPage({
 
   return (
     <div className="px-5 py-6">
+      {generated && (
+        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-risk-low/40 bg-risk-low/10 p-4 print:hidden">
+          <CheckCircle2 className="size-7 shrink-0 text-risk-low" aria-hidden />
+          <div>
+            <p className="font-semibold text-[#111827]">Your report is ready</p>
+            <p className="text-sm text-muted-foreground">
+              Review the findings below, export the PDF, or share a secure link.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link
           href={`/inspections/${id}`}

@@ -17,6 +17,8 @@ import { PhotoQualityStatus } from "@/components/photo-quality-status";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { PHOTO_POINTS, REQUIRED_PHOTO_COUNT } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { AnalyzingOverlay } from "@/components/analyzing-overlay";
 import type { InspectionPhoto, PhotoPointCode, QualityStatus } from "@/types";
 
 interface PhotoState {
@@ -99,12 +101,16 @@ export function HiddenDamageScanner({
         feedback: data.photo.quality_feedback,
       });
       // Auto-advance on success.
-      if (data.photo.quality_status === "passed") advance();
+      if (data.photo.quality_status === "passed") {
+        toast.success("Photo looks good.");
+        advance();
+      } else if (data.photo.quality_status === "needs_retake") {
+        toast.error("This photo needs a retake.");
+      }
     } catch (e) {
-      setState(activeCode, {
-        uploading: false,
-        error: e instanceof Error ? e.message : "Upload failed.",
-      });
+      const msg = e instanceof Error ? e.message : "Upload failed.";
+      setState(activeCode, { uploading: false, error: msg });
+      toast.error(msg);
     }
   }
 
@@ -138,10 +144,13 @@ export function HiddenDamageScanner({
     });
     const data = await res.json();
     if (!res.ok) {
-      setAnalyzeError(data.error ?? "Analysis failed.");
+      const msg = data.error ?? "Analysis failed.";
+      setAnalyzeError(msg);
+      toast.error(msg);
       setAnalyzing(false);
       return;
     }
+    toast.success("Analysis complete.");
     router.push(`/inspections/${sessionId}/analysis`);
   }
 
@@ -149,6 +158,7 @@ export function HiddenDamageScanner({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      {analyzing && <AnalyzingOverlay />}
       {/* Progress rail */}
       <div className="space-y-3">
         <EightPhotoProgress states={states} activeCode={activeCode} onSelect={setActiveCode} />

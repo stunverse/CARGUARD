@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, FileText, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 
 export function GenerateReportButton({ sessionId }: { sessionId: string }) {
   const router = useRouter();
@@ -18,11 +19,14 @@ export function GenerateReportButton({ sessionId }: { sessionId: string }) {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error ?? "Could not generate report.");
+      const msg = data.error ?? "Could not generate report.";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
       return;
     }
-    router.push(`/inspections/${sessionId}/report`);
+    toast.success("Report generated.");
+    router.push(`/inspections/${sessionId}/report?generated=1`);
     router.refresh();
   }
 
