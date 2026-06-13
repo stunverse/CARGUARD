@@ -78,3 +78,10 @@ export const REPORT_PACKS = [
 export function isStripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
+
+// Pay-per-report price for the paid per-VIN history (VinAudit/NMVTIS).
+// Charged one-time via Stripe Checkout; margin over the provider cost.
+export const VIN_HISTORY_PRICE_CENTS = Number(
+  process.env.VIN_HISTORY_PRICE_CENTS || 1499,
+);
+export const VIN_HISTORY_CURRENCY = process.env.VIN_HISTORY_CURRENCY || "usd";

@@ -22,6 +22,7 @@ import { PhotoAnalysisCard } from "@/components/photo-analysis-card";
 import { FollowUpPhotoRequestCard } from "@/components/follow-up-photo-request-card";
 import { EngineAudioTab } from "@/components/engine-audio-tab";
 import { MechanicalCheckTab } from "@/components/mechanical-check-tab";
+import { VinHistoryCard } from "@/components/vin-history-card";
 import { ReportPreview } from "@/components/report-preview";
 import {
   GenerateReportButton,
@@ -188,6 +189,9 @@ export function InspectionTabs({
                 </p>
               </CardContent>
             </Card>
+
+            {/* Paid per-VIN history (NMVTIS via VinAudit) */}
+            {vehicle?.vin && <VinHistoryCard sessionId={session.id} vin={vehicle.vin} />}
           </div>
         </div>
       </TabsContent>

@@ -311,6 +311,29 @@ export interface VehicleHistorySection {
   disclaimer: string;
 }
 
+// Paid per-VIN report (VinAudit / NMVTIS).
+export interface VinTitleRecord {
+  state?: string;
+  date?: string;
+  brand?: string;
+  mileage?: string;
+}
+
+export interface VinHistoryReport {
+  vin: string;
+  provider: string;
+  fetched_at: string;
+  titles: VinTitleRecord[];
+  brands: string[]; // salvage, flood, junk, rebuilt, lemon…
+  title_count: number;
+  salvage_or_total_loss: boolean;
+  theft_record: boolean | null;
+  odometer_readings: { date?: string; mileage?: string; source?: string }[];
+  sale_listings: { date?: string; price?: string; odometer?: string }[];
+  summary: string;
+  disclaimer: string;
+}
+
 // ---------------------------------------------------------------------
 // Engine Start Audio Analysis (optional module)
 // ---------------------------------------------------------------------

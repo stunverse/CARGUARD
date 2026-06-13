@@ -3,7 +3,10 @@ import type Stripe from "stripe";
 import { isStripeConfigured } from "@/lib/billing";
 import { getStripe, planFromPriceId } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchVinAuditReport } from "@/lib/vinaudit";
 import type { PlanName } from "@/types";
+
+const VIN_CACHE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export const runtime = "nodejs";
 
@@ -82,6 +85,42 @@ export async function POST(request: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+
+      // One-time purchase: paid per-VIN history report.
+      if (session.metadata?.type === "vin_history") {
+        const vin = (session.metadata.vin ?? "").toUpperCase();
+        const purchaseId = session.metadata.purchase_id;
+        if (vin && purchaseId) {
+          await admin
+            .from("vin_report_purchases")
+            .update({ status: "paid" })
+            .eq("id", purchaseId);
+
+          // Fetch from provider unless a fresh cache exists (saves cost).
+          try {
+            const { data: cached } = await admin
+              .from("vin_reports")
+              .select("fetched_at")
+              .eq("vin", vin)
+              .maybeSingle();
+            const fresh =
+              cached &&
+              Date.now() - new Date(cached.fetched_at).getTime() < VIN_CACHE_MAX_AGE_MS;
+            if (!fresh) {
+              const report = await fetchVinAuditReport(vin);
+              await admin.from("vin_reports").upsert(
+                { vin, provider: "vinaudit", data: report, fetched_at: new Date().toISOString() },
+                { onConflict: "vin" },
+              );
+            }
+          } catch (err) {
+            console.error("VinAudit fetch failed after payment:", err);
+            // Payment stays 'paid'; the GET endpoint will retry-fetch lazily.
+          }
+        }
+        break;
+      }
+
       if (session.subscription) {
         const sub = await stripe.subscriptions.retrieve(
           session.subscription as string,
