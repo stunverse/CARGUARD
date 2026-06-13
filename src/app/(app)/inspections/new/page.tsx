@@ -19,9 +19,12 @@ export default function NewInspectionPage() {
         <CardContent className="flex gap-3 p-4 text-sm">
           <Camera className="mt-0.5 size-5 shrink-0 text-accent" />
           <p>
-            You&apos;ll need to take <strong>8 mandatory exterior photos</strong>{" "}
-            (front, rear, both sides, and the 4 diagonals). No interior or engine
-            photos are required.
+            The scanner uses <strong>8 mandatory exterior photos</strong> (front,
+            rear, both sides, and the 4 diagonals) to spot accident, repair and
+            repaint signs on the bodywork. The <strong>engine</strong> is checked
+            separately — after creating the inspection, use the optional{" "}
+            <strong>Engine Audio</strong> module to detect suspicious startup
+            noises by sound.
           </p>
         </CardContent>
       </Card>
