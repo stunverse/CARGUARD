@@ -252,6 +252,8 @@ export interface FinalReport {
     photo_quality_summary: string;
     risk_level: RiskLevel;
     recommendation: Recommendation;
+    // Overall AI confidence in this analysis (0-100). Optional for older reports.
+    confidence?: number;
   };
   scores: {
     global_score: number;

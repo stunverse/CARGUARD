@@ -5,12 +5,11 @@ import {
   ChevronRight,
   Cpu,
   FileText,
-  HandCoins,
   Info,
   Menu,
   ScanLine,
   ShieldCheck,
-  AudioLines,
+  Wrench,
   Car,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -74,7 +73,6 @@ export default async function DashboardPage() {
   const list = (sessions ?? []) as (InspectionSession & { vehicles: Vehicle | null })[];
   const latestScored = list.find((s) => s.global_score != null) ?? null;
   const recent = list.slice(0, 3);
-  const latestId = list[0]?.id;
 
   // Risk score card: real latest, else mock per spec.
   const riskScore = latestScored?.global_score ?? 72;
@@ -114,32 +112,22 @@ export default async function DashboardPage() {
         </p>
       </section>
 
-      {/* Primary actions */}
-      <section className="mt-5 flex gap-3">
+      {/* Primary action */}
+      <section className="mt-5">
         <Link
           href="/inspections/new"
-          className="relative flex h-16 flex-[1.6] items-center justify-center gap-2 overflow-hidden rounded-[18px] font-semibold text-white shadow-[0_12px_30px_rgba(229,9,20,0.28)] transition-transform active:scale-[0.98]"
+          className="relative flex h-16 w-full items-center justify-center gap-2 overflow-hidden rounded-[18px] text-lg font-semibold text-white shadow-[0_12px_30px_rgba(229,9,20,0.28)] transition-transform active:scale-[0.98]"
           style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
         >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/15"
-          />
+          <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/15" />
           <ScanLine className="size-5" aria-hidden />
           <span>Start Inspection</span>
           <ChevronRight className="size-5 opacity-90" aria-hidden />
         </Link>
-        <Link
-          href={latestId ? `/inspections/${latestId}` : "/inspections/new"}
-          className="flex h-16 flex-1 items-center justify-center gap-2 rounded-[18px] border border-[#E5E7EB] bg-white px-2 text-left shadow-sm transition-transform active:scale-[0.98]"
-        >
-          <AudioLines className="size-5 shrink-0 text-[#E50914]" aria-hidden />
-          <span className="text-sm font-semibold leading-tight text-[#111827]">
-            Engine
-            <br />
-            Audio Check
-          </span>
-        </Link>
+        <p className="mt-2 text-center text-xs text-[#6B7280]">
+          One inspection: exterior photos · engine audio · mechanical checks →
+          a report with a confidence score.
+        </p>
       </section>
 
       {/* Hidden Damage Scanner */}
@@ -213,10 +201,10 @@ export default async function DashboardPage() {
         <div className="rounded-3xl border border-[rgba(229,9,20,0.14)] bg-white p-[18px] shadow-[0_12px_35px_rgba(17,24,39,0.06)]">
           <h3 className="mb-3 font-semibold text-[#111827]">Key Benefits</h3>
           <ul className="space-y-3">
-            <BenefitItem icon={Camera} title="8 Guided Photos" sub="Complete exterior coverage" />
+            <BenefitItem icon={Camera} title="8 Guided Photos" sub="Exterior damage scan" />
+            <BenefitItem icon={Wrench} title="Engine & Audio Checks" sub="Mechanical condition" />
             <BenefitItem icon={Cpu} title="AI Damage Detection" sub="Advanced computer vision" />
-            <BenefitItem icon={HandCoins} title="Negotiation Tips" sub="Know your bargaining power" />
-            <BenefitItem icon={FileText} title="Professional Report" sub="Shareable & trustworthy" />
+            <BenefitItem icon={FileText} title="Report + Confidence Score" sub="Shareable & trustworthy" />
           </ul>
         </div>
       </section>

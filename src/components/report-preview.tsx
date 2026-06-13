@@ -60,6 +60,11 @@ export function ReportPreview({ report }: { report: FinalReport }) {
               {report.summary.photos_analyzed} photos analyzed ·{" "}
               {report.summary.photo_quality_summary}
             </p>
+            {report.summary.confidence != null && (
+              <p className="text-center text-xs font-medium text-accent">
+                AI confidence: {report.summary.confidence}%
+              </p>
+            )}
           </div>
           <div className="flex-1">
             <ScoreBreakdown

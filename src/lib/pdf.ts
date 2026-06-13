@@ -61,6 +61,9 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
     body(
       `Risk level: ${report.summary.risk_level.toUpperCase()}  •  Recommendation: ${report.summary.recommendation}`,
     );
+    if (report.summary.confidence != null) {
+      body(`AI confidence: ${report.summary.confidence}%`);
+    }
 
     // 3. Scores
     h1("3. Scores (higher = safer)");

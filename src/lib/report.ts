@@ -72,6 +72,14 @@ export function generateFinalReport(params: {
     };
   });
 
+  // Overall AI confidence = average of per-photo confidences (0-100).
+  const confidences = photo_analysis
+    .map((p) => p.confidence)
+    .filter((c): c is number => c != null);
+  const confidence = confidences.length
+    ? Math.round(confidences.reduce((a, b) => a + b, 0) / confidences.length)
+    : undefined;
+
   return {
     generated_at: new Date().toISOString(),
     vehicle,
@@ -80,6 +88,7 @@ export function generateFinalReport(params: {
       photo_quality_summary: `${passed} of ${photos.length} photos passed quality control.`,
       risk_level: global.risk_level,
       recommendation: global.recommendation,
+      confidence,
     },
     scores: {
       global_score: globalScore,
