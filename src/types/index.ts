@@ -284,6 +284,31 @@ export interface FinalReport {
   engine_audio?: EngineAudioReportSection | null;
   // Optional engine & mechanical module (null when not performed).
   mechanical?: MechanicalReportSection | null;
+  // Optional vehicle history (recalls/complaints) — null when unavailable.
+  vehicle_history?: VehicleHistorySection | null;
+}
+
+// ---------------------------------------------------------------------
+// Vehicle history (free sources — US NHTSA: recalls + complaints)
+// ---------------------------------------------------------------------
+export interface VehicleRecall {
+  campaign: string;
+  component: string;
+  summary: string;
+  remedy: string;
+  date: string;
+}
+
+export interface VehicleHistorySection {
+  source: string; // e.g. "NHTSA"
+  matched: boolean;
+  vehicle: string; // "2020 Honda Accord"
+  recalls: VehicleRecall[];
+  recall_count: number;
+  complaints_count: number;
+  top_complaint_components: string[];
+  note: string;
+  disclaimer: string;
 }
 
 // ---------------------------------------------------------------------

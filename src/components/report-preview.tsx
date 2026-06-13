@@ -133,6 +133,48 @@ export function ReportPreview({ report }: { report: FinalReport }) {
       {/* 11. Engine & mechanical check (optional module) */}
       <MechanicalReportSection section={report.mechanical} />
 
+      {/* 12. Vehicle history (free NHTSA recalls + complaints) */}
+      {report.vehicle_history && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">12. Vehicle History (recalls &amp; complaints)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-xs text-muted-foreground">
+              Source: {report.vehicle_history.source} · {report.vehicle_history.vehicle}
+            </p>
+            <p>{report.vehicle_history.note}</p>
+
+            {report.vehicle_history.recalls.length > 0 && (
+              <div className="space-y-2">
+                <p className="font-medium">Recalls ({report.vehicle_history.recall_count})</p>
+                {report.vehicle_history.recalls.map((r, i) => (
+                  <div key={i} className="rounded-md border p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{r.component}</span>
+                      <Badge variant="moderate">{r.campaign}</Badge>
+                    </div>
+                    <p className="mt-1 text-muted-foreground">{r.summary}</p>
+                    {r.remedy && <p className="mt-1 text-xs">Remedy: {r.remedy}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {report.vehicle_history.complaints_count > 0 && (
+              <p>
+                <span className="font-medium">
+                  {report.vehicle_history.complaints_count} consumer complaint(s).
+                </span>{" "}
+                Most reported: {report.vehicle_history.top_complaint_components.join(", ") || "—"}.
+              </p>
+            )}
+
+            <p className="text-xs text-muted-foreground">{report.vehicle_history.disclaimer}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Disclaimer */}
       <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
         <strong className="text-foreground">Disclaimer. </strong>

@@ -159,6 +159,23 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(me.disclaimer).fillColor("#111");
     }
 
+    // 12. Vehicle history (NHTSA)
+    const vh = report.vehicle_history;
+    if (vh) {
+      h1("12. Vehicle History (recalls & complaints)");
+      muted(`Source: ${vh.source} · ${vh.vehicle}`);
+      body(vh.note);
+      vh.recalls.forEach((r) =>
+        body(`• [${r.campaign}] ${r.component}: ${r.summary}`),
+      );
+      if (vh.complaints_count > 0) {
+        body(
+          `${vh.complaints_count} consumer complaint(s). Most reported: ${vh.top_complaint_components.join(", ") || "—"}.`,
+        );
+      }
+      doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(vh.disclaimer).fillColor("#111");
+    }
+
     // Disclaimer
     doc.moveDown(0.8);
     doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(report.disclaimer);

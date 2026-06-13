@@ -14,6 +14,7 @@ import type {
   MechanicalReportSection,
   PhotoPointCode,
   Vehicle,
+  VehicleHistorySection,
 } from "@/types";
 
 // Build the embedded report section from a completed engine-audio check.
@@ -46,8 +47,9 @@ export function generateFinalReport(params: {
   globalScore: number;
   engineAudio?: EngineAudioReportSection | null;
   mechanical?: MechanicalReportSection | null;
+  vehicleHistory?: VehicleHistorySection | null;
 }): FinalReport {
-  const { vehicle, photos, global, globalScore, engineAudio, mechanical } = params;
+  const { vehicle, photos, global, globalScore, engineAudio, mechanical, vehicleHistory } = params;
 
   const titleFor = (code: PhotoPointCode) =>
     PHOTO_POINTS.find((p) => p.code === code)?.title ?? code;
@@ -109,6 +111,7 @@ export function generateFinalReport(params: {
     disclaimer: global.disclaimer || REPORT_DISCLAIMER,
     engine_audio: engineAudio ?? null,
     mechanical: mechanical ?? null,
+    vehicle_history: vehicleHistory ?? null,
   };
 }
 

@@ -8,6 +8,7 @@ import {
 } from "@/lib/ai/functions";
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
 import { aggregateMechanical } from "@/lib/ai/mechanical";
+import { getVehicleHistory } from "@/lib/vehicle-history";
 import { checkReportQuota } from "@/lib/quota";
 import { logActivity } from "@/lib/activity";
 import { scoreToRiskLevel } from "@/lib/constants";
@@ -105,6 +106,15 @@ export async function POST(
     .eq("inspection_session_id", sessionId);
   const mechanical = aggregateMechanical((mechItems ?? []) as never);
 
+  // Free vehicle history (US NHTSA recalls + complaints). Best-effort.
+  const v = vehicle as { vin?: string; make?: string; model?: string; year?: number };
+  const vehicleHistory = await getVehicleHistory({
+    vin: v.vin,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+  });
+
   const report = generateFinalReport({
     vehicle: vehicle as never,
     photos: photoList,
@@ -112,6 +122,7 @@ export async function POST(
     globalScore: scores.global_score,
     engineAudio,
     mechanical,
+    vehicleHistory,
   });
 
   if (engineAudio) {
