@@ -455,8 +455,62 @@ function VehicleStep({
             </button>
           );
         })}
+        {step.kind === "range" && (
+          <ExactAmount
+            unit={step.key === "asking_price" ? "price" : "mileage"}
+            onSubmit={(value) => onPick({ [step.key!]: String(value) })}
+          />
+        )}
       </div>
     </StepShell>
+  );
+}
+
+// "Enter the exact amount" expandable entry shown under range options.
+function ExactAmount({
+  unit,
+  onSubmit,
+}: {
+  unit: "price" | "mileage";
+  onSubmit: (value: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [val, setVal] = useState("");
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-[#E5E7EB] p-3 text-sm font-medium text-[#6B7280]"
+      >
+        Enter the exact amount
+      </button>
+    );
+  }
+
+  const n = Number(val.replace(/[^\d]/g, ""));
+  return (
+    <div className="rounded-xl border border-[#E5E7EB] p-3">
+      <div className="flex items-center gap-2">
+        {unit === "price" && <span className="text-sm text-[#6B7280]">$</span>}
+        <Input
+          autoFocus
+          inputMode="numeric"
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          placeholder={unit === "price" ? "e.g. 13500" : "e.g. 86250"}
+          className="h-12 text-base"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && n > 0) onSubmit(n);
+          }}
+        />
+        {unit === "mileage" && <span className="text-sm text-[#6B7280]">mi</span>}
+      </div>
+      <Button className="mt-3 w-full" onClick={() => n > 0 && onSubmit(n)} disabled={n <= 0}>
+        Use this amount
+      </Button>
+    </div>
   );
 }
 
