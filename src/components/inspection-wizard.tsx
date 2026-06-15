@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Sparkles,
   Video,
-  Wrench,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
-type Phase = "vehicle" | "photos" | "mech-prompt" | "mech" | "review" | "finishing";
+type Phase = "vehicle" | "photos" | "mech" | "review" | "finishing";
 
 type VKind = "vin" | "make" | "year" | "model" | "select" | "range";
 interface VStepDef {
@@ -73,7 +72,6 @@ export function InspectionWizard() {
   const [pIndex, setPIndex] = useState(0);
   const [photoState, setPhotoState] = useState<Record<string, { status: string; url: string | null }>>({});
 
-  const [includeMech, setIncludeMech] = useState(false);
   const [mIndex, setMIndex] = useState(0);
 
   const [busy, setBusy] = useState(false);
@@ -81,8 +79,9 @@ export function InspectionWizard() {
   const [capture, setCapture] = useState<CaptureMode | null>(null);
 
   const vehicleStepCount = VEHICLE_STEPS.length;
+  // Engine & mechanical is mandatory — always part of the flow.
   const total =
-    vehicleStepCount + PHOTO_POINTS.length + 1 + (includeMech ? MECHANICAL_POINTS.length : 0) + 1;
+    vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length + 1;
 
   const stepNumber = useMemo(() => {
     switch (phase) {
@@ -90,10 +89,8 @@ export function InspectionWizard() {
         return vIndex;
       case "photos":
         return vehicleStepCount + pIndex;
-      case "mech-prompt":
-        return vehicleStepCount + PHOTO_POINTS.length;
       case "mech":
-        return vehicleStepCount + PHOTO_POINTS.length + 1 + mIndex;
+        return vehicleStepCount + PHOTO_POINTS.length + mIndex;
       case "review":
       case "finishing":
         return total - 1;
@@ -113,19 +110,18 @@ export function InspectionWizard() {
       if (vIndex === 0) router.push("/dashboard");
       else setVIndex((i) => i - 1);
     } else if (phase === "photos") {
-      if (pIndex === 0) setPhase("vehicle"), setVIndex(vehicleStepCount - 1);
-      else setPIndex((i) => i - 1);
-    } else if (phase === "mech-prompt") {
-      setPhase("photos");
-      setPIndex(PHOTO_POINTS.length - 1);
+      if (pIndex === 0) {
+        setPhase("vehicle");
+        setVIndex(vehicleStepCount - 1);
+      } else setPIndex((i) => i - 1);
     } else if (phase === "mech") {
-      if (mIndex === 0) setPhase("mech-prompt");
-      else setMIndex((i) => i - 1);
+      if (mIndex === 0) {
+        setPhase("photos");
+        setPIndex(PHOTO_POINTS.length - 1);
+      } else setMIndex((i) => i - 1);
     } else if (phase === "review") {
-      if (includeMech) {
-        setPhase("mech");
-        setMIndex(MECHANICAL_POINTS.length - 1);
-      } else setPhase("mech-prompt");
+      setPhase("mech");
+      setMIndex(MECHANICAL_POINTS.length - 1);
     }
   }
 
@@ -167,7 +163,10 @@ export function InspectionWizard() {
 
   function nextPhoto() {
     if (pIndex < PHOTO_POINTS.length - 1) setPIndex((i) => i + 1);
-    else setPhase("mech-prompt");
+    else {
+      setPhase("mech");
+      setMIndex(0);
+    }
   }
 
   function nextMech() {
@@ -296,19 +295,6 @@ export function InspectionWizard() {
           />
         )}
 
-        {phase === "mech-prompt" && (
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <span className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-[rgba(229,9,20,0.10)] text-[#E50914]">
-              <Wrench className="size-8" aria-hidden />
-            </span>
-            <h2 className="text-2xl font-extrabold text-[#111827]">Add the engine &amp; mechanical check?</h2>
-            <p className="mt-3 max-w-xs text-sm text-[#6B7280]">
-              Recommended. A few guided steps (cold start, smoke, oil, coolant,
-              leaks, sounds…) to catch hidden engine problems. You can skip it.
-            </p>
-          </div>
-        )}
-
         {phase === "mech" && (
           <MechStep
             point={MECHANICAL_POINTS[mIndex]}
@@ -327,10 +313,9 @@ export function InspectionWizard() {
             </span>
             <h2 className="text-2xl font-extrabold text-[#111827]">All set!</h2>
             <p className="mt-3 max-w-xs text-sm text-[#6B7280]">
-              {passedCount} exterior photo{passedCount > 1 ? "s" : ""} captured
-              {includeMech ? " + engine & mechanical checks" : ""}. CarGuard AI
-              will now analyze everything and produce your report with a
-              confidence score.
+              {passedCount} exterior photo{passedCount > 1 ? "s" : ""} captured +
+              engine &amp; mechanical checks. CarGuard AI will now analyze
+              everything and produce your report with a confidence score.
             </p>
           </div>
         )}
@@ -349,12 +334,6 @@ export function InspectionWizard() {
           onVehicleNext={nextVehicle}
           onPhotoNext={nextPhoto}
           onPhotoSkip={() => skipPhoto(PHOTO_POINTS[pIndex].code)}
-          onMechYes={() => {
-            setIncludeMech(true);
-            setPhase("mech");
-            setMIndex(0);
-          }}
-          onMechNo={() => setPhase("review")}
           onFinish={finish}
         />
       </div>
@@ -851,14 +830,16 @@ function MechStep({
       <Button className="mt-5 w-full" onClick={save} disabled={busy}>
         {busy ? "Saving…" : "Save & continue"}
       </Button>
-      <button
-        type="button"
-        onClick={onSaved}
-        disabled={busy}
-        className="mt-2 w-full py-2 text-sm font-medium text-[#6B7280]"
-      >
-        Skip this step
-      </button>
+      {!point.required && (
+        <button
+          type="button"
+          onClick={onSaved}
+          disabled={busy}
+          className="mt-2 w-full py-2 text-sm font-medium text-[#6B7280]"
+        >
+          Skip this step
+        </button>
+      )}
     </StepShell>
   );
 }
@@ -893,8 +874,6 @@ function Footer({
   onVehicleNext,
   onPhotoNext,
   onPhotoSkip,
-  onMechYes,
-  onMechNo,
   onFinish,
 }: {
   phase: Phase;
@@ -905,8 +884,6 @@ function Footer({
   onVehicleNext: () => void;
   onPhotoNext: () => void;
   onPhotoSkip: () => void;
-  onMechYes: () => void;
-  onMechNo: () => void;
   onFinish: () => void;
 }) {
   if (phase === "vehicle") {
@@ -946,18 +923,6 @@ function Footer({
         </PrimaryButton>
         <Button variant="ghost" onClick={onPhotoSkip} disabled={busy}>
           Can&apos;t take it
-        </Button>
-      </div>
-    );
-  }
-  if (phase === "mech-prompt") {
-    return (
-      <div className="flex gap-2">
-        <PrimaryButton onClick={onMechYes} className="flex-1">
-          Yes, add it
-        </PrimaryButton>
-        <Button variant="outline" onClick={onMechNo}>
-          Skip
         </Button>
       </div>
     );
