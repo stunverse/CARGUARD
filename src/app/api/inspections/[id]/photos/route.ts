@@ -3,17 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { checkPhotoQuality } from "@/lib/ai/functions";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
-import {
-  ALLOWED_IMAGE_TYPES,
-  MAX_IMAGE_BYTES,
-  PHOTO_POINTS,
-} from "@/lib/constants";
+import { PHOTO_POINTS, STORAGE_BUCKETS } from "@/lib/constants";
 import type { PhotoPointCode } from "@/types";
 
-const BUCKET =
-  process.env.STORAGE_BUCKET_INSPECTION_PHOTOS || "inspection-photos";
+export const runtime = "nodejs";
 
-// POST /api/inspections/[id]/photos — upload one photo + run quality check.
+const BUCKET = process.env.STORAGE_BUCKET_INSPECTION_PHOTOS || STORAGE_BUCKETS.inspectionPhotos;
+
+// POST /api/inspections/[id]/photos
+// The browser uploads the (compressed) photo directly to Storage, then
+// calls this with the storage path. We sign it, quality-check, store the row.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -25,64 +24,39 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Rate limit photo uploads (each runs an AI quality check).
-  const rl = rateLimit(`photo:${user.id}`, { limit: 40, windowMs: 60_000 });
+  const rl = rateLimit(`photo:${user.id}`, { limit: 60, windowMs: 60_000 });
   if (!rl.allowed) {
     return NextResponse.json(
       { error: `Too many uploads. Try again in ${rl.retryAfterSeconds}s.` },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+      { status: 429 },
     );
   }
 
-  const form = await request.formData();
-  const file = form.get("file") as File | null;
-  const code = form.get("photo_point_code") as PhotoPointCode | null;
+  const body = await request.json().catch(() => null);
+  const code = body?.photo_point_code as PhotoPointCode | undefined;
+  const storagePath = body?.storage_path as string | undefined;
 
-  if (!file || !code) {
-    return NextResponse.json({ error: "file and photo_point_code are required." }, { status: 400 });
+  if (!code || !storagePath) {
+    return NextResponse.json({ error: "photo_point_code and storage_path are required." }, { status: 400 });
   }
   if (!PHOTO_POINTS.some((p) => p.code === code)) {
     return NextResponse.json({ error: "Invalid photo_point_code." }, { status: 400 });
   }
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: "Unsupported file type." }, { status: 400 });
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    return NextResponse.json({ error: "File is too large (max 15MB)." }, { status: 400 });
+  if (!storagePath.startsWith(`${user.id}/`)) {
+    return NextResponse.json({ error: "Invalid storage path." }, { status: 403 });
   }
 
-  // Ownership check (RLS would block anyway, but fail fast with a clear error).
   const { data: session } = await supabase
     .from("inspection_sessions")
-    .select("id, user_id")
+    .select("id")
     .eq("id", sessionId)
     .single();
   if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const storagePath = `${user.id}/${sessionId}/${code}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  const { error: upErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(storagePath, buffer, { contentType: file.type, upsert: true });
-  if (upErr) {
-    return NextResponse.json(
-      { error: `Upload failed: ${upErr.message}` },
-      { status: 500 },
-    );
-  }
-
-  // Signed URL for the AI to read (1 hour).
-  const { data: signed } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(storagePath, 3600);
+  const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 3600);
   const imageUrl = signed?.signedUrl ?? null;
 
-  // Quality control.
-  const quality = imageUrl
-    ? await checkPhotoQuality(imageUrl, code)
-    : null;
+  const quality = imageUrl ? await checkPhotoQuality(imageUrl, code) : null;
   const qualityStatus = quality
     ? quality.is_usable && quality.matches_requested_angle
       ? "passed"
@@ -96,7 +70,6 @@ export async function POST(
     .eq("code", code)
     .single();
 
-  // Upsert by (session, code): delete then insert keeps it simple.
   await supabase
     .from("inspection_photos")
     .delete()
@@ -112,9 +85,9 @@ export async function POST(
       photo_point_code: code,
       image_url: imageUrl,
       storage_path: storagePath,
-      original_file_name: file.name,
-      mime_type: file.type,
-      file_size: file.size,
+      original_file_name: body?.original_file_name ?? null,
+      mime_type: body?.mime_type ?? null,
+      file_size: body?.file_size ?? null,
       upload_status: "uploaded",
       quality_status: qualityStatus,
       quality_feedback: quality?.retake_instructions || null,
@@ -136,8 +109,7 @@ export async function POST(
   return NextResponse.json({ photo, quality, imageUrl });
 }
 
-// PUT /api/inspections/[id]/photos — mark a photo point as skipped
-// ("I can't take this photo"). Skipped photos reduce analysis coverage.
+// PUT — mark a photo point as skipped.
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

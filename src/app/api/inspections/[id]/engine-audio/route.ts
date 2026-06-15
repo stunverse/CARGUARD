@@ -3,18 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { checkEngineAudioQuality, audioModelFormat } from "@/lib/ai/engine-audio";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
-import {
-  ALLOWED_AUDIO_TYPES,
-  ALLOWED_VIDEO_TYPES,
-  MAX_AUDIO_BYTES,
-  MAX_VIDEO_BYTES,
-} from "@/lib/constants";
+import { STORAGE_BUCKETS } from "@/lib/constants";
 
 export const runtime = "nodejs";
 
-const BUCKET = process.env.STORAGE_BUCKET_ENGINE_AUDIO || "engine-audio";
+const BUCKET = process.env.STORAGE_BUCKET_ENGINE_AUDIO || STORAGE_BUCKETS.engineAudio;
 
-// POST /api/inspections/[id]/engine-audio — upload audio/video + quality check.
+// POST — the browser uploads the recording directly to Storage and sends
+// the path; we sign it, quality-check, and store the row (one per session).
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -28,31 +24,18 @@ export async function POST(
 
   const rl = rateLimit(`engine-audio:${user.id}`, { limit: 15, windowMs: 60_000 });
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: `Too many uploads. Try again in ${rl.retryAfterSeconds}s.` },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: "Too many uploads. Try again shortly." }, { status: 429 });
   }
 
-  const form = await request.formData();
-  const file = form.get("file") as File | null;
-  const durationSeconds = Number(form.get("duration_seconds") ?? 0) || 0;
-  if (!file) return NextResponse.json({ error: "file is required." }, { status: 400 });
-
-  const isAudio = ALLOWED_AUDIO_TYPES.includes(file.type);
-  const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
-  if (!isAudio && !isVideo) {
-    return NextResponse.json({ error: "Unsupported file type." }, { status: 400 });
-  }
-  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_AUDIO_BYTES;
-  if (file.size > maxBytes) {
-    return NextResponse.json(
-      { error: `File is too large (max ${isVideo ? "100MB" : "25MB"}).` },
-      { status: 400 },
-    );
+  const body = await request.json().catch(() => ({}));
+  const storagePath = body?.storage_path as string | undefined;
+  const mimeType = (body?.mime_type as string) ?? "";
+  const fileType = (body?.file_type as string) ?? "audio";
+  const durationSeconds = Number(body?.duration_seconds ?? 0) || 0;
+  if (!storagePath || !storagePath.startsWith(`${user.id}/`)) {
+    return NextResponse.json({ error: "Invalid storage path." }, { status: 400 });
   }
 
-  // Ownership check (RLS also enforces this).
   const { data: session } = await supabase
     .from("inspection_sessions")
     .select("id, vehicle_id")
@@ -60,84 +43,53 @@ export async function POST(
     .single();
   if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || (isVideo ? "mp4" : "mp3");
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 3600);
 
-  // Create the row first to get a stable id for the storage path.
-  const { data: created, error: insErr } = await supabase
-    .from("engine_audio_checks")
-    .insert({
-      user_id: user.id,
-      inspection_session_id: sessionId,
-      vehicle_id: session.vehicle_id,
-      original_file_name: file.name,
-      file_type: isVideo ? "video" : "audio",
-      mime_type: file.type,
-      file_size: file.size,
-      duration_seconds: durationSeconds || null,
-      upload_status: "pending",
-    })
-    .select()
-    .single();
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
-
-  const storagePath = `${user.id}/${sessionId}/${created.id}.${ext}`;
-  const { error: upErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(storagePath, buffer, { contentType: file.type, upsert: true });
-  if (upErr) {
-    await supabase
-      .from("engine_audio_checks")
-      .update({ upload_status: "failed" })
-      .eq("id", created.id);
-    return NextResponse.json({ error: `Upload failed: ${upErr.message}` }, { status: 500 });
+  // Quality check: only for model-compatible formats (download bytes server-side).
+  const ext = storagePath.split(".").pop()?.toLowerCase() ?? null;
+  const fmt = audioModelFormat(mimeType, ext);
+  let audioBase64: string | null = null;
+  if (fmt) {
+    const { data: blob } = await supabase.storage.from(BUCKET).download(storagePath);
+    if (blob) audioBase64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
   }
-
-  const { data: signed } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(storagePath, 3600);
-
-  await logActivity(supabase, {
-    userId: user.id,
-    sessionId,
-    action: "engine_audio_uploaded",
-    description: file.name,
-  });
-
-  // Quality check (real only for WAV/MP3; otherwise cautious demo result).
-  const fmt = audioModelFormat(file.type, ext);
-  const quality = await checkEngineAudioQuality({
-    audioBase64: fmt ? buffer.toString("base64") : null,
-    format: fmt,
-    durationSeconds,
-  });
+  const quality = await checkEngineAudioQuality({ audioBase64, format: fmt, durationSeconds });
   const qualityStatus = quality.is_usable
     ? quality.retake_required
       ? "needs_retake"
       : "passed"
     : "needs_retake";
 
-  const { data: updated } = await supabase
+  // One engine-audio per session.
+  await supabase.from("engine_audio_checks").delete().eq("inspection_session_id", sessionId);
+
+  const { data: saved, error } = await supabase
     .from("engine_audio_checks")
-    .update({
+    .insert({
+      user_id: user.id,
+      inspection_session_id: sessionId,
+      vehicle_id: session.vehicle_id,
+      original_file_name: body?.original_file_name ?? null,
+      file_type: fileType,
+      mime_type: mimeType,
+      duration_seconds: quality.duration_seconds || durationSeconds || null,
       file_url: signed?.signedUrl ?? null,
       storage_path: storagePath,
       upload_status: "uploaded",
       quality_status: qualityStatus,
       audio_quality_score: quality.audio_quality_score,
       ai_quality_check: quality,
-      duration_seconds: quality.duration_seconds || durationSeconds || null,
     })
-    .eq("id", created.id)
     .select()
     .single();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await logActivity(supabase, {
     userId: user.id,
     sessionId,
-    action: "engine_audio_quality_checked",
+    action: "engine_audio_uploaded",
     description: `Quality: ${qualityStatus}`,
   });
 
-  return NextResponse.json({ check: updated, quality });
+  return NextResponse.json({ check: saved, quality });
 }

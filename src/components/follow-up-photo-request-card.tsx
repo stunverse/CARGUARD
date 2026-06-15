@@ -6,6 +6,8 @@ import { Camera, CheckCircle2, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { STORAGE_BUCKETS } from "@/lib/constants";
+import { compressImage, getUserId, uploadToStorage } from "@/lib/upload";
 
 interface FollowUp {
   id: string;
@@ -36,22 +38,29 @@ export function FollowUpPhotoRequestCard({
   async function upload(file: File) {
     setBusy(true);
     setError(null);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch(
-      `/api/inspections/${sessionId}/follow-ups/${request.id}`,
-      { method: "POST", body: fd },
-    );
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Upload failed.");
-      return;
+    try {
+      const userId = await getUserId();
+      if (!userId) throw new Error("Please sign in again.");
+      const compressed = await compressImage(file);
+      const path = `${userId}/${sessionId}/followup-${request.id}.jpg`;
+      await uploadToStorage(STORAGE_BUCKETS.inspectionPhotos, path, compressed);
+
+      const res = await fetch(`/api/inspections/${sessionId}/follow-ups/${request.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storage_path: path }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      setStatus("analyzed");
+      setImageUrl(data.request.image_url);
+      setSummary(data.analysis?.summary ?? null);
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed.");
+    } finally {
+      setBusy(false);
     }
-    setStatus("analyzed");
-    setImageUrl(data.request.image_url);
-    setSummary(data.analysis?.summary ?? null);
-    router.refresh();
   }
 
   async function skip() {

@@ -15,9 +15,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhotoQualityStatus } from "@/components/photo-quality-status";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
-import { PHOTO_POINTS, REQUIRED_PHOTO_COUNT } from "@/lib/constants";
+import { PHOTO_POINTS, REQUIRED_PHOTO_COUNT, STORAGE_BUCKETS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { compressImage, getUserId, uploadToStorage } from "@/lib/upload";
 import { AnalyzingOverlay } from "@/components/analyzing-overlay";
 import type { InspectionPhoto, PhotoPointCode, QualityStatus } from "@/types";
 
@@ -84,13 +85,23 @@ export function HiddenDamageScanner({
 
   async function upload(file: File) {
     setState(activeCode, { uploading: true, error: null });
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("photo_point_code", activeCode);
     try {
+      const userId = await getUserId();
+      if (!userId) throw new Error("Please sign in again.");
+      const compressed = await compressImage(file);
+      const path = `${userId}/${sessionId}/${activeCode}.jpg`;
+      await uploadToStorage(STORAGE_BUCKETS.inspectionPhotos, path, compressed);
+
       const res = await fetch(`/api/inspections/${sessionId}/photos`, {
         method: "POST",
-        body: fd,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photo_point_code: activeCode,
+          storage_path: path,
+          original_file_name: file.name,
+          mime_type: compressed.type,
+          file_size: compressed.size,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed.");

@@ -24,6 +24,8 @@ import {
 } from "@/lib/mechanical";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { STORAGE_BUCKETS } from "@/lib/constants";
+import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import type {
   MechanicalCheckItem,
   MechanicalPoint,
@@ -137,24 +139,45 @@ function StepCard({
   async function save() {
     setSaving(true);
     setError(null);
-    const fd = new FormData();
-    fd.append("observations", JSON.stringify(obs));
-    if (primaryFile) fd.append("file", primaryFile);
-    if (secondaryFile) fd.append("file2", secondaryFile);
-    if (point.media_type === "docs") {
-      for (const f of Array.from(docsRef.current?.files ?? [])) fd.append("files", f);
-    }
-    const res = await fetch(`/api/inspections/${sessionId}/mechanical/${point.code}`, {
-      method: "POST",
-      body: fd,
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error ?? "Save failed.");
-      toast.error(data.error ?? "Could not save this check.");
+    let data: { analysis: { score: number; severity: Severity; suspicious_observations?: string[] }; error?: string };
+    try {
+      const userId = await getUserId();
+      if (!userId) throw new Error("Please sign in again.");
+      const base = `${userId}/${sessionId}/${point.code}`;
+
+      const upImg = async (f: File, suffix: string) => {
+        const isImg = f.type.startsWith("image/");
+        const out = isImg ? await compressImage(f) : f;
+        const path = `${base}${suffix}.${fileExt(out)}`;
+        await uploadToStorage(STORAGE_BUCKETS.mechanical, path, out);
+        return path;
+      };
+
+      const payload: Record<string, unknown> = { observations: obs };
+      if (primaryFile) payload.primary_path = await upImg(primaryFile, "");
+      if (secondaryFile) payload.secondary_path = await upImg(secondaryFile, "-2");
+      if (point.media_type === "docs") {
+        const docs = Array.from(docsRef.current?.files ?? []);
+        const docPaths: string[] = [];
+        for (let i = 0; i < docs.length; i++) docPaths.push(await upImg(docs[i], `-doc${i}`));
+        payload.doc_paths = docPaths;
+      }
+
+      const res = await fetch(`/api/inspections/${sessionId}/mechanical/${point.code}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Save failed.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not save this check.";
+      setError(msg);
+      toast.error(msg);
+      setSaving(false);
       return;
     }
+    setSaving(false);
     toast.success(`${point.title} saved.`);
     setSkipped(false);
     setResult({

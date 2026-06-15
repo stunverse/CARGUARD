@@ -296,7 +296,15 @@ export const ALLOWED_VIDEO_TYPES = [
   "video/webm",
 ];
 export const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB
-export const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB (Supabase default cap)
+
+// Public (non-secret) storage bucket names — used by the browser to
+// upload directly to Supabase Storage, bypassing the serverless body limit.
+export const STORAGE_BUCKETS = {
+  inspectionPhotos: "inspection-photos",
+  engineAudio: "engine-audio",
+  mechanical: "mechanical-media",
+} as const;
 
 export const ENGINE_AUDIO_DISCLAIMER =
   "This engine-sound analysis is based only on the uploaded audio and its quality. CarGuard AI is not a certified mechanic and cannot diagnose or guarantee the condition of the engine. Always confirm with a professional mechanic before purchase.";

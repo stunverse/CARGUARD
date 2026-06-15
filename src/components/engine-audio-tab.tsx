@@ -24,6 +24,8 @@ import {
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { STORAGE_BUCKETS } from "@/lib/constants";
+import { fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import type {
   DetectedEngineSound,
   EngineAudioCheck,
@@ -102,21 +104,35 @@ export function EngineAudioTab({
   async function upload(file: File, durationSeconds = 0) {
     setBusy(true);
     setError(null);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("duration_seconds", String(durationSeconds));
-    const res = await fetch(`/api/inspections/${sessionId}/engine-audio`, {
-      method: "POST",
-      body: fd,
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Upload failed.");
-      return;
+    try {
+      const userId = await getUserId();
+      if (!userId) throw new Error("Please sign in again.");
+      const isVideo = file.type.startsWith("video/");
+      const path = `${userId}/${sessionId}/engine.${fileExt(file)}`;
+      await uploadToStorage(STORAGE_BUCKETS.engineAudio, path, file);
+
+      const res = await fetch(`/api/inspections/${sessionId}/engine-audio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storage_path: path,
+          mime_type: file.type,
+          file_type: isVideo ? "video" : "audio",
+          original_file_name: file.name,
+          duration_seconds: durationSeconds,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      setCheck(data.check);
+      router.refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Upload failed.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
     }
-    setCheck(data.check);
-    router.refresh();
   }
 
   async function analyze() {

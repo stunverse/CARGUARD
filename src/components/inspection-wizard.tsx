@@ -21,6 +21,7 @@ import {
   INSPECTION_GOAL_OPTIONS,
   PHOTO_POINTS,
   SELLER_TYPE_OPTIONS,
+  STORAGE_BUCKETS,
 } from "@/lib/constants";
 import {
   catalogYears,
@@ -31,6 +32,7 @@ import {
   TRANSMISSION_OPTIONS,
 } from "@/lib/vehicle-catalog";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
+import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
@@ -179,10 +181,23 @@ export function InspectionWizard() {
     setBusy(true);
     setError(null);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("photo_point_code", code);
-      const res = await fetch(`/api/inspections/${sessionId}/photos`, { method: "POST", body: fd });
+      const userId = await getUserId();
+      if (!userId) throw new Error("Please sign in again.");
+      const compressed = await compressImage(file);
+      const path = `${userId}/${sessionId}/${code}.jpg`;
+      await uploadToStorage(STORAGE_BUCKETS.inspectionPhotos, path, compressed);
+
+      const res = await fetch(`/api/inspections/${sessionId}/photos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photo_point_code: code,
+          storage_path: path,
+          original_file_name: file.name,
+          mime_type: compressed.type,
+          file_size: compressed.size,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed.");
       const status = data.photo.quality_status as string;
@@ -765,20 +780,29 @@ function MechStep({
 
   async function save() {
     setBusy(true);
-    const fd = new FormData();
-    fd.append("observations", JSON.stringify(obs));
-    if (file) fd.append("file", file);
-    const res = await fetch(`/api/inspections/${sessionId}/mechanical/${point.code}`, {
-      method: "POST",
-      body: fd,
-    });
-    setBusy(false);
-    if (res.ok) {
+    try {
+      let primary_path: string | undefined;
+      if (file) {
+        const userId = await getUserId();
+        if (!userId) throw new Error("Please sign in again.");
+        const isImg = file.type.startsWith("image/");
+        const f = isImg ? await compressImage(file) : file;
+        primary_path = `${userId}/${sessionId}/${point.code}.${fileExt(f)}`;
+        await uploadToStorage(STORAGE_BUCKETS.mechanical, primary_path, f);
+      }
+      const res = await fetch(`/api/inspections/${sessionId}/mechanical/${point.code}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ observations: obs, primary_path }),
+      });
+      if (!res.ok) throw new Error("save failed");
       setObs({});
       setFile(null);
       onSaved();
-    } else {
+    } catch {
       toast.error("Could not save this step.");
+    } finally {
+      setBusy(false);
     }
   }
 

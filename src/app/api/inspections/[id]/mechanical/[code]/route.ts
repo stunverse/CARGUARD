@@ -8,34 +8,21 @@ import {
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
-import {
-  ALLOWED_IMAGE_TYPES,
-  ALLOWED_VIDEO_TYPES,
-  MAX_IMAGE_BYTES,
-  MAX_VIDEO_BYTES,
-} from "@/lib/constants";
+import { STORAGE_BUCKETS } from "@/lib/constants";
 import type { MechanicalCheckItem, MechanicalPointCode } from "@/types";
 
 export const runtime = "nodejs";
 
-const BUCKET = process.env.STORAGE_BUCKET_MECHANICAL || "mechanical-media";
-const DOC_TYPES = [...ALLOWED_IMAGE_TYPES, "application/pdf"];
+const BUCKET = process.env.STORAGE_BUCKET_MECHANICAL || STORAGE_BUCKETS.mechanical;
 
-async function uploadFile(
+async function signed(
   supabase: Awaited<ReturnType<typeof createClient>>,
   path: string,
-  file: File,
-) {
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, buffer, { contentType: file.type, upsert: true });
-  if (error) throw new Error(error.message);
+): Promise<string | null> {
   const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
 }
 
-// Recompute the unified mechanical score on the session.
 async function recomputeSession(
   supabase: Awaited<ReturnType<typeof createClient>>,
   sessionId: string,
@@ -55,7 +42,8 @@ async function recomputeSession(
     .eq("id", sessionId);
 }
 
-// POST /api/inspections/[id]/mechanical/[code] — save one mechanical item.
+// POST — save one mechanical item. The browser uploads media directly to
+// Storage and sends the path(s) here.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; code: string }> },
@@ -72,10 +60,7 @@ export async function POST(
 
   const rl = rateLimit(`mechanical:${user.id}`, { limit: 60, windowMs: 60_000 });
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: `Too many uploads. Try again in ${rl.retryAfterSeconds}s.` },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: "Too many uploads. Try again shortly." }, { status: 429 });
   }
 
   const { data: session } = await supabase
@@ -85,8 +70,19 @@ export async function POST(
     .single();
   if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
 
-  const form = await request.formData();
-  const observations = JSON.parse((form.get("observations") as string) || "{}") as Record<string, boolean>;
+  const body = await request.json().catch(() => ({}));
+  const observations = (body?.observations ?? {}) as Record<string, boolean>;
+  const primaryPath = body?.primary_path as string | undefined;
+  const secondaryPath = body?.secondary_path as string | undefined;
+  const docPaths = (body?.doc_paths ?? []) as string[];
+
+  const own = (p?: string) => !p || p.startsWith(`${user.id}/`);
+  if (!own(primaryPath) || !own(secondaryPath) || !docPaths.every(own)) {
+    return NextResponse.json({ error: "Invalid storage path." }, { status: 403 });
+  }
+
+  const isPhoto = point.media_type === "photo" || point.media_type === "photo_pair";
+  const isVideo = point.media_type === "video";
 
   const update: Partial<MechanicalCheckItem> & Record<string, unknown> = {
     user_id: user.id,
@@ -100,66 +96,36 @@ export async function POST(
     analysis_status: "completed",
   };
 
-  const ext = (f: File) => f.name.split(".").pop()?.toLowerCase() || "bin";
   const imageUrlsForAi: string[] = [];
-
-  try {
-    if (point.media_type === "photo" || point.media_type === "photo_pair") {
-      const file = form.get("file") as File | null;
-      if (file) {
-        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) throw new Error("Unsupported image type.");
-        if (file.size > MAX_IMAGE_BYTES) throw new Error("Image too large (max 15MB).");
-        const path = `${user.id}/${sessionId}/${code}.${ext(file)}`;
-        update.image_url = await uploadFile(supabase, path, file);
-        update.storage_path = path;
-        if (update.image_url) imageUrlsForAi.push(update.image_url);
-      }
-      if (point.media_type === "photo_pair") {
-        const file2 = form.get("file2") as File | null;
-        if (file2) {
-          if (!ALLOWED_IMAGE_TYPES.includes(file2.type)) throw new Error("Unsupported image type.");
-          const path2 = `${user.id}/${sessionId}/${code}-2.${ext(file2)}`;
-          update.image_url_2 = await uploadFile(supabase, path2, file2);
-          update.storage_path_2 = path2;
-          if (update.image_url_2) imageUrlsForAi.push(update.image_url_2);
-        }
-      }
-    } else if (point.media_type === "video") {
-      const file = form.get("file") as File | null;
-      if (file) {
-        if (!ALLOWED_VIDEO_TYPES.includes(file.type)) throw new Error("Unsupported video type.");
-        if (file.size > MAX_VIDEO_BYTES) throw new Error("Video too large (max 100MB).");
-        const path = `${user.id}/${sessionId}/${code}-video.${ext(file)}`;
-        update.video_url = await uploadFile(supabase, path, file);
-        update.video_storage_path = path;
-        update.mime_type = file.type;
-      }
-    } else if (point.media_type === "docs") {
-      const files = form.getAll("files") as File[];
-      const urls: string[] = [];
-      let n = 0;
-      for (const f of files) {
-        if (!DOC_TYPES.includes(f.type)) continue;
-        if (f.size > MAX_IMAGE_BYTES) continue;
-        const path = `${user.id}/${sessionId}/${code}-doc${n}.${ext(f)}`;
-        const url = await uploadFile(supabase, path, f);
-        if (url) urls.push(url);
-        n += 1;
-      }
-      update.doc_urls = urls;
+  if (primaryPath) {
+    const url = await signed(supabase, primaryPath);
+    if (isVideo) {
+      update.video_url = url;
+      update.video_storage_path = primaryPath;
+    } else {
+      update.image_url = url;
+      update.storage_path = primaryPath;
+      if (isPhoto && url) imageUrlsForAi.push(url);
     }
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Upload failed." },
-      { status: 400 },
-    );
+  }
+  if (secondaryPath) {
+    const url = await signed(supabase, secondaryPath);
+    update.image_url_2 = url;
+    update.storage_path_2 = secondaryPath;
+    if (isPhoto && url) imageUrlsForAi.push(url);
+  }
+  if (docPaths.length) {
+    const urls: string[] = [];
+    for (const p of docPaths) {
+      const u = await signed(supabase, p);
+      if (u) urls.push(u);
+    }
+    update.doc_urls = urls;
   }
 
-  // AI vision on photos; observation-driven otherwise.
-  const ai =
-    imageUrlsForAi.length > 0
-      ? await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode)
-      : null;
+  const ai = imageUrlsForAi.length
+    ? await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode)
+    : null;
   const analysis = buildMechanicalItemAnalysis(code as MechanicalPointCode, observations, ai);
   update.ai_analysis = analysis;
   update.detected_issues = analysis.detected_issues;
@@ -167,7 +133,6 @@ export async function POST(
   update.severity = analysis.severity;
   update.confidence = analysis.confidence;
 
-  // Upsert by (session, code).
   await supabase
     .from("mechanical_checks")
     .delete()
@@ -191,7 +156,7 @@ export async function POST(
   return NextResponse.json({ item: saved, analysis });
 }
 
-// PUT — skip a mechanical item ("I can't do this check").
+// PUT — skip a mechanical item.
 export async function PUT(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; code: string }> },

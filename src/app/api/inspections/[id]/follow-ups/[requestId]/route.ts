@@ -3,12 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { analyzeFollowUpPhoto } from "@/lib/ai/functions";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES } from "@/lib/constants";
+import { STORAGE_BUCKETS } from "@/lib/constants";
+
+export const runtime = "nodejs";
 
 const BUCKET =
-  process.env.STORAGE_BUCKET_INSPECTION_PHOTOS || "inspection-photos";
+  process.env.STORAGE_BUCKET_INSPECTION_PHOTOS || STORAGE_BUCKETS.inspectionPhotos;
 
-// POST — upload + analyze a follow-up close-up photo.
+// POST — analyze a follow-up close-up photo (uploaded to Storage by the client).
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; requestId: string }> },
@@ -28,14 +30,10 @@ export async function POST(
     );
   }
 
-  const form = await request.formData();
-  const file = form.get("file") as File | null;
-  if (!file) return NextResponse.json({ error: "file is required." }, { status: 400 });
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: "Unsupported file type." }, { status: 400 });
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    return NextResponse.json({ error: "File is too large (max 15MB)." }, { status: 400 });
+  const body = await request.json().catch(() => ({}));
+  const storagePath = body?.storage_path as string | undefined;
+  if (!storagePath || !storagePath.startsWith(`${user.id}/`)) {
+    return NextResponse.json({ error: "Invalid storage path." }, { status: 400 });
   }
 
   const { data: reqRow } = await supabase
@@ -44,15 +42,6 @@ export async function POST(
     .eq("id", requestId)
     .single();
   if (!reqRow) return NextResponse.json({ error: "Request not found." }, { status: 404 });
-
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const storagePath = `${user.id}/${sessionId}/followup-${requestId}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  const { error: upErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(storagePath, buffer, { contentType: file.type, upsert: true });
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
 
   const { data: signed } = await supabase.storage
     .from(BUCKET)
