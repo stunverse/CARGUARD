@@ -35,7 +35,8 @@ import { CountUp } from "@/components/landing/count-up";
 import { createClient } from "@/lib/supabase/server";
 import { getServerLocale } from "@/lib/i18n-server";
 import { t, formatMoney, localeCurrency } from "@/lib/i18n";
-import { INSPECTION_PRICE } from "@/lib/billing";
+import { cn } from "@/lib/utils";
+import { INSPECTION_PRICE, INSPECTION_PACKS } from "@/lib/billing";
 
 const HOW = [
   { icon: Car, k: "s1" },
@@ -93,7 +94,8 @@ export default async function HomePage() {
   }
   const startHref = authed ? "/dashboard" : "/signup";
   const locale = await getServerLocale();
-  const priceLabel = formatMoney(INSPECTION_PRICE, localeCurrency(locale));
+  const currency = localeCurrency(locale);
+  const priceLabel = formatMoney(INSPECTION_PRICE, currency);
   const marquee = t(locale, "landing.marquee.line");
 
   return (
@@ -345,6 +347,55 @@ export default async function HomePage() {
               <ScanLine className="size-5" aria-hidden /> {t(locale, "landing.compare.cta")}
             </Link>
           </Reveal>
+        </div>
+      </section>
+
+      {/* ============================ PRICING ============================ */}
+      <section id="pricing" className="bg-[#F7F8FA]">
+        <div className="mx-auto w-full max-w-5xl px-5 py-16 lg:px-8 lg:py-24">
+          <Reveal>
+            <h2 className="text-center text-3xl font-extrabold lg:text-4xl">{t(locale, "price.title")}</h2>
+            <p className="mx-auto mt-3 max-w-lg text-center text-[#6B7280]">{t(locale, "price.subtitle")}</p>
+          </Reveal>
+          <div className="mt-10 grid gap-5 sm:grid-cols-3">
+            {INSPECTION_PACKS.map((p, i) => {
+              const best = i === INSPECTION_PACKS.length - 1;
+              return (
+                <Reveal key={p.id} delay={i * 90}>
+                  <div
+                    className={cn(
+                      "relative h-full rounded-2xl border bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg",
+                      best ? "border-[#E50914] ring-1 ring-[#E50914]/20" : "border-[#E5E7EB]",
+                    )}
+                  >
+                    {best && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#E50914] px-3 py-0.5 text-[11px] font-bold text-white">
+                        {t(locale, "wiz.pay.bestValue")}
+                      </span>
+                    )}
+                    <div className="text-sm font-semibold text-[#6B7280]">
+                      {p.credits} {p.credits > 1 ? t(locale, "wiz.pay.inspections") : t(locale, "wiz.pay.inspection")}
+                    </div>
+                    <div className="mt-1 text-4xl font-extrabold text-[#111827]">{formatMoney(p.price, currency)}</div>
+                    <div className="text-xs text-[#6B7280]">
+                      {formatMoney(p.price / p.credits, currency)} {t(locale, "wiz.pay.perInspection")}
+                    </div>
+                    <Link
+                      href={startHref}
+                      className={cn(
+                        "mt-5 flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold transition-transform active:scale-[0.98]",
+                        best ? "text-white" : "border border-[#E5E7EB] bg-white text-[#111827]",
+                      )}
+                      style={best ? { backgroundImage: RED_GRADIENT } : undefined}
+                    >
+                      {t(locale, "price.cta")}
+                    </Link>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+          <p className="mt-6 text-center text-xs text-[#6B7280]">{t(locale, "wiz.pay.packHelper")}</p>
         </div>
       </section>
 
