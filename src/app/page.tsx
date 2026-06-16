@@ -4,46 +4,59 @@ import {
   Camera,
   Car,
   ChevronRight,
+  CreditCard,
   Droplets,
   FileText,
   Flame,
   Gauge,
   Lightbulb,
+  Lock,
   Palette,
+  Quote,
   ScanLine,
   ScanSearch,
   ShieldCheck,
+  Smartphone,
+  Star,
   Volume2,
   Wrench,
+  Zap,
 } from "lucide-react";
 import { LogoMark } from "@/components/mobile/logo-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { createClient } from "@/lib/supabase/server";
 import { getServerLocale } from "@/lib/i18n-server";
-import { t } from "@/lib/i18n";
+import { t, formatMoney, localeCurrency } from "@/lib/i18n";
+import { INSPECTION_PRICE } from "@/lib/billing";
 
 const HOW_IT_WORKS = [
-  { icon: Car, title: "Enter the vehicle details", text: "Type it in, or auto-fill instantly from the VIN." },
-  { icon: Camera, title: "Take 8 guided exterior photos", text: "We guide each angle to check the bodywork." },
-  { icon: Wrench, title: "Add engine & mechanical checks", text: "Cold start, smoke, oil, coolant, leaks, sounds." },
-  { icon: FileText, title: "Get a clear AI report", text: "Risk score, suspicious points, questions, PDF." },
+  { icon: Car, k: "s1" },
+  { icon: Camera, k: "s2" },
+  { icon: Wrench, k: "s3" },
+  { icon: FileText, k: "s4" },
 ];
-
 const BODYWORK = [
-  { label: "Panel alignment", icon: AlignVerticalJustifyCenter },
-  { label: "Color & repaint differences", icon: Palette },
-  { label: "Bumper fitment", icon: ShieldCheck },
-  { label: "Headlights & taillights", icon: ShieldCheck },
-  { label: "Signs of previous body repairs", icon: ScanSearch },
+  { k: "landing.body.1", icon: AlignVerticalJustifyCenter },
+  { k: "landing.body.2", icon: Palette },
+  { k: "landing.body.3", icon: ShieldCheck },
+  { k: "landing.body.4", icon: ShieldCheck },
+  { k: "landing.body.5", icon: ScanSearch },
 ];
-
 const ENGINE = [
-  { label: "Cold-start noises (knocking, rattling)", icon: Volume2 },
-  { label: "Exhaust smoke (white / blue / black)", icon: Flame },
-  { label: "Oil & coolant condition", icon: Droplets },
-  { label: "Leaks under the engine", icon: Droplets },
-  { label: "Dashboard warning lights", icon: Gauge },
+  { k: "landing.eng.1", icon: Volume2 },
+  { k: "landing.eng.2", icon: Flame },
+  { k: "landing.eng.3", icon: Droplets },
+  { k: "landing.eng.4", icon: Droplets },
+  { k: "landing.eng.5", icon: Gauge },
 ];
+const TRUST = [
+  { icon: Lock, k: "landing.trust.secure" },
+  { icon: CreditCard, k: "landing.trust.noSub" },
+  { icon: Zap, k: "landing.trust.instant" },
+  { icon: Smartphone, k: "landing.trust.devices" },
+];
+const REVIEWS = ["r1", "r2", "r3"];
+const FAQ = ["q1", "q2", "q3", "q4", "q5"];
 
 export default async function HomePage() {
   let authed = false;
@@ -58,6 +71,7 @@ export default async function HomePage() {
   }
   const startHref = authed ? "/dashboard" : "/signup";
   const locale = await getServerLocale();
+  const priceLabel = formatMoney(INSPECTION_PRICE, localeCurrency(locale));
 
   return (
     <div className="min-h-screen w-full bg-[#EEF0F3] lg:bg-white">
@@ -132,13 +146,30 @@ export default async function HomePage() {
             <p className="mt-3 text-xs text-[#6B7280]">{t(locale, "landing.tagline")}</p>
           </section>
 
+          {/* Trust bar */}
+          <section className="mx-auto mt-10 max-w-4xl">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {TRUST.map((it) => (
+                <div
+                  key={it.k}
+                  className="flex flex-col items-center gap-2 rounded-2xl border border-[#E5E7EB] bg-white/90 p-4 text-center shadow-sm"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-[rgba(39,211,216,0.12)] text-[#1FAEB3]">
+                    <it.icon className="size-5" aria-hidden />
+                  </span>
+                  <span className="text-xs font-medium text-[#374151]">{t(locale, it.k)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
           {/* How it works */}
           <section id="how" className="mx-auto mt-12 max-w-6xl lg:mt-24">
             <h2 className="text-center text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.how.title")}</h2>
             <div className="mt-5 grid gap-3 lg:mt-10 lg:grid-cols-4 lg:gap-5">
               {HOW_IT_WORKS.map((step, i) => (
                 <div
-                  key={step.title}
+                  key={step.k}
                   className="flex items-start gap-3 rounded-2xl border border-[#E5E7EB] bg-white/90 p-4 shadow-sm lg:flex-col lg:gap-3"
                 >
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(229,9,20,0.10)] text-[#E50914]">
@@ -146,8 +177,8 @@ export default async function HomePage() {
                   </span>
                   <div>
                     <div className="text-xs font-semibold text-[#27D3D8]">Step {i + 1}</div>
-                    <h3 className="font-semibold text-[#111827]">{step.title}</h3>
-                    <p className="text-sm text-[#6B7280]">{step.text}</p>
+                    <h3 className="font-semibold text-[#111827]">{t(locale, `landing.how.${step.k}.title`)}</h3>
+                    <p className="text-sm text-[#6B7280]">{t(locale, `landing.how.${step.k}.text`)}</p>
                   </div>
                 </div>
               ))}
@@ -161,8 +192,53 @@ export default async function HomePage() {
               {t(locale, "landing.checks.subtitle")}
             </p>
             <div className="mt-5 grid gap-4 lg:mt-10 lg:grid-cols-2">
-              <CheckGroup title={t(locale, "landing.checks.bodywork")} icon={Camera} items={BODYWORK} />
-              <CheckGroup title={t(locale, "landing.checks.engine")} icon={Wrench} items={ENGINE} />
+              <CheckGroup title={t(locale, "landing.checks.bodywork")} icon={Camera} items={BODYWORK} locale={locale} />
+              <CheckGroup title={t(locale, "landing.checks.engine")} icon={Wrench} items={ENGINE} locale={locale} />
+            </div>
+          </section>
+
+          {/* Price vs risk comparison */}
+          <section className="mx-auto mt-12 max-w-4xl text-center lg:mt-24">
+            <h2 className="text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.compare.title")}</h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm text-[#6B7280]">{t(locale, "landing.compare.subtitle")}</p>
+            <div className="mt-6 grid gap-4 text-left sm:grid-cols-2">
+              <div className="rounded-2xl border border-risk-low/40 bg-risk-low/5 p-5">
+                <div className="text-3xl font-extrabold text-[#111827]">{priceLabel}</div>
+                <h3 className="mt-1 font-semibold text-[#111827]">{t(locale, "landing.compare.now.title")}</h3>
+                <p className="mt-1 text-sm text-[#6B7280]">{t(locale, "landing.compare.now.desc")}</p>
+              </div>
+              <div className="rounded-2xl border border-risk-critical/40 bg-risk-critical/5 p-5">
+                <div className="text-3xl font-extrabold text-[#B00008]">{t(locale, "landing.compare.risk.price")}</div>
+                <h3 className="mt-1 font-semibold text-[#111827]">{t(locale, "landing.compare.risk.title")}</h3>
+                <p className="mt-1 text-sm text-[#6B7280]">{t(locale, "landing.compare.risk.desc")}</p>
+              </div>
+            </div>
+            <Link
+              href={startHref}
+              className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(229,9,20,0.28)]"
+              style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
+            >
+              <ScanLine className="size-5" aria-hidden /> {t(locale, "landing.compare.cta")}
+            </Link>
+          </section>
+
+          {/* Social proof */}
+          <section className="mx-auto mt-12 max-w-6xl lg:mt-24">
+            <h2 className="text-center text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.reviews.title")}</h2>
+            <p className="mx-auto mt-2 max-w-md text-center text-sm text-[#6B7280]">{t(locale, "landing.reviews.subtitle")}</p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              {REVIEWS.map((r) => (
+                <figure key={r} className="rounded-2xl border border-[#E5E7EB] bg-white/90 p-5 shadow-sm">
+                  <Quote className="size-6 text-[#E50914]/30" aria-hidden />
+                  <div className="mt-2 flex gap-0.5 text-[#F5A623]">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="size-4 fill-current" aria-hidden />
+                    ))}
+                  </div>
+                  <blockquote className="mt-2 text-sm text-[#374151]">{t(locale, `landing.reviews.${r}.quote`)}</blockquote>
+                  <figcaption className="mt-3 text-xs font-medium text-[#6B7280]">— {t(locale, `landing.reviews.${r}.author`)}</figcaption>
+                </figure>
+              ))}
             </div>
           </section>
 
@@ -174,24 +250,45 @@ export default async function HomePage() {
               {t(locale, "landing.why.body")}
             </p>
             <div className="mt-5 rounded-2xl border border-[#E5E7EB] bg-[#F7F8FA] p-4 text-left text-xs text-[#6B7280]">
-              CarGuard AI provides a preliminary, photo- and sound-based
-              screening. It does not replace a professional inspection or a
-              certified mechanic.
+              {t(locale, "landing.why.disclaimer")}
             </div>
           </section>
 
-          {/* Pricing CTA */}
-          <section className="mt-10 text-center lg:mt-16">
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-1 rounded-full bg-[#F2F3F5] px-5 py-2.5 text-sm font-semibold text-[#111827]"
+          {/* FAQ */}
+          <section className="mx-auto mt-12 max-w-3xl lg:mt-24">
+            <h2 className="text-center text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.faq.title")}</h2>
+            <div className="mt-5 divide-y divide-[#EFEFEF] overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white/90">
+              {FAQ.map((q) => (
+                <details key={q} className="group p-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-[#111827]">
+                    {t(locale, `landing.faq.${q}`)}
+                    <ChevronRight className="size-4 shrink-0 text-[#6B7280] transition-transform group-open:rotate-90" aria-hidden />
+                  </summary>
+                  <p className="mt-2 text-sm text-[#6B7280]">{t(locale, `landing.faq.a${q.slice(1)}`)}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+
+          {/* Final CTA */}
+          <section className="mx-auto mt-12 max-w-4xl lg:mt-20">
+            <div
+              className="rounded-3xl px-6 py-10 text-center text-white shadow-[0_20px_50px_rgba(229,9,20,0.30)]"
+              style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
             >
-              {t(locale, "landing.pricing")} <ChevronRight className="size-4" aria-hidden />
-            </Link>
+              <h2 className="text-2xl font-extrabold lg:text-3xl">{t(locale, "landing.final.title")}</h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-white/90">{t(locale, "landing.final.subtitle")}</p>
+              <Link
+                href={startHref}
+                className="mt-6 inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-white px-8 text-base font-semibold text-[#B00008] transition-transform active:scale-[0.98]"
+              >
+                <ScanLine className="size-5" aria-hidden /> {t(locale, "landing.start")}
+              </Link>
+            </div>
           </section>
 
           {/* Footer */}
-          <footer className="mx-auto mt-12 max-w-6xl border-t border-[#EFEFEF] pt-6 text-center text-xs text-[#9AA3AF] lg:mt-20">
+          <footer className="mx-auto mt-12 max-w-6xl border-t border-[#EFEFEF] pt-6 text-center text-xs text-[#9AA3AF] lg:mt-16">
             <div className="flex justify-center gap-5">
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
@@ -209,10 +306,12 @@ function CheckGroup({
   title,
   icon: Icon,
   items,
+  locale,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
-  items: { label: string; icon: React.ComponentType<{ className?: string }> }[];
+  items: { k: string; icon: React.ComponentType<{ className?: string }> }[];
+  locale: Parameters<typeof t>[0];
 }) {
   return (
     <div className="rounded-2xl border border-[#E5E7EB] bg-white/90 p-4 shadow-sm lg:p-6">
@@ -224,11 +323,11 @@ function CheckGroup({
       </div>
       <ul className="space-y-2.5">
         {items.map((it) => (
-          <li key={it.label} className="flex items-center gap-3">
+          <li key={it.k} className="flex items-center gap-3">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[rgba(39,211,216,0.12)] text-[#1FAEB3]">
               <it.icon className="size-4" aria-hidden />
             </span>
-            <span className="text-sm font-medium text-[#374151]">{it.label}</span>
+            <span className="text-sm font-medium text-[#374151]">{t(locale, it.k)}</span>
           </li>
         ))}
       </ul>
