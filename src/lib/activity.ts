@@ -21,7 +21,8 @@ export type ActivityAction =
   | "engine_audio_added_to_report"
   | "mechanical_item_saved"
   | "mechanical_item_skipped"
-  | "mechanical_added_to_report";
+  | "mechanical_added_to_report"
+  | "document_uploaded";
 
 export async function logActivity(
   supabase: SupabaseClient,

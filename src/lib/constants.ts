@@ -304,6 +304,7 @@ export const STORAGE_BUCKETS = {
   inspectionPhotos: "inspection-photos",
   engineAudio: "engine-audio",
   mechanical: "mechanical-media",
+  documents: "inspection-documents",
 } as const;
 
 export const ENGINE_AUDIO_DISCLAIMER =

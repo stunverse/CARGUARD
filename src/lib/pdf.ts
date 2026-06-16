@@ -292,6 +292,27 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       ).fillColor("#111");
     }
 
+    // 18. Supporting documents
+    const dq = report.documents;
+    if (dq) {
+      const LABEL: Record<string, string> = {
+        registration: "Registration / title",
+        maintenance: "Maintenance records",
+        technical_inspection: "Technical inspection (MOT/CT)",
+        history_report: "Vehicle history report",
+        purchase_invoice: "Purchase invoice",
+        emissions: "Emissions / smog certificate",
+        insurance: "Insurance certificate",
+        non_pledge: "Certificate of non-pledge",
+        odometer_disclosure: "Odometer disclosure",
+      };
+      h1("18. Supporting documents");
+      muted(`${dq.provided_count}/${dq.relevant_count} provided · ${dq.key_provided}/${dq.key_total} key documents`);
+      dq.items.forEach((d) =>
+        body(`${d.provided ? "[x]" : "[ ]"} ${LABEL[d.doc_type] ?? d.doc_type}${d.key ? " (key)" : ""}`),
+      );
+    }
+
     // Disclaimer
     doc.moveDown(0.8);
     doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(report.disclaimer);

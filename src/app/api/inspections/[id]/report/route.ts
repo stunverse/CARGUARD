@@ -15,6 +15,7 @@ import { getSafetyRating } from "@/lib/safety-rating";
 import { deriveTitleFlags } from "@/lib/title-flags";
 import { fetchEuTitleFlags } from "@/lib/providers/eu-history";
 import { estimateMarketValue } from "@/lib/market-value";
+import { buildDocumentsSection, documentsRatio } from "@/lib/documents";
 import { computeOverall } from "@/lib/score";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkReportQuota } from "@/lib/quota";
@@ -204,6 +205,17 @@ export async function POST(
     currency: veh.currency ?? null,
   });
 
+  // Supporting documents the buyer photographed (maintenance, registration…).
+  const { data: docRows } = await supabase
+    .from("inspection_documents")
+    .select("doc_type")
+    .eq("inspection_session_id", sessionId);
+  const documents = buildDocumentsSection(
+    (docRows ?? []).map((d) => d.doc_type as string),
+    veh.country ?? null,
+  );
+  const docRatio = documentsRatio(documents);
+
   // --- Overall score + confidence across ALL modules ---
   const photoConfidences = results
     .map((r) => r.confidence)
@@ -225,6 +237,8 @@ export async function POST(
     mechanicalConfidence: mechConfidence,
     history: vehicleHistory,
     salvageTitle,
+    documentsRatio: docRatio,
+    documentsProvided: documents?.provided_count ?? 0,
   });
 
   // Augment the photo-based summary so it also covers the engine/mechanical
@@ -245,6 +259,13 @@ export async function POST(
       `Vehicle history (NHTSA, model-level): ${vehicleHistory.recall_count} recall(s) and ${vehicleHistory.complaints_count} consumer complaint(s) reported for this make/model/year.`,
     );
   }
+  if (documents) {
+    summaryParts.push(
+      documents.provided_count > 0
+        ? `Supporting documents: ${documents.provided_count}/${documents.relevant_count} provided (${documents.key_provided}/${documents.key_total} key documents), which strengthens confidence in this assessment.`
+        : "No supporting documents (maintenance records, registration, etc.) were provided — confidence is limited accordingly.",
+    );
+  }
   global.global_summary = summaryParts.filter(Boolean).join(" ");
 
   const report = generateFinalReport({
@@ -260,6 +281,7 @@ export async function POST(
     safety,
     titleFlags,
     marketValue,
+    documents,
     overallConfidence: overall.confidence,
   });
 

@@ -351,6 +351,38 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         </Card>
       )}
 
+      {/* Supporting documents */}
+      {report.documents && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("rep.s.documents")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              {report.documents.provided_count}/{report.documents.relevant_count} {t("doc.provided")}
+              {" · "}
+              {report.documents.key_provided}/{report.documents.key_total} {t("doc.keyDocs")}
+            </p>
+            <ul className="grid gap-1.5 sm:grid-cols-2">
+              {report.documents.items.map((d) => (
+                <li key={d.doc_type} className="flex items-center gap-2">
+                  {d.provided ? (
+                    <ShieldCheck className="size-4 shrink-0 text-risk-low" aria-hidden />
+                  ) : (
+                    <span className="size-4 shrink-0 rounded-full border border-muted-foreground/40" aria-hidden />
+                  )}
+                  <span className={d.provided ? "" : "text-muted-foreground"}>
+                    {t(`doc.${d.doc_type}.title`)}
+                    {d.key && <span className="ml-1 text-[10px] font-semibold uppercase text-accent">{t("doc.key")}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">{t("doc.disclaimer")}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Disclaimer */}
       <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
         <strong className="text-foreground">{t("rep.disclaimer")} </strong>

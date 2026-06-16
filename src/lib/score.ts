@@ -14,6 +14,8 @@ export interface OverallInput {
   mechanicalConfidence?: number | null;
   history?: VehicleHistorySection | null;
   salvageTitle?: boolean; // confirmed salvage/total-loss (paid VIN history)
+  documentsRatio?: number; // 0-1 completeness of supporting documents
+  documentsProvided?: number; // how many documents were photographed
 }
 
 export interface OverallResult {
@@ -38,6 +40,10 @@ export function computeOverall(i: OverallInput): OverallResult {
   const parts: { v: number; w: number }[] = [{ v: i.photoScore, w: 0.5 }];
   if (i.mechanicalScore != null) parts.push({ v: i.mechanicalScore, w: 0.5 });
   if (i.history?.matched) parts.push({ v: historyScore(i.history), w: 0.12 });
+  // Supporting documents lightly reduce risk (a documented car is safer).
+  if (i.documentsProvided && i.documentsProvided > 0) {
+    parts.push({ v: 60 + (i.documentsRatio ?? 0) * 35, w: 0.07 });
+  }
 
   const totalW = parts.reduce((a, p) => a + p.w, 0);
   let score = clamp(parts.reduce((a, p) => a + p.v * p.w, 0) / totalW);
@@ -49,6 +55,10 @@ export function computeOverall(i: OverallInput): OverallResult {
   const conf: { v: number; w: number }[] = [{ v: i.photoConfidence, w: 0.45 }];
   if (i.mechanicalConfidence != null) conf.push({ v: i.mechanicalConfidence, w: 0.45 });
   if (i.history?.matched) conf.push({ v: 70, w: 0.1 });
+  // Provided documents make the inspection more verifiable → more confidence.
+  if (i.documentsProvided && i.documentsProvided > 0) {
+    conf.push({ v: 35 + (i.documentsRatio ?? 0) * 65, w: 0.14 });
+  }
   const cW = conf.reduce((a, p) => a + p.w, 0);
   const confidence = clamp(conf.reduce((a, p) => a + p.v * p.w, 0) / cW);
 

@@ -6,6 +6,7 @@
 
 import { PHOTO_POINTS, REPORT_DISCLAIMER } from "@/lib/constants";
 import type {
+  DocumentsSection,
   EngineAudioCheck,
   EngineAudioReportSection,
   FinalReport,
@@ -58,6 +59,7 @@ export function generateFinalReport(params: {
   safety?: SafetyRatingSection | null;
   titleFlags?: TitleFlagsSection | null;
   marketValue?: MarketValueSection | null;
+  documents?: DocumentsSection | null;
   /** Overall confidence across all modules (falls back to photo avg). */
   overallConfidence?: number;
 }): FinalReport {
@@ -74,6 +76,7 @@ export function generateFinalReport(params: {
     safety,
     titleFlags,
     marketValue,
+    documents,
     overallConfidence,
   } = params;
 
@@ -148,6 +151,7 @@ export function generateFinalReport(params: {
     safety: safety ?? null,
     title_flags: titleFlags ?? null,
     market_value: marketValue ?? null,
+    documents: documents ?? null,
   };
 }
 

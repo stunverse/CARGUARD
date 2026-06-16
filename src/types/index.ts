@@ -299,6 +299,28 @@ export interface FinalReport {
   title_flags?: TitleFlagsSection | null;
   // Heuristic market-value estimate vs asking price. Works worldwide.
   market_value?: MarketValueSection | null;
+  // Supporting documents the buyer photographed (maintenance, registration…).
+  documents?: DocumentsSection | null;
+}
+
+// ---------------------------------------------------------------------
+// Supporting documents (maintenance, registration, non-pledge, MOT…).
+// Their presence raises the report's confidence.
+// ---------------------------------------------------------------------
+export interface ReportDocument {
+  doc_type: string; // i18n key suffix (doc.<code>.title)
+  provided: boolean;
+  key: boolean; // a key document (weighs more in confidence)
+  summary?: string | null; // optional AI-read summary
+}
+export interface DocumentsSection {
+  provided_count: number;
+  relevant_count: number;
+  key_provided: number;
+  key_total: number;
+  items: ReportDocument[];
+  note: string;
+  disclaimer: string;
 }
 
 // ---------------------------------------------------------------------

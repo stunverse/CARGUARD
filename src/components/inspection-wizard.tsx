@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -8,9 +8,11 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  FileText,
   Lock,
   RefreshCw,
   Sparkles,
+  Upload,
   Video,
   X,
 } from "lucide-react";
@@ -31,6 +33,7 @@ import {
   TRANSMISSION_OPTIONS,
 } from "@/lib/vehicle-catalog";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
+import { documentsForRegion } from "@/lib/documents";
 import { INSPECTION_PRICE } from "@/lib/billing";
 import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
@@ -39,7 +42,7 @@ import { localizedMechPoint, localizedPhotoPoint } from "@/lib/content-i18n";
 import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
-type Phase = "vehicle" | "payment" | "photos" | "mech" | "review" | "finishing";
+type Phase = "vehicle" | "payment" | "photos" | "mech" | "documents" | "review" | "finishing";
 
 type VKind = "vin" | "make" | "year" | "model" | "select" | "number";
 interface VStepDef {
@@ -112,9 +115,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   const [capture, setCapture] = useState<CaptureMode | null>(null);
 
   const vehicleStepCount = VEHICLE_STEPS.length;
-  // Engine & mechanical is mandatory — always part of the flow.
+  // Engine & mechanical is mandatory; documents + review close the flow.
   const total =
-    vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length + 1;
+    vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length + 2;
 
   const stepNumber = useMemo(() => {
     switch (phase) {
@@ -127,6 +130,8 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
         return vehicleStepCount + pIndex;
       case "mech":
         return vehicleStepCount + PHOTO_POINTS.length + mIndex;
+      case "documents":
+        return vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length;
       case "review":
       case "finishing":
         return total - 1;
@@ -160,9 +165,11 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
         setPhase("photos");
         setPIndex(PHOTO_POINTS.length - 1);
       } else setMIndex((i) => i - 1);
-    } else if (phase === "review") {
+    } else if (phase === "documents") {
       setPhase("mech");
       setMIndex(MECHANICAL_POINTS.length - 1);
+    } else if (phase === "review") {
+      setPhase("documents");
     }
   }
 
@@ -222,7 +229,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
 
   function nextMech() {
     if (mIndex < MECHANICAL_POINTS.length - 1) setMIndex((i) => i + 1);
-    else setPhase("review");
+    else setPhase("documents");
   }
 
   // ---- Uploads ----------------------------------------------------
@@ -397,6 +404,16 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
             onSaved={nextMech}
             sessionId={sessionId!}
             setBusy={setBusy}
+          />
+        )}
+
+        {phase === "documents" && (
+          <DocumentsStep
+            sessionId={sessionId!}
+            country={vehicle.country}
+            busy={busy}
+            setBusy={setBusy}
+            onDone={() => setPhase("review")}
           />
         )}
 
@@ -1062,6 +1079,134 @@ function PaymentStep({
         <Lock className="size-3.5" aria-hidden /> {t("wiz.pay.secure")}
       </p>
     </StepShell>
+  );
+}
+
+// Documents step — photograph paperwork (maintenance, registration, non-pledge…).
+function DocumentsStep({
+  sessionId,
+  country,
+  busy,
+  setBusy,
+  onDone,
+}: {
+  sessionId: string;
+  country?: string;
+  busy: boolean;
+  setBusy: (b: boolean) => void;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const docs = useMemo(() => documentsForRegion(country), [country]);
+  const [provided, setProvided] = useState<Record<string, boolean>>({});
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  // Prefill on resume.
+  useEffect(() => {
+    fetch(`/api/inspections/${sessionId}/documents`)
+      .then((r) => r.json())
+      .then((d) => {
+        const m: Record<string, boolean> = {};
+        for (const row of d.documents ?? []) m[row.doc_type] = true;
+        setProvided(m);
+      })
+      .catch(() => {});
+  }, [sessionId]);
+
+  async function upload(code: string, file: File) {
+    setUploading(code);
+    setBusy(true);
+    try {
+      const userId = await getUserId();
+      if (!userId) throw new Error("Please sign in again.");
+      const isImg = file.type.startsWith("image/");
+      const out = isImg ? await compressImage(file) : file;
+      const path = `${userId}/${sessionId}/doc-${code}.${fileExt(out)}`;
+      await uploadToStorage(STORAGE_BUCKETS.documents, path, out);
+      const res = await fetch(`/api/inspections/${sessionId}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doc_type: code, storage_path: path, mime_type: out.type, file_size: out.size }),
+      });
+      if (!res.ok) throw new Error("upload failed");
+      setProvided((p) => ({ ...p, [code]: true }));
+    } catch {
+      toast.error(t("ui.uploadFailed"));
+    } finally {
+      setUploading(null);
+      setBusy(false);
+    }
+  }
+
+  const count = Object.values(provided).filter(Boolean).length;
+
+  return (
+    <StepShell kicker={t("wiz.docs.kicker")} question={t("wiz.docs.q")} helper={t("wiz.docs.helper")}>
+      <div className="space-y-2">
+        {docs.map((d) => (
+          <DocTile
+            key={d.code}
+            code={d.code}
+            label={t(`doc.${d.code}.title`)}
+            done={!!provided[d.code]}
+            busy={uploading === d.code}
+            onFile={(f) => upload(d.code, f)}
+          />
+        ))}
+      </div>
+      <Button className="mt-5 w-full" onClick={onDone} disabled={busy}>
+        {count > 0 ? `${t("wiz.continue")} (${count} ${t("wiz.docs.provided")})` : t("wiz.continue")}
+      </Button>
+    </StepShell>
+  );
+}
+
+function DocTile({
+  code,
+  label,
+  done,
+  busy,
+  onFile,
+}: {
+  code: string;
+  label: string;
+  done: boolean;
+  busy: boolean;
+  onFile: (file: File) => void;
+}) {
+  const { t } = useI18n();
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <button
+      type="button"
+      onClick={() => ref.current?.click()}
+      disabled={busy}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-xl border p-3 text-left text-sm transition-colors",
+        done ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB] hover:bg-secondary",
+      )}
+    >
+      <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", done ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]")}>
+        {busy ? <RefreshCw className="size-5 animate-spin" /> : done ? <CheckCircle2 className="size-5" /> : <FileText className="size-5" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-medium text-[#111827]">{label}</span>
+        <span className="block text-xs text-[#6B7280]">{done ? t("wiz.docs.added") : t("wiz.docs.add")}</span>
+      </span>
+      <Upload className="size-4 shrink-0 text-[#6B7280]" aria-hidden />
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*,application/pdf"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+          e.target.value = "";
+        }}
+      />
+    </button>
   );
 }
 
