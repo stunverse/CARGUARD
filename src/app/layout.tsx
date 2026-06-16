@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BRAND } from "@/lib/constants";
 import { Toaster } from "@/components/ui/toaster";
+import { I18nProvider } from "@/components/i18n-provider";
+import { getServerLocale } from "@/lib/i18n-server";
 
 export const metadata: Metadata = {
   title: `${BRAND.name} — ${BRAND.tagline}`,
@@ -28,16 +30,19 @@ export const viewport: Viewport = {
   viewportFit: "cover", // respect device safe areas (notch / home indicator)
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getServerLocale();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body>
-        {children}
-        <Toaster />
+        <I18nProvider locale={locale}>
+          {children}
+          <Toaster />
+        </I18nProvider>
       </body>
     </html>
   );

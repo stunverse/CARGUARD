@@ -33,6 +33,7 @@ import {
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
+import { useI18n } from "@/components/i18n-provider";
 import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
@@ -399,6 +400,7 @@ function VehicleStep({
   onAutoFill: (data: Record<string, string>) => void;
   onPick: (updates: Record<string, string>) => void;
 }) {
+  const { currency, unit } = useI18n();
   const step = VEHICLE_STEPS[vIndex];
 
   if (step.kind === "vin") return <VinStep vehicle={vehicle} setField={setField} onAutoFill={onAutoFill} />;
@@ -459,8 +461,14 @@ function VehicleStep({
     step.kind === "range"
       ? step.ranges!.map((r) => ({ value: String(r.value), label: r.label }))
       : step.options!;
+  const questionSuffix =
+    step.kind === "range"
+      ? step.key === "asking_price"
+        ? ` (${currency})`
+        : ` (${unit})`
+      : "";
   return (
-    <StepShell kicker="Vehicle" question={step.question!}>
+    <StepShell kicker="Vehicle" question={`${step.question!}${questionSuffix}`}>
       <div className="space-y-2">
         {opts.map((o) => {
           const active = vehicle[step.key!] === o.value;
@@ -481,7 +489,7 @@ function VehicleStep({
         })}
         {step.kind === "range" && (
           <ExactAmount
-            unit={step.key === "asking_price" ? "price" : "mileage"}
+            kind={step.key === "asking_price" ? "price" : "mileage"}
             onSubmit={(value) => onPick({ [step.key!]: String(value) })}
           />
         )}
@@ -492,14 +500,16 @@ function VehicleStep({
 
 // "Enter the exact amount" expandable entry shown under range options.
 function ExactAmount({
-  unit,
+  kind,
   onSubmit,
 }: {
-  unit: "price" | "mileage";
+  kind: "price" | "mileage";
   onSubmit: (value: number) => void;
 }) {
+  const { currency, unit } = useI18n();
   const [open, setOpen] = useState(false);
   const [val, setVal] = useState("");
+  const symbol = currency === "EUR" ? "€" : "$";
 
   if (!open) {
     return (
@@ -517,19 +527,19 @@ function ExactAmount({
   return (
     <div className="rounded-xl border border-[#E5E7EB] p-3">
       <div className="flex items-center gap-2">
-        {unit === "price" && <span className="text-sm text-[#6B7280]">$</span>}
+        {kind === "price" && <span className="text-sm text-[#6B7280]">{symbol}</span>}
         <Input
           autoFocus
           inputMode="numeric"
           value={val}
           onChange={(e) => setVal(e.target.value)}
-          placeholder={unit === "price" ? "e.g. 13500" : "e.g. 86250"}
+          placeholder={kind === "price" ? "e.g. 13500" : "e.g. 86250"}
           className="h-12 text-base"
           onKeyDown={(e) => {
             if (e.key === "Enter" && n > 0) onSubmit(n);
           }}
         />
-        {unit === "mileage" && <span className="text-sm text-[#6B7280]">mi</span>}
+        {kind === "mileage" && <span className="text-sm text-[#6B7280]">{unit}</span>}
       </div>
       <Button className="mt-3 w-full" onClick={() => n > 0 && onSubmit(n)} disabled={n <= 0}>
         Use this amount

@@ -9,7 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EngineAudioReportSection } from "@/components/engine-audio-report-section";
 import { MechanicalReportSection } from "@/components/mechanical-report-section";
-import { formatPrice, vehicleLabel } from "@/lib/utils";
+import { vehicleLabel } from "@/lib/utils";
+import { formatMoney, formatDistance } from "@/lib/i18n";
 import type { FinalReport } from "@/types";
 
 export function ReportPreview({ report }: { report: FinalReport }) {
@@ -35,8 +36,8 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         <CardContent>
           <h3 className="text-lg font-semibold">{vehicleLabel(v)}</h3>
           <dl className="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-            <Item label="Mileage" value={v.mileage} />
-            <Item label="Asking price" value={formatPrice(v.asking_price ?? null, v.currency ?? "USD")} />
+            <Item label="Mileage" value={formatDistance(v.mileage ?? null, v.currency)} />
+            <Item label="Asking price" value={formatMoney(v.asking_price ?? null, v.currency ?? "USD")} />
             <Item label="Seller" value={v.seller_type} />
             <Item label="VIN" value={v.vin} />
             <Item label="Country" value={v.country} />

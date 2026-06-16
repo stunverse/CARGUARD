@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Camera, Car, FileText, ShieldCheck, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
 
 const ITEMS = [
-  { href: "/dashboard", label: "Home", icon: ShieldCheck, match: (p: string) => p === "/dashboard" },
-  { href: "/inspections", label: "Inspections", icon: Car, match: (p: string) => p === "/inspections" || (p.startsWith("/inspections/") && !p.endsWith("/new")) },
-  { href: "/reports", label: "Reports", icon: FileText, match: (p: string) => p.startsWith("/reports") },
-  { href: "/settings", label: "Profile", icon: User, match: (p: string) => p.startsWith("/settings") },
+  { href: "/dashboard", key: "nav.home", icon: ShieldCheck, match: (p: string) => p === "/dashboard" },
+  { href: "/inspections", key: "nav.inspections", icon: Car, match: (p: string) => p === "/inspections" || (p.startsWith("/inspections/") && !p.endsWith("/new")) },
+  { href: "/reports", key: "nav.reports", icon: FileText, match: (p: string) => p.startsWith("/reports") },
+  { href: "/settings", key: "nav.profile", icon: User, match: (p: string) => p.startsWith("/settings") },
 ];
 
 export function BottomNavigation() {
@@ -55,11 +56,13 @@ function NavItem({
   item: (typeof ITEMS)[number];
   active: boolean;
 }) {
+  const { t } = useI18n();
   const Icon = item.icon;
+  const label = t(item.key);
   return (
     <Link
       href={item.href}
-      aria-label={item.label}
+      aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
@@ -74,7 +77,7 @@ function NavItem({
       >
         <Icon className="size-5" aria-hidden />
       </span>
-      {item.label}
+      {label}
     </Link>
   );
 }

@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity";
 import { checkInspectionQuota } from "@/lib/quota";
+import { getServerLocale } from "@/lib/i18n-server";
+import { localeCurrency } from "@/lib/i18n";
 
 // POST /api/inspections — create a vehicle + draft inspection session.
 export async function POST(request: NextRequest) {
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
       transmission: vehicleInput.transmission || null,
       mileage: num(vehicleInput.mileage),
       asking_price: num(vehicleInput.asking_price),
-      currency: vehicleInput.currency || "USD",
+      currency: vehicleInput.currency || localeCurrency(await getServerLocale()),
       seller_type: vehicleInput.seller_type || "unknown",
       listing_url: vehicleInput.listing_url || null,
       vin: vehicleInput.vin || null,

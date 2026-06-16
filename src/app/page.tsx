@@ -17,7 +17,10 @@ import {
   Wrench,
 } from "lucide-react";
 import { LogoMark } from "@/components/mobile/logo-mark";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { createClient } from "@/lib/supabase/server";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 const HOW_IT_WORKS = [
   { icon: Car, title: "Enter the vehicle details", text: "Type it in, or auto-fill instantly from the VIN." },
@@ -54,6 +57,7 @@ export default async function HomePage() {
     // Supabase not configured yet — render the public landing.
   }
   const startHref = authed ? "/dashboard" : "/signup";
+  const locale = await getServerLocale();
 
   return (
     <div className="min-h-screen w-full bg-[#EEF0F3]">
@@ -71,15 +75,16 @@ export default async function HomePage() {
         <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#EFEFEF] bg-white/85 px-5 py-3 backdrop-blur">
           <LogoMark href="/" size={24} />
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <Link href="/login" className="px-2 py-1 text-sm font-medium text-[#374151]">
-              Log in
+              {t(locale, "landing.login")}
             </Link>
             <Link
               href={startHref}
               className="rounded-full px-3 py-1.5 text-sm font-semibold text-white"
               style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
             >
-              Start
+              {t(locale, "common.start")}
             </Link>
           </div>
         </header>
@@ -89,16 +94,17 @@ export default async function HomePage() {
           <section className="pt-8 text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-3 py-1 text-xs font-medium text-[#374151]">
               <ShieldCheck className="size-3.5 text-[#E50914]" aria-hidden />
-              AI-powered hidden-defect detection
+              {t(locale, "landing.badge")}
             </span>
             <h1 className="mt-5 text-[30px] font-extrabold leading-[1.1] tracking-tight text-[#111827]">
-              Spot a <span className="text-[#E50914]">hidden defect</span> the
-              seller may be hiding — <span className="text-[#E50914]">before you buy</span>.
+              {t(locale, "landing.hero.pre")}{" "}
+              <span className="text-[#E50914]">{t(locale, "landing.hero.defect")}</span>{" "}
+              {t(locale, "landing.hero.mid")}{" "}
+              <span className="text-[#E50914]">{t(locale, "landing.hero.before")}</span>{" "}
+              {t(locale, "landing.hero.suffix")}
             </h1>
             <p className="mt-3 text-[15px] leading-snug text-[#6B7280]">
-              CarGuard AI guides you through exterior photos and engine &amp;
-              mechanical checks, then flags possible signs of past accidents,
-              body repairs, repainting and engine problems.
+              {t(locale, "landing.hero.subtitle")}
             </p>
 
             <div className="mt-6 space-y-3">
@@ -109,23 +115,21 @@ export default async function HomePage() {
               >
                 <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/15" />
                 <ScanLine className="size-5" aria-hidden />
-                Start an inspection
+                {t(locale, "landing.start")}
               </Link>
               <Link
                 href="#how"
                 className="flex h-14 w-full items-center justify-center rounded-2xl border border-[#E5E7EB] bg-white text-base font-semibold text-[#111827] transition-transform active:scale-[0.98]"
               >
-                See how it works
+                {t(locale, "landing.how")}
               </Link>
             </div>
-            <p className="mt-3 text-xs text-[#6B7280]">
-              Bodywork + engine checks · AI risk score · shareable PDF report
-            </p>
+            <p className="mt-3 text-xs text-[#6B7280]">{t(locale, "landing.tagline")}</p>
           </section>
 
           {/* How it works */}
           <section id="how" className="mt-12">
-            <h2 className="text-center text-2xl font-bold text-[#111827]">How it works</h2>
+            <h2 className="text-center text-2xl font-bold text-[#111827]">{t(locale, "landing.how.title")}</h2>
             <div className="mt-5 space-y-3">
               {HOW_IT_WORKS.map((step, i) => (
                 <div
@@ -147,25 +151,22 @@ export default async function HomePage() {
 
           {/* What we check */}
           <section id="checks" className="mt-12">
-            <h2 className="text-center text-2xl font-bold text-[#111827]">What CarGuard AI checks</h2>
+            <h2 className="text-center text-2xl font-bold text-[#111827]">{t(locale, "landing.checks.title")}</h2>
             <p className="mx-auto mt-2 max-w-xs text-center text-sm text-[#6B7280]">
-              Two complementary modules — the bodywork and the engine &amp;
-              mechanical condition.
+              {t(locale, "landing.checks.subtitle")}
             </p>
             <div className="mt-5 space-y-4">
-              <CheckGroup title="Bodywork & accident signs" icon={Camera} items={BODYWORK} />
-              <CheckGroup title="Engine & mechanical" icon={Wrench} items={ENGINE} />
+              <CheckGroup title={t(locale, "landing.checks.bodywork")} icon={Camera} items={BODYWORK} />
+              <CheckGroup title={t(locale, "landing.checks.engine")} icon={Wrench} items={ENGINE} />
             </div>
           </section>
 
           {/* Why it matters */}
           <section className="mt-12 text-center">
             <Lightbulb className="mx-auto mb-3 size-9 text-[#27D3D8]" aria-hidden />
-            <h2 className="text-2xl font-bold text-[#111827]">Why it matters</h2>
+            <h2 className="text-2xl font-bold text-[#111827]">{t(locale, "landing.why.title")}</h2>
             <p className="mt-3 text-[15px] leading-snug text-[#6B7280]">
-              Some used cars are patched up quickly before resale — a repainted
-              panel, a head-gasket issue, a warning light cleared just before the
-              viewing. CarGuard AI helps you spot the signs before you pay.
+              {t(locale, "landing.why.body")}
             </p>
             <div className="mt-5 rounded-2xl border border-[#E5E7EB] bg-[#F7F8FA] p-4 text-left text-xs text-[#6B7280]">
               CarGuard AI provides a preliminary, photo- and sound-based
@@ -180,7 +181,7 @@ export default async function HomePage() {
               href="/pricing"
               className="inline-flex items-center gap-1 rounded-full bg-[#F2F3F5] px-5 py-2.5 text-sm font-semibold text-[#111827]"
             >
-              View pricing <ChevronRight className="size-4" aria-hidden />
+              {t(locale, "landing.pricing")} <ChevronRight className="size-4" aria-hidden />
             </Link>
           </section>
 

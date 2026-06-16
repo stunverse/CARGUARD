@@ -7,6 +7,7 @@
 import PDFDocument from "pdfkit";
 import type { FinalReport } from "@/types";
 import { vehicleLabel } from "@/lib/utils";
+import { formatMoney, formatDistance } from "@/lib/i18n";
 import { ENGINE_SOUND_LABELS } from "@/lib/constants";
 
 const RED = "#b91c1c";
@@ -44,8 +45,8 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
     body(vehicleLabel(report.vehicle));
     muted(
       [
-        `Mileage: ${report.vehicle.mileage ?? "—"}`,
-        `Asking price: ${report.vehicle.asking_price ?? "—"} ${report.vehicle.currency ?? ""}`,
+        `Mileage: ${formatDistance(report.vehicle.mileage ?? null, report.vehicle.currency)}`,
+        `Asking price: ${formatMoney(report.vehicle.asking_price ?? null, report.vehicle.currency ?? "USD")}`,
         `Seller: ${report.vehicle.seller_type ?? "—"}`,
         report.vehicle.vin ? `VIN: ${report.vehicle.vin}` : "",
       ]

@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Bell, ChevronRight, Menu, ScanLine } from "lucide-react";
 import { LogoMark } from "@/components/mobile/logo-mark";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const metadata = { title: "CarGuard AI" };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const locale = await getServerLocale();
+  const title = t(locale, "home.hero.title").split("\n");
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col px-5">
       {/* Header */}
@@ -30,12 +34,15 @@ export default function DashboardPage() {
       {/* Centered hero + single action */}
       <div className="flex flex-1 flex-col items-center justify-center text-center">
         <h1 className="text-[34px] font-extrabold leading-[1.05] tracking-tight text-[#111827]">
-          Protect your
-          <br />
-          next car purchase
+          {title.map((line, i) => (
+            <span key={i}>
+              {line}
+              {i < title.length - 1 && <br />}
+            </span>
+          ))}
         </h1>
         <p className="mt-3 max-w-xs text-[15px] leading-snug text-[#6B7280]">
-          Detect hidden accident or mechanical defects before you buy a used car.
+          {t(locale, "home.hero.subtitle")}
         </p>
 
         <Link
@@ -45,14 +52,11 @@ export default function DashboardPage() {
         >
           <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/15" />
           <ScanLine className="size-5" aria-hidden />
-          <span>Start Inspection</span>
+          <span>{t(locale, "home.start")}</span>
           <ChevronRight className="size-5 opacity-90" aria-hidden />
         </Link>
 
-        <p className="mt-3 max-w-xs text-xs text-[#6B7280]">
-          One inspection: exterior photos, engine audio and mechanical checks —
-          then a report with a confidence score.
-        </p>
+        <p className="mt-3 max-w-xs text-xs text-[#6B7280]">{t(locale, "home.caption")}</p>
       </div>
     </div>
   );

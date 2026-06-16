@@ -31,7 +31,8 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { PHOTO_POINTS, RECOMMENDATION_COPY } from "@/lib/constants";
 import { MECHANICAL_RISK_COPY } from "@/lib/mechanical";
-import { formatDate, formatPrice } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { formatMoney, formatDistance } from "@/lib/i18n";
 import type {
   EngineAudioCheck,
   FinalReport,
@@ -118,8 +119,8 @@ export function InspectionTabs({
                 <Info label="Make" value={vehicle?.make} />
                 <Info label="Model" value={vehicle?.model} />
                 <Info label="Year" value={vehicle?.year} />
-                <Info label="Mileage" value={vehicle?.mileage} />
-                <Info label="Asking price" value={formatPrice(vehicle?.asking_price, vehicle?.currency ?? "USD")} />
+                <Info label="Mileage" value={formatDistance(vehicle?.mileage ?? null, vehicle?.currency)} />
+                <Info label="Asking price" value={formatMoney(vehicle?.asking_price ?? null, vehicle?.currency ?? "USD")} />
                 <Info label="Seller" value={vehicle?.seller_type} />
                 <Info label="VIN" value={vehicle?.vin} />
                 <Info label="Country" value={vehicle?.country} />
