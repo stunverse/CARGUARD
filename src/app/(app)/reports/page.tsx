@@ -35,7 +35,7 @@ export default async function ReportsPage() {
           actionHref="/inspections/new"
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0 xl:grid-cols-3">
           {list.map((r) => {
             const content = r.report_content as FinalReport | null;
             return (

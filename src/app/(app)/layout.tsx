@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { SideNav } from "@/components/desktop/side-nav";
+import { DesktopTopbar } from "@/components/desktop/desktop-topbar";
 import { createClient } from "@/lib/supabase/server";
 
 // Responsive app shell.
@@ -51,6 +52,8 @@ export default async function AppLayout({
           className="pointer-events-none absolute right-[-100px] top-[-60px] h-64 w-64 rounded-full blur-3xl lg:hidden"
           style={{ background: "rgba(229,9,20,0.10)" }}
         />
+
+        <DesktopTopbar />
 
         <div className="relative min-h-screen pb-28 lg:pb-12">
           <div className="lg:mx-auto lg:max-w-5xl">{children}</div>
