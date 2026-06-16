@@ -27,9 +27,7 @@ import {
 import {
   catalogYears,
   FUEL_OPTIONS,
-  MILEAGE_BRACKETS,
   POPULAR_MAKES,
-  PRICE_BRACKETS,
   TRANSMISSION_OPTIONS,
 } from "@/lib/vehicle-catalog";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
@@ -43,14 +41,13 @@ import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
 type Phase = "vehicle" | "payment" | "photos" | "mech" | "review" | "finishing";
 
-type VKind = "vin" | "make" | "year" | "model" | "select" | "range";
+type VKind = "vin" | "make" | "year" | "model" | "select" | "number";
 interface VStepDef {
   kind: VKind;
   key?: string;
   question?: string;
   required?: boolean;
   options?: readonly { value: string; label: string }[];
-  ranges?: { value: number; label: string }[];
 }
 
 const VEHICLE_STEPS: VStepDef[] = [
@@ -60,8 +57,8 @@ const VEHICLE_STEPS: VStepDef[] = [
   { kind: "model", required: true },
   { kind: "select", key: "fuel_type", question: "Fuel / engine type?", options: FUEL_OPTIONS },
   { kind: "select", key: "transmission", question: "Transmission?", options: TRANSMISSION_OPTIONS },
-  { kind: "range", key: "mileage", question: "What's the mileage?", ranges: MILEAGE_BRACKETS },
-  { kind: "range", key: "asking_price", question: "What's the asking price?", ranges: PRICE_BRACKETS },
+  { kind: "number", key: "mileage", question: "What's the mileage?" },
+  { kind: "number", key: "asking_price", question: "What's the asking price?" },
   { kind: "select", key: "seller_type", question: "Who is selling it?", options: SELLER_TYPE_OPTIONS },
   { kind: "select", key: "goal", question: "What do you want to check?", options: INSPECTION_GOAL_OPTIONS },
 ];
@@ -526,17 +523,22 @@ function VehicleStep({
     );
   }
 
-  // select / range → tappable option list
-  const opts =
-    step.kind === "range"
-      ? step.ranges!.map((r) => ({ value: String(r.value), label: r.label }))
-      : step.options!;
-  const questionSuffix =
-    step.kind === "range"
-      ? step.key === "asking_price"
-        ? ` (${currency})`
-        : ` (${unit})`
-      : "";
+  // number → precise numeric entry (mileage, asking price)
+  if (step.kind === "number") {
+    const suffix = step.key === "asking_price" ? ` (${currency})` : ` (${unit})`;
+    return (
+      <StepShell kicker={t("wiz.vehicle")} question={`${t(`veh.q.${step.key}`)}${suffix}`}>
+        <NumberStep
+          stepKey={step.key!}
+          value={vehicle[step.key!] ?? ""}
+          onSubmit={(v) => onPick({ [step.key!]: String(v) })}
+        />
+      </StepShell>
+    );
+  }
+
+  // select → tappable option list
+  const opts = step.options!;
   const optGroup =
     step.key === "fuel_type"
       ? "fuel"
@@ -548,7 +550,7 @@ function VehicleStep({
             ? "goal"
             : null;
   return (
-    <StepShell kicker={t("wiz.vehicle")} question={`${t(`veh.q.${step.key}`)}${questionSuffix}`}>
+    <StepShell kicker={t("wiz.vehicle")} question={t(`veh.q.${step.key}`)}>
       <div className="space-y-2">
         {opts.map((o) => {
           const active = vehicle[step.key!] === o.value;
@@ -568,62 +570,48 @@ function VehicleStep({
             </button>
           );
         })}
-        {step.kind === "range" && (
-          <ExactAmount
-            kind={step.key === "asking_price" ? "price" : "mileage"}
-            onSubmit={(value) => onPick({ [step.key!]: String(value) })}
-          />
-        )}
       </div>
     </StepShell>
   );
 }
 
-// "Enter the exact amount" expandable entry shown under range options.
-function ExactAmount({
-  kind,
+// Precise numeric entry for mileage / asking price (no preset brackets).
+function NumberStep({
+  stepKey,
+  value,
   onSubmit,
 }: {
-  kind: "price" | "mileage";
+  stepKey: string;
+  value: string;
   onSubmit: (value: number) => void;
 }) {
   const { t, currency, unit } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [val, setVal] = useState("");
+  const isPrice = stepKey === "asking_price";
+  const [val, setVal] = useState(value ?? "");
   const symbol = currency === "EUR" ? "€" : "$";
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-[#E5E7EB] p-3 text-sm font-medium text-[#6B7280]"
-      >
-        {t("wiz.enterExact")}
-      </button>
-    );
-  }
-
   const n = Number(val.replace(/[^\d]/g, ""));
+
   return (
-    <div className="rounded-xl border border-[#E5E7EB] p-3">
-      <div className="flex items-center gap-2">
-        {kind === "price" && <span className="text-sm text-[#6B7280]">{symbol}</span>}
+    <div>
+      <div className="flex items-center gap-2 rounded-xl border border-[#E5E7EB] p-3">
+        {isPrice && <span className="text-base text-[#6B7280]">{symbol}</span>}
         <Input
           autoFocus
           inputMode="numeric"
           value={val}
           onChange={(e) => setVal(e.target.value)}
-          placeholder={kind === "price" ? "e.g. 13500" : "e.g. 86250"}
-          className="h-12 text-base"
+          placeholder={isPrice ? "13500" : "86250"}
+          className="h-14 border-0 px-1 text-lg shadow-none focus-visible:ring-0"
           onKeyDown={(e) => {
             if (e.key === "Enter" && n > 0) onSubmit(n);
           }}
         />
-        {kind === "mileage" && <span className="text-sm text-[#6B7280]">{unit}</span>}
+        <span className="shrink-0 text-sm font-medium text-[#6B7280]">
+          {isPrice ? currency : unit}
+        </span>
       </div>
-      <Button className="mt-3 w-full" onClick={() => n > 0 && onSubmit(n)} disabled={n <= 0}>
-        {t("wiz.useAmount")}
+      <Button className="mt-5 w-full" onClick={() => n > 0 && onSubmit(n)} disabled={n <= 0}>
+        {t("wiz.continue")}
       </Button>
     </div>
   );
