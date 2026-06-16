@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -159,39 +159,66 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     }
   }
 
-  async function createSessionAndStartPhotos() {
-    if (sessionId) {
-      setPhase("photos");
-      setPIndex(0);
-      return;
+  // Create the draft inspection once, as early as the first question, so the
+  // buyer can leave and resume at any time. Concurrent callers share the same
+  // in-flight promise to avoid creating duplicate drafts.
+  const draftPromiseRef = useRef<Promise<string | null> | null>(null);
+
+  function ensureDraft(data: Record<string, string>): Promise<string | null> {
+    if (sessionId) return Promise.resolve(sessionId);
+    if (!draftPromiseRef.current) {
+      draftPromiseRef.current = (async () => {
+        try {
+          const res = await fetch("/api/inspections", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...data, goal: data.goal }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error ?? "Could not start the inspection.");
+          setSessionId(d.sessionId);
+          return d.sessionId as string;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Something went wrong.";
+          setError(msg);
+          toast.error(msg);
+          draftPromiseRef.current = null; // allow a retry
+          return null;
+        }
+      })();
     }
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/inspections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...vehicle, goal: vehicle.goal }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Could not start the inspection.");
-      setSessionId(data.sessionId);
-      setPhase("photos");
-      setPIndex(0);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Something went wrong.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setBusy(false);
-    }
+    return draftPromiseRef.current;
   }
 
-  function nextVehicle() {
-    if (vIndex < vehicleStepCount - 1) {
-      setVIndex((i) => i + 1);
+  // Persist the accumulated vehicle answers to the draft (fire-and-forget).
+  function patchDraft(sid: string, data: Record<string, string>) {
+    fetch(`/api/inspections/${sid}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...data, goal: data.goal }),
+    }).catch(() => {});
+  }
+
+  // Create the draft as soon as the wizard opens (unless resuming one).
+  useEffect(() => {
+    if (!resume && !sessionId) ensureDraft({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function nextVehicle(override?: Record<string, string>) {
+    const data = override ?? vehicle;
+    setError(null);
+    const last = vIndex >= vehicleStepCount - 1;
+    setBusy(true);
+    const sid = sessionId ?? (await ensureDraft(data));
+    setBusy(false);
+    if (!sid) return; // draft creation failed — stay on this step
+    patchDraft(sid, data);
+    if (last) {
+      setPhase("photos");
+      setPIndex(0);
     } else {
-      createSessionAndStartPhotos();
+      setVIndex((i) => i + 1);
     }
   }
 
@@ -330,8 +357,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
             setField={setField}
             onAutoFill={(data) => setVehicle((v) => ({ ...v, ...data }))}
             onPick={(updates) => {
-              setVehicle((v) => ({ ...v, ...updates }));
-              nextVehicle();
+              const merged = { ...vehicle, ...updates };
+              setVehicle(merged);
+              nextVehicle(merged);
             }}
           />
         )}
@@ -387,7 +415,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
           vIndex={vIndex}
           busy={busy}
           photoStatus={phase === "photos" ? photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending" : undefined}
-          onVehicleNext={nextVehicle}
+          onVehicleNext={() => nextVehicle()}
           onPhotoNext={nextPhoto}
           onPhotoSkip={() => skipPhoto(PHOTO_POINTS[pIndex].code)}
           onFinish={finish}
