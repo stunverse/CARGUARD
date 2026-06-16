@@ -204,4 +204,64 @@ export function localizedRiskLevel(level: RiskLevel | null | undefined, locale: 
   return locale === "fr" ? RISK_LEVEL_FR[level] : enCopy[level];
 }
 
-export const _mechReco: MechanicalRecommendation | null = null; // (reserved)
+// Long recommendation paragraphs (FR).
+export const RECO_TEXT_FR: Record<Recommendation, string> = {
+  buy: "Aucun signe évident d'accident ou de réparation importante n'a été détecté sur les photos fournies. Le véhicule paraît visuellement cohérent. Cela ne garantit pas qu'il n'a jamais été endommagé. Une inspection professionnelle et un rapport d'historique restent recommandés.",
+  negotiate: "Certains éléments visuels doivent être vérifiés avant l'achat. Demandez au vendeur d'éventuelles réparations, repeintes ou antécédents d'accident. Utilisez les points signalés comme arguments de négociation.",
+  professional_inspection: "Plusieurs signes visuels pourraient suggérer des réparations passées ou des dommages d'accident. Ne versez pas d'acompte avant une inspection professionnelle ou un passage en carrosserie.",
+  avoid: "Les photos montrent plusieurs signes préoccupants compatibles avec un accident ou des réparations. Il peut être plus prudent d'éviter ce véhicule, sauf si une inspection professionnelle confirme le contraire.",
+  insufficient_photos: "Les photos fournies ne suffisent pas à une analyse fiable. Reprenez les photos signalées avec le véhicule entièrement visible et une bonne lumière.",
+};
+
+export const MECH_RECO_FR: Record<MechanicalRecommendation, string> = {
+  normal: "Aucun problème mécanique évident n'a été signalé d'après les contrôles fournis. Cela ne garantit pas l'état du moteur.",
+  monitor: "Quelques points méritent d'être surveillés. Demandez des précisions au vendeur et les factures d'entretien.",
+  ask_seller_questions: "Certains éléments doivent être clarifiés avec le vendeur avant l'achat.",
+  professional_inspection: "Plusieurs constats peuvent suggérer un problème mécanique. Une inspection par un mécanicien professionnel est recommandée avant l'achat.",
+  avoid_without_diagnosis: "Des constats préoccupants ont été signalés. N'achetez pas sans un diagnostic mécanique professionnel.",
+  insufficient_data: "Pas assez de contrôles mécaniques réalisés pour une évaluation fiable.",
+};
+
+export const ENGINE_AUDIO_RISK_FR: Record<string, string> = {
+  low: "Son normal",
+  moderate: "Risque faible à modéré",
+  high: "Risque modéré à élevé",
+  very_high: "Risque élevé",
+  insufficient_audio: "Audio insuffisant",
+};
+
+export const ENGINE_AUDIO_RECO_FR: Record<string, string> = {
+  normal_sound: "Le son de démarrage paraît normal dans l'audio fourni. Aucun bruit suspect évident. Cela ne garantit pas l'état du moteur.",
+  monitor: "Quelques sons méritent d'être surveillés, mais rien de critique. Gardez-les en tête et demandez des précisions au vendeur.",
+  ask_seller_questions: "Certains sons devraient être clarifiés avec le vendeur avant l'achat.",
+  professional_inspection: "Des sons suspects peuvent suggérer un problème mécanique. Une inspection par un mécanicien est recommandée avant l'achat.",
+  avoid_without_diagnosis: "Des sons préoccupants ont été détectés. N'achetez pas sans un diagnostic mécanique professionnel.",
+  insufficient_audio: "L'audio ne suffit pas à une analyse fiable. Réenregistrez dans un endroit plus calme, moteur bien audible dès le démarrage.",
+};
+
+export const ENGINE_SOUND_FR: Record<string, string> = {
+  hard_start: "Démarrage difficile",
+  knocking: "Cognement",
+  metallic_rattling: "Cliquetis métallique",
+  timing_chain_rattle: "Bruit de chaîne de distribution",
+  belt_squeal: "Couinement de courroie",
+  rough_idle: "Ralenti instable",
+  misfire_like_sound: "Bruit de ratés",
+  starter_issue: "Problème de démarreur",
+  exhaust_leak_suspicion: "Suspicion de fuite d'échappement",
+  air_leak_suspicion: "Suspicion de prise d'air",
+  turbo_whistle_abnormal: "Sifflement turbo anormal",
+  normal_startup: "Démarrage normal",
+  other: "Autre",
+};
+
+// Generic locale picker: FR map when fr, else the English fallback map.
+export function pick<T extends string>(
+  locale: Locale,
+  key: T | null | undefined,
+  frMap: Record<string, string>,
+  enMap: Record<string, string>,
+): string {
+  if (!key) return "";
+  return (locale === "fr" ? frMap[key] : enMap[key]) ?? enMap[key] ?? key;
+}

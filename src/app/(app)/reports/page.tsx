@@ -5,11 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { RiskLevelBadge } from "@/components/risk-indicators";
 import { formatDate, vehicleLabel } from "@/lib/utils";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import type { FinalReport } from "@/types";
 
 export const metadata = { title: "Reports — CarGuard AI" };
 
 export default async function ReportsPage() {
+  const locale = await getServerLocale();
   const supabase = await createClient();
 
   const { data: reports } = await supabase
@@ -21,14 +24,14 @@ export default async function ReportsPage() {
 
   return (
     <div className="px-5 py-6">
-      <h1 className="mb-5 text-2xl font-bold text-[#111827]">Reports</h1>
+      <h1 className="mb-5 text-2xl font-bold text-[#111827]">{t(locale, "list.reports")}</h1>
 
       {list.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No reports yet"
-          description="Generate a report from a completed inspection to find it here."
-          actionLabel="Start an inspection"
+          title={t(locale, "list.noReports")}
+          description={t(locale, "list.noReportsDesc")}
+          actionLabel={t(locale, "list.startInspection")}
           actionHref="/inspections/new"
         />
       ) : (
@@ -44,7 +47,7 @@ export default async function ReportsPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold">
-                        {content ? vehicleLabel(content.vehicle) : "Inspection report"}
+                        {content ? vehicleLabel(content.vehicle) : t(locale, "list.reportFallback")}
                       </p>
                       <p className="text-xs text-muted-foreground">{formatDate(r.created_at)}</p>
                       {content && (

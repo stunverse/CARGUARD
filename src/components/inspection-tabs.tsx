@@ -31,6 +31,8 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { PHOTO_POINTS, RECOMMENDATION_COPY } from "@/lib/constants";
 import { MECHANICAL_RISK_COPY } from "@/lib/mechanical";
+import { useI18n } from "@/components/i18n-provider";
+import { MECH_RISK_FR, RECO_TEXT_FR, pick } from "@/lib/content-i18n";
 import { formatDate } from "@/lib/utils";
 import { formatMoney, formatDistance } from "@/lib/i18n";
 import type {
@@ -85,6 +87,7 @@ export function InspectionTabs({
   }[];
   report: FinalReport | null;
 }) {
+  const { locale, t } = useI18n();
   const analyzed = session.global_score != null;
   const completed = photos.filter((p) =>
     ["passed", "skipped"].includes(p.quality_status),
@@ -95,14 +98,14 @@ export function InspectionTabs({
   return (
     <Tabs defaultValue="overview">
       <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="photos">Photos</TabsTrigger>
-        <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
-        <TabsTrigger value="scores">Scores</TabsTrigger>
-        <TabsTrigger value="followups">Follow-up photos</TabsTrigger>
-        <TabsTrigger value="engine-mechanical">Engine &amp; Mechanical</TabsTrigger>
-        <TabsTrigger value="report">Report</TabsTrigger>
-        <TabsTrigger value="activity">Activity log</TabsTrigger>
+        <TabsTrigger value="overview">{t("tab.overview")}</TabsTrigger>
+        <TabsTrigger value="photos">{t("tab.photos")}</TabsTrigger>
+        <TabsTrigger value="analysis">{t("tab.analysis")}</TabsTrigger>
+        <TabsTrigger value="scores">{t("tab.scores")}</TabsTrigger>
+        <TabsTrigger value="followups">{t("tab.followups")}</TabsTrigger>
+        <TabsTrigger value="engine-mechanical">{t("tab.engine")}</TabsTrigger>
+        <TabsTrigger value="report">{t("tab.report")}</TabsTrigger>
+        <TabsTrigger value="activity">{t("tab.activity")}</TabsTrigger>
       </TabsList>
 
       {/* Overview */}
@@ -111,19 +114,19 @@ export function InspectionTabs({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Car className="size-5 text-primary" /> Vehicle information
+                <Car className="size-5 text-primary" /> {t("tab.vehicleInfo")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid grid-cols-2 gap-3 text-sm">
-                <Info label="Make" value={vehicle?.make} />
-                <Info label="Model" value={vehicle?.model} />
-                <Info label="Year" value={vehicle?.year} />
-                <Info label="Mileage" value={formatDistance(vehicle?.mileage ?? null, vehicle?.currency)} />
-                <Info label="Asking price" value={formatMoney(vehicle?.asking_price ?? null, vehicle?.currency ?? "USD")} />
-                <Info label="Seller" value={vehicle?.seller_type} />
-                <Info label="VIN" value={vehicle?.vin} />
-                <Info label="Country" value={vehicle?.country} />
+                <Info label={t("lbl.make")} value={vehicle?.make} />
+                <Info label={t("lbl.model")} value={vehicle?.model} />
+                <Info label={t("lbl.year")} value={vehicle?.year} />
+                <Info label={t("lbl.mileage")} value={formatDistance(vehicle?.mileage ?? null, vehicle?.currency)} />
+                <Info label={t("lbl.askingPrice")} value={formatMoney(vehicle?.asking_price ?? null, vehicle?.currency ?? "USD")} />
+                <Info label={t("lbl.seller")} value={vehicle?.seller_type} />
+                <Info label={t("lbl.vin")} value={vehicle?.vin} />
+                <Info label={t("lbl.country")} value={vehicle?.country} />
               </dl>
               {analyzed && session.ai_summary && (
                 <p className="mt-4 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
@@ -137,7 +140,7 @@ export function InspectionTabs({
             {analyzed ? (
               <Card>
                 <CardContent className="flex flex-col items-center gap-3 p-6">
-                  <RiskScoreCircle score={session.global_score} label="Global score" />
+                  <RiskScoreCircle score={session.global_score} label={t("score.global")} />
                   <div className="flex flex-wrap justify-center gap-2">
                     <RiskLevelBadge level={session.risk_level} />
                     <RecommendationBadge recommendation={rec} />
@@ -148,9 +151,9 @@ export function InspectionTabs({
               <Card className="border-accent/30 bg-accent/5">
                 <CardContent className="p-6 text-center">
                   <Camera className="mx-auto mb-2 size-8 text-accent" />
-                  <p className="text-sm">{completed}/8 photos completed.</p>
+                  <p className="text-sm">{completed}/8 {t("tab.photosCompleted")}</p>
                   <Button asChild className="mt-3 w-full">
-                    <Link href={`/inspections/${session.id}/photos`}>Continue scanner</Link>
+                    <Link href={`/inspections/${session.id}/photos`}>{t("tab.continueScanner")}</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -160,7 +163,7 @@ export function InspectionTabs({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Volume2 className="size-4 text-accent" /> Engine &amp; Mechanical
+                  <Volume2 className="size-4 text-accent" /> {t("tab.engine")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
@@ -177,17 +180,14 @@ export function InspectionTabs({
                     </Badge>
                     <span className="text-muted-foreground">
                       {session.mechanical_risk_level
-                        ? MECHANICAL_RISK_COPY[session.mechanical_risk_level]
+                        ? pick(locale, session.mechanical_risk_level, MECH_RISK_FR, MECHANICAL_RISK_COPY)
                         : ""}
                     </span>
                   </div>
                 ) : (
-                  <Badge variant="secondary">Not started</Badge>
+                  <Badge variant="secondary">{t("tab.notStarted")}</Badge>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Optional: guided engine checks (cold start, smoke, oil, coolant,
-                  leaks, noises…) + AI startup-sound analysis.
-                </p>
+                <p className="text-xs text-muted-foreground">{t("tab.engineOptional")}</p>
               </CardContent>
             </Card>
 
@@ -202,7 +202,7 @@ export function InspectionTabs({
         <div className="mb-4 flex justify-end">
           <Button asChild variant="outline">
             <Link href={`/inspections/${session.id}/photos`}>
-              <Camera className="size-4" /> Open scanner
+              <Camera className="size-4" /> {t("tab.openScanner")}
             </Link>
           </Button>
         </div>
@@ -233,7 +233,7 @@ export function InspectionTabs({
                               : "outline"
                       }
                     >
-                      {ph?.quality_status ?? "pending"}
+                      {ph?.quality_status ?? t("tab.pending")}
                     </Badge>
                   </div>
                 </CardContent>
@@ -246,12 +246,12 @@ export function InspectionTabs({
       {/* AI Analysis */}
       <TabsContent value="analysis">
         {!analyzed ? (
-          <EmptyState title="No analysis yet" description="Run the AI analysis from the scanner." actionLabel="Go to scanner" actionHref={`/inspections/${session.id}/photos`} />
+          <EmptyState title={t("tab.noAnalysis")} description={t("tab.noAnalysisDesc")} actionLabel={t("an.goScanner")} actionHref={`/inspections/${session.id}/photos`} />
         ) : (
           <div className="space-y-6">
             {rec && (
               <Card>
-                <CardContent className="p-4 text-sm">{RECOMMENDATION_COPY[rec].text}</CardContent>
+                <CardContent className="p-4 text-sm">{pick(locale, rec, RECO_TEXT_FR, Object.fromEntries(Object.entries(RECOMMENDATION_COPY).map(([k, v]) => [k, v.text])))}</CardContent>
               </Card>
             )}
             <div className="grid gap-4 md:grid-cols-2">
@@ -260,7 +260,7 @@ export function InspectionTabs({
               <SellerQuestionsList items={report?.questions_to_ask_seller ?? []} />
               <NegotiationArgumentsList items={report?.negotiation_arguments ?? []} />
             </div>
-            <h3 className="text-lg font-semibold">Photo-by-photo</h3>
+            <h3 className="text-lg font-semibold">{t("tab.photoByPhoto")}</h3>
             <div className="grid gap-4 md:grid-cols-2">
               {analyzedPhotos.map((p) => (
                 <PhotoAnalysisCard key={p.id} photo={p} />
@@ -273,19 +273,19 @@ export function InspectionTabs({
       {/* Scores */}
       <TabsContent value="scores">
         {!analyzed ? (
-          <EmptyState title="No scores yet" description="Run the analysis to compute scores." />
+          <EmptyState title={t("tab.noScores")} description={t("tab.noScoresDesc")} />
         ) : (
           <Card>
             <CardContent className="p-6">
               <ScoreBreakdown
                 scores={[
-                  { label: "Accident / repair", value: session.accident_repair_score, description: SCORE_HELP["Accident / repair"] },
-                  { label: "Alignment", value: session.alignment_score, description: SCORE_HELP["Alignment"] },
-                  { label: "Paint / tone", value: session.paint_tone_score, description: SCORE_HELP["Paint / tone"] },
-                  { label: "Symmetry", value: session.symmetry_score, description: SCORE_HELP["Symmetry"] },
-                  { label: "Bumpers / lights", value: session.bumpers_lights_score, description: SCORE_HELP["Bumpers / lights"] },
-                  { label: "Overall consistency", value: session.overall_consistency_score, description: SCORE_HELP["Overall consistency"] },
-                  { label: "Model risk", value: session.model_risk_score, description: SCORE_HELP["Model risk"] },
+                  { label: t("score.accidentRepair"), value: session.accident_repair_score, description: SCORE_HELP["Accident / repair"] },
+                  { label: t("score.alignment"), value: session.alignment_score, description: SCORE_HELP["Alignment"] },
+                  { label: t("score.paintTone"), value: session.paint_tone_score, description: SCORE_HELP["Paint / tone"] },
+                  { label: t("score.symmetry"), value: session.symmetry_score, description: SCORE_HELP["Symmetry"] },
+                  { label: t("score.bumpersLights"), value: session.bumpers_lights_score, description: SCORE_HELP["Bumpers / lights"] },
+                  { label: t("score.overallConsistency"), value: session.overall_consistency_score, description: SCORE_HELP["Overall consistency"] },
+                  { label: t("score.modelRisk"), value: session.model_risk_score, description: SCORE_HELP["Model risk"] },
                 ]}
               />
             </CardContent>
@@ -296,7 +296,7 @@ export function InspectionTabs({
       {/* Follow-up photos */}
       <TabsContent value="followups">
         {followUps.length === 0 ? (
-          <EmptyState title="No follow-up photos requested" description="The AI requests close-ups only when it detects something worth a second look." />
+          <EmptyState title={t("tab.noFollowups")} description={t("tab.noFollowupsDesc")} />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {followUps.map((f) => (
@@ -316,11 +316,8 @@ export function InspectionTabs({
             mechanicalRisk={session.mechanical_risk_level}
           />
           <div>
-            <h3 className="mb-1 text-lg font-semibold">Deep engine-sound analysis (AI)</h3>
-            <p className="mb-3 text-sm text-muted-foreground">
-              Optional: upload an MP3/WAV of the cold start for an AI analysis of
-              the startup sound (complements the cold-start step above).
-            </p>
+            <h3 className="mb-1 text-lg font-semibold">{t("tab.deepAudio")}</h3>
+            <p className="mb-3 text-sm text-muted-foreground">{t("tab.deepAudioDesc")}</p>
             <EngineAudioTab sessionId={session.id} initialCheck={engineAudio} />
           </div>
         </div>
@@ -337,11 +334,11 @@ export function InspectionTabs({
           </div>
         ) : analyzed ? (
           <div className="flex flex-col items-center gap-4 py-10">
-            <p className="text-muted-foreground">No report generated yet.</p>
+            <p className="text-muted-foreground">{t("tab.noReportGenerated")}</p>
             <GenerateReportButton sessionId={session.id} />
           </div>
         ) : (
-          <EmptyState title="No report yet" description="Run the analysis first." />
+          <EmptyState title={t("tab.noReport")} description={t("tab.noReportDesc")} />
         )}
       </TabsContent>
 
@@ -349,7 +346,7 @@ export function InspectionTabs({
       <TabsContent value="activity">
         <Card>
           <CardContent className="space-y-2 p-4 text-sm">
-            {logs.length === 0 && <p className="text-muted-foreground">No activity yet.</p>}
+            {logs.length === 0 && <p className="text-muted-foreground">{t("tab.noActivity")}</p>}
             {logs.map((l) => (
               <div key={l.id} className="flex justify-between gap-3 border-b pb-2 last:border-0">
                 <span>{l.action_description || l.action_type.replaceAll("_", " ")}</span>

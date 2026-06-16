@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -5,6 +7,8 @@ import {
   RISK_LEVEL_COPY,
   scoreToRiskLevel,
 } from "@/lib/constants";
+import { useI18n } from "@/components/i18n-provider";
+import { RECOMMENDATION_LABEL_FR, RISK_LEVEL_FR } from "@/lib/content-i18n";
 import type { Recommendation, RiskLevel } from "@/types";
 
 const riskVariant: Record<RiskLevel, "low" | "moderate" | "high" | "critical"> = {
@@ -15,8 +19,10 @@ const riskVariant: Record<RiskLevel, "low" | "moderate" | "high" | "critical"> =
 };
 
 export function RiskLevelBadge({ level }: { level: RiskLevel | null | undefined }) {
-  if (!level) return <Badge variant="secondary">Not analyzed</Badge>;
-  return <Badge variant={riskVariant[level]}>{RISK_LEVEL_COPY[level]}</Badge>;
+  const { locale, t } = useI18n();
+  if (!level) return <Badge variant="secondary">{t("badge.notAnalyzed")}</Badge>;
+  const copy = locale === "fr" ? RISK_LEVEL_FR[level] : RISK_LEVEL_COPY[level];
+  return <Badge variant={riskVariant[level]}>{copy}</Badge>;
 }
 
 export function RecommendationBadge({
@@ -24,7 +30,8 @@ export function RecommendationBadge({
 }: {
   recommendation: Recommendation | null | undefined;
 }) {
-  if (!recommendation) return <Badge variant="secondary">Pending</Badge>;
+  const { locale, t } = useI18n();
+  if (!recommendation) return <Badge variant="secondary">{t("badge.pending")}</Badge>;
   const variant =
     recommendation === "buy"
       ? "low"
@@ -35,7 +42,9 @@ export function RecommendationBadge({
           : recommendation === "avoid"
             ? "critical"
             : "secondary";
-  return <Badge variant={variant as never}>{RECOMMENDATION_COPY[recommendation].label}</Badge>;
+  const label =
+    locale === "fr" ? RECOMMENDATION_LABEL_FR[recommendation] : RECOMMENDATION_COPY[recommendation].label;
+  return <Badge variant={variant as never}>{label}</Badge>;
 }
 
 // Circular score gauge (SVG, no deps). Higher score = safer (greener).

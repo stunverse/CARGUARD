@@ -20,6 +20,9 @@ import { GenerateReportButton } from "@/components/report-actions";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { EmptyState } from "@/components/empty-state";
 import { RECOMMENDATION_COPY, REPORT_DISCLAIMER } from "@/lib/constants";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
+import { RECO_TEXT_FR } from "@/lib/content-i18n";
 import type { FinalReport, InspectionPhoto, InspectionSession } from "@/types";
 
 export const metadata = { title: "AI Analysis — CarGuard AI" };
@@ -30,6 +33,7 @@ export default async function AnalysisPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const locale = await getServerLocale();
   const supabase = await createClient();
 
   const { data: s } = await supabase
@@ -54,9 +58,9 @@ export default async function AnalysisPage({
     return (
       <div className="px-5 py-6">
         <EmptyState
-          title="No analysis yet"
-          description="Upload the 8 photos and run the AI analysis from the scanner."
-          actionLabel="Go to scanner"
+          title={t(locale, "an.none")}
+          description={t(locale, "an.noneDesc")}
+          actionLabel={t(locale, "an.goScanner")}
           actionHref={`/inspections/${id}/photos`}
         />
       </div>
@@ -72,18 +76,18 @@ export default async function AnalysisPage({
         href={`/inspections/${id}`}
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="size-4" /> Back to inspection
+        <ArrowLeft className="size-4" /> {t(locale, "an.back")}
       </Link>
 
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">AI Analysis</h1>
+        <h1 className="text-2xl font-bold">{t(locale, "an.title")}</h1>
         <GenerateReportButton sessionId={id} />
       </div>
 
       {/* Summary */}
       <Card className="mb-6">
         <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row">
-          <RiskScoreCircle score={session.global_score} label="Global score" />
+          <RiskScoreCircle score={session.global_score} label={t(locale, "score.global")} />
           <div className="flex-1 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <RiskLevelBadge level={session.risk_level} />
@@ -92,7 +96,7 @@ export default async function AnalysisPage({
             <p className="text-sm text-muted-foreground">{session.ai_summary}</p>
             {rec && (
               <p className="rounded-md bg-muted/50 p-3 text-sm">
-                {RECOMMENDATION_COPY[rec].text}
+                {locale === "fr" ? RECO_TEXT_FR[rec] : RECOMMENDATION_COPY[rec].text}
               </p>
             )}
           </div>
@@ -102,18 +106,18 @@ export default async function AnalysisPage({
       {/* Scores */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Score breakdown</CardTitle>
+          <CardTitle className="text-base">{t(locale, "score.breakdown")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ScoreBreakdown
             scores={[
-              { label: "Accident / repair", value: session.accident_repair_score },
-              { label: "Alignment", value: session.alignment_score },
-              { label: "Paint / tone", value: session.paint_tone_score },
-              { label: "Symmetry", value: session.symmetry_score },
-              { label: "Bumpers / lights", value: session.bumpers_lights_score },
-              { label: "Overall consistency", value: session.overall_consistency_score },
-              { label: "Model risk", value: session.model_risk_score },
+              { label: t(locale, "score.accidentRepair"), value: session.accident_repair_score },
+              { label: t(locale, "score.alignment"), value: session.alignment_score },
+              { label: t(locale, "score.paintTone"), value: session.paint_tone_score },
+              { label: t(locale, "score.symmetry"), value: session.symmetry_score },
+              { label: t(locale, "score.bumpersLights"), value: session.bumpers_lights_score },
+              { label: t(locale, "score.overallConsistency"), value: session.overall_consistency_score },
+              { label: t(locale, "score.modelRisk"), value: session.model_risk_score },
             ]}
           />
         </CardContent>
@@ -128,7 +132,7 @@ export default async function AnalysisPage({
       </div>
 
       {/* Photo-by-photo */}
-      <h2 className="mb-3 text-lg font-semibold">Photo-by-photo analysis</h2>
+      <h2 className="mb-3 text-lg font-semibold">{t(locale, "tab.photoByPhoto")}</h2>
       <div className="mb-6 grid gap-4 md:grid-cols-2">
         {analyzed.map((p) => (
           <PhotoAnalysisCard key={p.id} photo={p} />

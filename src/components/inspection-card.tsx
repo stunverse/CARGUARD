@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { Car, ChevronRight, Volume2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskLevelBadge, RecommendationBadge } from "@/components/risk-indicators";
+import { useI18n } from "@/components/i18n-provider";
 import { formatDate, vehicleLabel } from "@/lib/utils";
 import type { EngineAudioCheck, InspectionSession, Vehicle } from "@/types";
 
@@ -29,6 +32,7 @@ export function InspectionCard({
   vehicle: Vehicle | null;
   engineAudio?: EngineAudioCheck | null;
 }) {
+  const { t } = useI18n();
   const complete = session.status === "report_generated";
   const href = complete
     ? `/inspections/${session.id}`
@@ -56,7 +60,7 @@ export function InspectionCard({
                   )}
                 </>
               ) : (
-                <Badge variant="moderate">In progress — tap to resume</Badge>
+                <Badge variant="moderate">{t("list.inProgress")}</Badge>
               )}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">

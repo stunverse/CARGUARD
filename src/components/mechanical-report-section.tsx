@@ -1,6 +1,10 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MECHANICAL_RECOMMENDATION_COPY, MECHANICAL_RISK_COPY } from "@/lib/mechanical";
+import { useI18n } from "@/components/i18n-provider";
+import { MECH_RECO_FR, MECH_RISK_FR, pick } from "@/lib/content-i18n";
 import type { MechanicalReportSection as Section, Severity } from "@/types";
 
 const sevBadge: Record<Severity, "low" | "moderate" | "high" | "critical" | "secondary"> = {
@@ -12,26 +16,25 @@ const sevBadge: Record<Severity, "low" | "moderate" | "high" | "critical" | "sec
 };
 
 export function MechanicalReportSection({ section }: { section: Section | null | undefined }) {
+  const { locale, t } = useI18n();
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">11. Engine &amp; Mechanical Check</CardTitle>
+        <CardTitle className="text-base">{t("rep.s.mechanical")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         {!section ? (
-          <p className="text-muted-foreground">
-            No engine &amp; mechanical check was performed for this inspection.
-          </p>
+          <p className="text-muted-foreground">{t("rep.noMechanical")}</p>
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">
               <Badge
                 variant={["high", "very_high"].includes(section.risk_level) ? "critical" : "low"}
               >
-                {MECHANICAL_RISK_COPY[section.risk_level]}
+                {pick(locale, section.risk_level, MECH_RISK_FR, MECHANICAL_RISK_COPY)}
               </Badge>
               <span className="text-muted-foreground">
-                Mechanical score: <strong>{section.mechanical_score}/100</strong>
+                {t("score.mechanical")}: <strong>{section.mechanical_score}/100</strong>
               </span>
             </div>
             <p>{section.summary}</p>
@@ -55,12 +58,12 @@ export function MechanicalReportSection({ section }: { section: Section | null |
             </div>
 
             <p className="rounded-md bg-muted/50 p-2">
-              {MECHANICAL_RECOMMENDATION_COPY[section.recommendation]}
+              {pick(locale, section.recommendation, MECH_RECO_FR, MECHANICAL_RECOMMENDATION_COPY)}
             </p>
 
             {section.seller_questions.length > 0 && (
               <div>
-                <p className="font-medium">Questions for the seller</p>
+                <p className="font-medium">{t("rep.sellerQuestions")}</p>
                 <ul className="list-disc pl-5 text-muted-foreground">
                   {section.seller_questions.map((q, i) => (
                     <li key={i}>{q}</li>
@@ -70,7 +73,7 @@ export function MechanicalReportSection({ section }: { section: Section | null |
             )}
             {section.mechanic_questions.length > 0 && (
               <div>
-                <p className="font-medium">Questions for the mechanic</p>
+                <p className="font-medium">{t("rep.mechanicQuestions")}</p>
                 <ul className="list-disc pl-5 text-muted-foreground">
                   {section.mechanic_questions.map((q, i) => (
                     <li key={i}>{q}</li>

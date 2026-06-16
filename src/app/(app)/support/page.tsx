@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SupportForm } from "@/components/support-form";
 import { formatDate } from "@/lib/utils";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const metadata = { title: "Support — CarGuard AI" };
 
@@ -22,6 +24,7 @@ const FAQ = [
 ];
 
 export default async function SupportPage() {
+  const locale = await getServerLocale();
   const supabase = await createClient();
   const { data: tickets } = await supabase
     .from("support_tickets")
@@ -30,7 +33,7 @@ export default async function SupportPage() {
 
   return (
     <div className="px-5 py-6">
-      <h1 className="mb-6 text-2xl font-bold">Support</h1>
+      <h1 className="mb-6 text-2xl font-bold">{t(locale, "page.support")}</h1>
 
       <Card className="mb-6">
         <CardHeader>
@@ -61,13 +64,13 @@ export default async function SupportPage() {
             <CardTitle className="text-base">Your tickets</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {tickets.map((t) => (
-              <div key={t.id} className="flex items-center justify-between border-b pb-2 last:border-0">
+            {tickets.map((ticket) => (
+              <div key={ticket.id} className="flex items-center justify-between border-b pb-2 last:border-0">
                 <div>
-                  <p className="text-sm font-medium">{t.subject}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(t.created_at)}</p>
+                  <p className="text-sm font-medium">{ticket.subject}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(ticket.created_at)}</p>
                 </div>
-                <Badge variant="outline">{t.status.replaceAll("_", " ")}</Badge>
+                <Badge variant="outline">{ticket.status.replaceAll("_", " ")}</Badge>
               </div>
             ))}
           </CardContent>
