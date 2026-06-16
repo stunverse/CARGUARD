@@ -22,10 +22,28 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { goal, useCredit, pack, ...vehicleInput } = body ?? {};
+  const { goal, useCredit, pack, waiver, ...vehicleInput } = body ?? {};
 
   if (!vehicleInput.make || !vehicleInput.model) {
     return NextResponse.json({ error: "Make and model are required." }, { status: 400 });
+  }
+  // Consumer must accept the sales terms + waive withdrawal (immediate execution).
+  if (waiver !== true) {
+    return NextResponse.json(
+      { error: "You must accept the sales terms to continue.", code: "waiver_required" },
+      { status: 400 },
+    );
+  }
+  // Record the consent (best-effort audit trail).
+  try {
+    await supabase.from("user_consents").insert({
+      user_id: user.id,
+      consent_type: "terms",
+      consent_text:
+        "Accepted CGV/CGU and requested immediate execution, waiving the 14-day right of withdrawal once the inspection analysis begins.",
+    });
+  } catch {
+    // never block checkout on consent logging
   }
 
   const locale = await getServerLocale();

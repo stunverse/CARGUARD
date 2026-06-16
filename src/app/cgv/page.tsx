@@ -1,15 +1,15 @@
 import { MobileShell } from "@/components/mobile/mobile-shell";
 import { LegalDoc } from "@/components/legal-doc";
-import { PRIVACY } from "@/lib/legal-content";
+import { CGV } from "@/lib/legal-content";
 import { getServerLocale } from "@/lib/i18n-server";
 
-export const metadata = { title: "Privacy Policy — CarGuard AI" };
+export const metadata = { title: "Sales Terms — CarGuard AI" };
 
-export default async function PrivacyPage() {
+export default async function CgvPage() {
   const locale = await getServerLocale();
   return (
     <MobileShell>
-      <LegalDoc doc={PRIVACY[locale]} locale={locale} />
+      <LegalDoc doc={CGV[locale]} locale={locale} />
     </MobileShell>
   );
 }

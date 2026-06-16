@@ -492,9 +492,9 @@ export default async function HomePage() {
             <img src="/logo.png" alt="" aria-hidden className="size-7" /> CarGuard <span className="text-[#FF4D4D]">AI</span>
           </div>
           <div className="flex justify-center gap-5">
-            <Link href="/terms" className="hover:text-white">Terms</Link>
-            <Link href="/privacy" className="hover:text-white">Privacy</Link>
-            <Link href="/disclaimer" className="hover:text-white">Disclaimer</Link>
+            <Link href="/terms" className="hover:text-white">{locale === "fr" ? "CGU" : "Terms"}</Link>
+            <Link href="/cgv" className="hover:text-white">{locale === "fr" ? "CGV" : "Sales terms"}</Link>
+            <Link href="/privacy" className="hover:text-white">{locale === "fr" ? "Confidentialité" : "Privacy"}</Link>
             <Link href="/pricing" className="hover:text-white">{t(locale, "landing.pricing")}</Link>
           </div>
           <p>© {new Date().getFullYear()} CarGuard AI</p>

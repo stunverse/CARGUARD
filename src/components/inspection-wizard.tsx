@@ -183,7 +183,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       const res = await fetch("/api/inspections/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...vehicle, goal: vehicle.goal, useCredit: opts.useCredit, pack: opts.pack }),
+        body: JSON.stringify({ ...vehicle, goal: vehicle.goal, useCredit: opts.useCredit, pack: opts.pack, waiver: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not start the payment.");
@@ -1052,6 +1052,7 @@ function PaymentStep({
   const { t, formatMoney, currency } = useI18n();
   const [credits, setCredits] = useState<number | null>(null);
   const [stripe, setStripe] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     fetch("/api/billing/credits")
@@ -1089,6 +1090,25 @@ function PaymentStep({
     </ul>
   );
 
+  // Required consent: sales terms + immediate-execution / withdrawal waiver.
+  const consent = (
+    <label className="mt-4 flex items-start gap-2 text-xs leading-snug text-[#6B7280]">
+      <input
+        type="checkbox"
+        checked={agreed}
+        onChange={(e) => setAgreed(e.target.checked)}
+        className="mt-0.5 size-4 shrink-0"
+      />
+      <span>
+        {t("wiz.pay.waiver.pre")}{" "}
+        <a href="/cgv" target="_blank" rel="noreferrer" className="underline">{t("wiz.pay.waiver.cgv")}</a>{" "}
+        {t("wiz.pay.waiver.and")}{" "}
+        <a href="/terms" target="_blank" rel="noreferrer" className="underline">{t("wiz.pay.waiver.cgu")}</a>
+        {t("wiz.pay.waiver.post")}
+      </span>
+    </label>
+  );
+
   // Demo (no Stripe) or has a credit → one tap to start.
   if (!stripe || credits > 0) {
     return (
@@ -1099,7 +1119,8 @@ function PaymentStep({
           </div>
         )}
         <div className="rounded-2xl border border-[#E5E7EB] p-4">{featuresBlock}</div>
-        <Button className="mt-5 w-full" onClick={() => onPay({ useCredit: stripe })} disabled={busy}>
+        {consent}
+        <Button className="mt-4 w-full" onClick={() => onPay({ useCredit: stripe })} disabled={busy || !agreed}>
           {busy ? t("wiz.pay.processing") : stripe ? t("wiz.pay.useCredit") : t("wiz.pay.startDemo")}
         </Button>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#6B7280]">
@@ -1112,7 +1133,8 @@ function PaymentStep({
   // No credit → choose a pack.
   return (
     <StepShell kicker={t("wiz.pay.kicker")} question={t("wiz.pay.choosePack")} helper={t("wiz.pay.packHelper")}>
-      <div className="space-y-3">
+      {consent}
+      <div className="mt-3 space-y-3">
         {INSPECTION_PACKS.map((p, i) => {
           const per = p.price / p.credits;
           const best = i === INSPECTION_PACKS.length - 1;
@@ -1121,7 +1143,7 @@ function PaymentStep({
               key={p.id}
               type="button"
               onClick={() => onPay({ pack: p.id })}
-              disabled={busy}
+              disabled={busy || !agreed}
               className={cn(
                 "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
                 best ? "border-[#E50914] bg-[rgba(229,9,20,0.04)]" : "border-[#E5E7EB] hover:bg-secondary",
