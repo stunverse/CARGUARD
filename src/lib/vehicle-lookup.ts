@@ -104,19 +104,76 @@ export async function lookupPlate(
 ): Promise<LookupResponse> {
   const cc = (country || "").trim().toUpperCase();
 
-  // UK — DVLA Vehicle Enquiry Service (real adapter, needs DVLA_API_KEY).
+  // UK — DVLA Vehicle Enquiry Service (real adapter, FREE with DVLA_API_KEY).
   if (cc === "GB" || cc === "UK" || cc === "UNITED KINGDOM") {
     return lookupPlateDvla(plate);
   }
 
-  // TODO: add regional providers (FR/SIV, DE, ES, IT…). These are paid and
-  // require a contract; wire them here behind PLATE_LOOKUP_* env vars.
-  return {
-    ok: false,
-    configured: false,
-    message:
-      "Plate lookup isn't configured for this country yet. Enter the VIN to auto-fill, or fill the fields manually.",
-  };
+  // Other EU countries — no free pan-EU source exists. A generic provider
+  // (paid aggregator / national-register proxy) is wired behind env vars.
+  return lookupPlateGeneric(plate, cc);
+}
+
+export function isPlateProviderConfigured(): boolean {
+  return Boolean(process.env.PLATE_LOOKUP_API_URL && process.env.PLATE_LOOKUP_API_KEY);
+}
+
+// Generic plate provider (carVertical-style aggregator or a national proxy).
+// Expects a POST { plate, country } and a JSON shape with
+// { make, model, year, fuel_type|fuelType, transmission, vin }.
+async function lookupPlateGeneric(
+  plate: string,
+  country: string,
+): Promise<LookupResponse> {
+  if (!isPlateProviderConfigured()) {
+    return {
+      ok: false,
+      configured: false,
+      message:
+        "Plate lookup isn't enabled for this country yet. Enter the VIN to auto-fill, or fill the fields manually.",
+    };
+  }
+  try {
+    const res = await fetch(process.env.PLATE_LOOKUP_API_URL!, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.PLATE_LOOKUP_API_KEY}`,
+      },
+      body: JSON.stringify({ plate: plate.replace(/\s/g, "").toUpperCase(), country }),
+    });
+    if (!res.ok) {
+      return { ok: false, configured: true, message: "No vehicle found for that plate." };
+    }
+    const v = (await res.json()) as {
+      make?: string;
+      model?: string;
+      year?: number | string;
+      fuel_type?: string;
+      fuelType?: string;
+      transmission?: string;
+      vin?: string;
+    };
+    if (!v.make && !v.vin) {
+      return { ok: false, configured: true, message: "No vehicle found for that plate." };
+    }
+    return {
+      ok: true,
+      configured: true,
+      data: {
+        make: v.make,
+        model: v.model,
+        year: v.year ? Number(v.year) : undefined,
+        fuel_type: normalizeFuel(v.fuel_type ?? v.fuelType),
+        transmission: normalizeTransmission(v.transmission),
+        vin: v.vin,
+        source: process.env.PLATE_LOOKUP_PROVIDER || "Plate lookup",
+      },
+    };
+  } catch (err) {
+    console.error("plate lookup failed:", err);
+    return { ok: false, configured: true, message: "Plate lookup is temporarily unavailable." };
+  }
 }
 
 async function lookupPlateDvla(plate: string): Promise<LookupResponse> {

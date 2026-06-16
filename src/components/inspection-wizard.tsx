@@ -617,6 +617,8 @@ function NumberStep({
   );
 }
 
+const PLATE_COUNTRIES = ["GB", "FR", "DE", "ES", "IT", "NL", "BE", "PT", "IE", "PL", "AT", "CH", "SE", "DK"];
+
 function VinStep({
   vehicle,
   setField,
@@ -626,43 +628,123 @@ function VinStep({
   setField: (k: string, v: string) => void;
   onAutoFill: (data: Record<string, string>) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const [mode, setMode] = useState<"vin" | "plate">("vin");
   const [looking, setLooking] = useState(false);
-  const [vinMsg, setVinMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [plate, setPlate] = useState("");
+  const [country, setCountry] = useState(locale === "fr" ? "FR" : "GB");
 
-  async function autofill() {
-    if (!vehicle.vin?.trim()) return;
-    setLooking(true);
-    setVinMsg(null);
-    const res = await fetch(`/api/vehicle-lookup?q=${encodeURIComponent(vehicle.vin.trim())}`);
-    const d = await res.json();
-    setLooking(false);
+  const regionName = (code: string) => {
+    try {
+      return new Intl.DisplayNames([locale], { type: "region" }).of(code) ?? code;
+    } catch {
+      return code;
+    }
+  };
+
+  function applyResult(d: { ok?: boolean; configured?: boolean; data?: Record<string, unknown>; message?: string }, isPlate: boolean) {
     if (d.ok && d.data) {
       const data: Record<string, string> = {};
-      for (const k of ["make", "model", "year", "trim", "engine", "fuel_type", "transmission"]) {
+      for (const k of ["make", "model", "year", "trim", "engine", "fuel_type", "transmission", "vin"]) {
         if (d.data[k] != null) data[k] = String(d.data[k]);
       }
       onAutoFill(data);
-      setVinMsg(`Pre-filled from ${d.data.source}. Tap Continue to review.`);
-      toast.success("Vehicle details pre-filled.");
+      setMsg(t("wiz.prefilled"));
+      toast.success(t("wiz.prefilledToast"));
+    } else if (d.configured === false) {
+      setMsg(isPlate ? t("wiz.plateUnavailable") : t("wiz.noMatch"));
     } else {
-      setVinMsg(d.message ?? "No match — you can pick the details manually.");
+      setMsg(isPlate ? t("wiz.plateNoMatch") : t("wiz.noMatch"));
     }
   }
 
+  async function autofillVin() {
+    if (!vehicle.vin?.trim()) return;
+    setLooking(true);
+    setMsg(null);
+    const res = await fetch(`/api/vehicle-lookup?q=${encodeURIComponent(vehicle.vin.trim())}`);
+    applyResult(await res.json(), false);
+    setLooking(false);
+  }
+
+  async function autofillPlate() {
+    if (!plate.trim()) return;
+    setLooking(true);
+    setMsg(null);
+    const res = await fetch(
+      `/api/vehicle-lookup?plate=${encodeURIComponent(plate.trim())}&country=${encodeURIComponent(country)}`,
+    );
+    applyResult(await res.json(), true);
+    setLooking(false);
+  }
+
   return (
-    <StepShell kicker={t("wiz.vehicle")} question={t("veh.q.vin")} helper={t("wiz.vinHelper")}>
-      <Input
-        autoFocus
-        placeholder={t("wiz.vinPlaceholder")}
-        value={vehicle.vin ?? ""}
-        onChange={(e) => setField("vin", e.target.value)}
-        className="h-14 text-base"
-      />
-      <Button type="button" variant="accent" className="mt-3 w-full" onClick={autofill} disabled={looking}>
-        <Sparkles className="size-4" /> {looking ? t("wiz.looking") : t("wiz.autofill")}
-      </Button>
-      {vinMsg && <p className="mt-2 text-xs text-[#6B7280]">{vinMsg}</p>}
+    <StepShell
+      kicker={t("wiz.vehicle")}
+      question={mode === "vin" ? t("veh.q.vin") : t("wiz.plate.q")}
+      helper={mode === "vin" ? t("wiz.vinHelper") : t("wiz.plate.helper")}
+    >
+      {/* VIN / Plate tabs */}
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-[#F2F3F5] p-1 text-sm font-medium">
+        {(["vin", "plate"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => {
+              setMode(m);
+              setMsg(null);
+            }}
+            className={cn(
+              "rounded-lg py-2 transition-colors",
+              mode === m ? "bg-white text-[#111827] shadow-sm" : "text-[#6B7280]",
+            )}
+          >
+            {t(m === "vin" ? "wiz.tab.vin" : "wiz.tab.plate")}
+          </button>
+        ))}
+      </div>
+
+      {mode === "vin" ? (
+        <>
+          <Input
+            autoFocus
+            placeholder={t("wiz.vinPlaceholder")}
+            value={vehicle.vin ?? ""}
+            onChange={(e) => setField("vin", e.target.value)}
+            className="h-14 text-base"
+          />
+          <Button type="button" variant="accent" className="mt-3 w-full" onClick={autofillVin} disabled={looking}>
+            <Sparkles className="size-4" /> {looking ? t("wiz.looking") : t("wiz.autofill")}
+          </Button>
+        </>
+      ) : (
+        <>
+          <label className="mb-1 block text-xs font-medium text-[#6B7280]">{t("wiz.country")}</label>
+          <select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="mb-3 h-12 w-full rounded-xl border border-[#E5E7EB] bg-white px-3 text-base"
+          >
+            {PLATE_COUNTRIES.map((c) => (
+              <option key={c} value={c}>
+                {regionName(c)}
+              </option>
+            ))}
+          </select>
+          <Input
+            autoFocus
+            placeholder={t("wiz.platePlaceholder")}
+            value={plate}
+            onChange={(e) => setPlate(e.target.value)}
+            className="h-14 text-base uppercase"
+          />
+          <Button type="button" variant="accent" className="mt-3 w-full" onClick={autofillPlate} disabled={looking}>
+            <Sparkles className="size-4" /> {looking ? t("wiz.looking") : t("wiz.autofillPlate")}
+          </Button>
+        </>
+      )}
+      {msg && <p className="mt-2 text-xs text-[#6B7280]">{msg}</p>}
     </StepShell>
   );
 }
