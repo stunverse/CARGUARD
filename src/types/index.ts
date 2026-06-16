@@ -297,6 +297,25 @@ export interface FinalReport {
   safety?: SafetyRatingSection | null;
   // Adverse title flags (salvage/flood/theft…) from a paid VIN report. US now.
   title_flags?: TitleFlagsSection | null;
+  // Heuristic market-value estimate vs asking price. Works worldwide.
+  market_value?: MarketValueSection | null;
+}
+
+// ---------------------------------------------------------------------
+// Market value — heuristic estimate (no provider). Compares the asking price
+// to a fair band derived from the vehicle age and mileage. Works worldwide.
+// ---------------------------------------------------------------------
+export type MarketValueVerdict = "underpriced" | "fair" | "overpriced" | "unknown";
+export interface MarketValueSection {
+  currency: string;
+  asking_price: number | null;
+  estimated_low: number | null;
+  estimated_high: number | null;
+  verdict: MarketValueVerdict;
+  expected_mileage: number | null;
+  actual_mileage: number | null;
+  unit: "km" | "mi";
+  disclaimer: string;
 }
 
 // ---------------------------------------------------------------------

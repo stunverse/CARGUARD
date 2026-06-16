@@ -270,6 +270,28 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       }
     }
 
+    // 17. Market value (heuristic estimate)
+    const mv = report.market_value;
+    if (mv) {
+      const VERDICT: Record<string, string> = {
+        underpriced: "Below market — looks like a good deal (verify why)",
+        fair: "In line with the market for the age & mileage",
+        overpriced: "Above market for the age & mileage — room to negotiate",
+        unknown: "",
+      };
+      h1("17. Market value (estimate)");
+      body(`Asking price: ${formatMoney(mv.asking_price, mv.currency)}`);
+      if (mv.estimated_low != null && mv.estimated_high != null) {
+        body(
+          `Estimated fair range: ${formatMoney(mv.estimated_low, mv.currency)} – ${formatMoney(mv.estimated_high, mv.currency)}`,
+        );
+      }
+      if (VERDICT[mv.verdict]) body(VERDICT[mv.verdict]);
+      doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(
+        "Heuristic estimate (asking price adjusted for age & mileage) — not an official valuation.",
+      ).fillColor("#111");
+    }
+
     // Disclaimer
     doc.moveDown(0.8);
     doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(report.disclaimer);

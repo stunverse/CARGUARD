@@ -63,6 +63,54 @@ async function getNhtsaSafety(
   }
 }
 
+// EU (Euro NCAP) — no free official API. Wired behind env for a paid/EU
+// proxy provider; returns null until configured.
+//   EURONCAP_API_URL  GET/POST endpoint accepting { year, make, model }
+//   EURONCAP_API_KEY  bearer token
+function isEuroNcapConfigured(): boolean {
+  return Boolean(process.env.EURONCAP_API_URL && process.env.EURONCAP_API_KEY);
+}
+
+async function getEuroNcap(
+  year: number,
+  make: string,
+  model: string,
+): Promise<SafetyRatingSection | null> {
+  if (!isEuroNcapConfigured()) return null;
+  try {
+    const res = await fetch(process.env.EURONCAP_API_URL!, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.EURONCAP_API_KEY}`,
+      },
+      body: JSON.stringify({ year, make, model }),
+    });
+    if (!res.ok) return null;
+    // TODO: map the provider payload. Expected generic shape:
+    // { overall?, frontal?, side?, rollover? } as star strings.
+    const r = (await res.json()) as Record<string, string>;
+    const section: SafetyRatingSection = {
+      source: "Euro NCAP",
+      matched: true,
+      vehicle: `${year} ${make} ${model}`,
+      overall: cleanRating(r.overall),
+      frontal: cleanRating(r.frontal),
+      side: cleanRating(r.side),
+      rollover: cleanRating(r.rollover),
+      note: "",
+      disclaimer: "",
+    };
+    if (!section.overall && !section.frontal && !section.side && !section.rollover) {
+      return null;
+    }
+    return section;
+  } catch (err) {
+    console.error("Euro NCAP provider failed:", err);
+    return null;
+  }
+}
+
 export async function getSafetyRating(input: {
   year?: number | null;
   make?: string | null;
@@ -72,7 +120,8 @@ export async function getSafetyRating(input: {
   const { year, make, model } = input;
   if (!year || !make || !model) return null;
 
-  // Always try NHTSA first — it simply returns nothing for non-US models, so
-  // it works as a graceful US path. EU provider (Euro NCAP) goes here later.
-  return getNhtsaSafety(year, make, model);
+  // US path first (free, returns nothing for non-US models), then EU provider.
+  const us = await getNhtsaSafety(year, make, model);
+  if (us) return us;
+  return getEuroNcap(year, make, model);
 }

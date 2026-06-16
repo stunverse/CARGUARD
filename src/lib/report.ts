@@ -12,6 +12,7 @@ import type {
   FullInspectionResult,
   InspectionPhoto,
   MechanicalReportSection,
+  MarketValueSection,
   MileageCheckSection,
   PhotoPointCode,
   SafetyRatingSection,
@@ -56,6 +57,7 @@ export function generateFinalReport(params: {
   mileageCheck?: MileageCheckSection | null;
   safety?: SafetyRatingSection | null;
   titleFlags?: TitleFlagsSection | null;
+  marketValue?: MarketValueSection | null;
   /** Overall confidence across all modules (falls back to photo avg). */
   overallConfidence?: number;
 }): FinalReport {
@@ -71,6 +73,7 @@ export function generateFinalReport(params: {
     mileageCheck,
     safety,
     titleFlags,
+    marketValue,
     overallConfidence,
   } = params;
 
@@ -144,6 +147,7 @@ export function generateFinalReport(params: {
     mileage_check: mileageCheck ?? null,
     safety: safety ?? null,
     title_flags: titleFlags ?? null,
+    market_value: marketValue ?? null,
   };
 }
 

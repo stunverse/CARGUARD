@@ -309,6 +309,48 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         </Card>
       )}
 
+      {/* Market value — heuristic estimate vs asking price (worldwide) */}
+      {report.market_value && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("rep.s.marketValue")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">{t("mv.asking")}</p>
+                <p className="text-lg font-bold">
+                  {formatMoney(report.market_value.asking_price, report.market_value.currency)}
+                </p>
+              </div>
+              {report.market_value.estimated_low != null && report.market_value.estimated_high != null && (
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">{t("mv.estimatedRange")}</p>
+                  <p className="text-lg font-bold">
+                    {formatMoney(report.market_value.estimated_low, report.market_value.currency)} –{" "}
+                    {formatMoney(report.market_value.estimated_high, report.market_value.currency)}
+                  </p>
+                </div>
+              )}
+            </div>
+            {report.market_value.verdict !== "unknown" && (
+              <Badge
+                variant={
+                  report.market_value.verdict === "underpriced"
+                    ? "low"
+                    : report.market_value.verdict === "fair"
+                      ? "moderate"
+                      : "high"
+                }
+              >
+                {t(`mv.verdict.${report.market_value.verdict}`)}
+              </Badge>
+            )}
+            <p className="text-xs text-muted-foreground">{t("mv.disclaimer")}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Disclaimer */}
       <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
         <strong className="text-foreground">{t("rep.disclaimer")} </strong>

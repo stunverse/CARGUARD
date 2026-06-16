@@ -13,6 +13,8 @@ import { buildVehicleSpecs } from "@/lib/vehicle-specs";
 import { assessMileage } from "@/lib/mileage-check";
 import { getSafetyRating } from "@/lib/safety-rating";
 import { deriveTitleFlags } from "@/lib/title-flags";
+import { fetchEuTitleFlags } from "@/lib/providers/eu-history";
+import { estimateMarketValue } from "@/lib/market-value";
 import { computeOverall } from "@/lib/score";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkReportQuota } from "@/lib/quota";
@@ -166,6 +168,14 @@ export async function POST(
     }
   }
 
+  // No US title record? Try an EU history provider (no-op until configured).
+  if (!titleFlags) {
+    titleFlags = await fetchEuTitleFlags({
+      vin: v.vin ?? null,
+      country: (vehicle as { country?: string }).country ?? null,
+    });
+  }
+
   // Specifications & equipment (VIN decode + provided data) — US + EU.
   const specifications = await buildVehicleSpecs(vehicle as never, v.vin);
 
@@ -184,6 +194,14 @@ export async function POST(
     make: v.make ?? null,
     model: v.model ?? null,
     country: veh.country ?? null,
+  });
+
+  // Heuristic market-value estimate vs asking price — works worldwide.
+  const marketValue = estimateMarketValue({
+    askingPrice: (vehicle as { asking_price?: number }).asking_price ?? null,
+    mileage: veh.mileage ?? null,
+    year: veh.year ?? null,
+    currency: veh.currency ?? null,
   });
 
   // --- Overall score + confidence across ALL modules ---
@@ -241,6 +259,7 @@ export async function POST(
     mileageCheck,
     safety,
     titleFlags,
+    marketValue,
     overallConfidence: overall.confidence,
   });
 
