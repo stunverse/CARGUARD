@@ -18,7 +18,6 @@ import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { RiskScoreCircle } from "@/components/risk-indicators";
 import { MediaCapture, type CaptureMode } from "@/components/media-capture";
 import {
-  MECHANICAL_DISCLAIMER,
   MECHANICAL_POINTS,
   MECHANICAL_RISK_COPY,
 } from "@/lib/mechanical";
@@ -26,6 +25,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { STORAGE_BUCKETS } from "@/lib/constants";
 import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
+import { useI18n } from "@/components/i18n-provider";
+import { MECH_RISK_FR, localizedMechPoint, pick } from "@/lib/content-i18n";
 import type {
   MechanicalCheckItem,
   MechanicalPoint,
@@ -51,6 +52,7 @@ export function MechanicalCheckTab({
   mechanicalScore: number | null;
   mechanicalRisk: string | null;
 }) {
+  const { locale, t } = useI18n();
   const byCode = useMemo(() => {
     const m = new Map<string, MechanicalCheckItem>();
     for (const it of initialItems) m.set(it.point_code, it);
@@ -65,20 +67,18 @@ export function MechanicalCheckTab({
     <div className="space-y-6">
       <Card>
         <CardContent className="flex flex-col items-center gap-4 p-6 sm:flex-row">
-          <RiskScoreCircle score={mechanicalScore} label="Mechanical score" />
+          <RiskScoreCircle score={mechanicalScore} label={t("mct.score")} />
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
               <Wrench className="size-5 text-accent" />
-              <h2 className="text-lg font-bold">Engine &amp; Mechanical Check</h2>
+              <h2 className="text-lg font-bold">{t("mct.title")}</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              Optional but recommended. Complete the guided checks below — tick
-              what you observe and add a photo/video where asked. {completed}/
-              {MECHANICAL_POINTS.length} done.
+              {t("mct.introPre")} {completed}/{MECHANICAL_POINTS.length} {t("mct.done")}
             </p>
             {mechanicalRisk && (
               <Badge variant="secondary">
-                {MECHANICAL_RISK_COPY[mechanicalRisk as keyof typeof MECHANICAL_RISK_COPY] ?? mechanicalRisk}
+                {pick(locale, mechanicalRisk, MECH_RISK_FR, MECHANICAL_RISK_COPY)}
               </Badge>
             )}
           </div>
@@ -94,7 +94,7 @@ export function MechanicalCheckTab({
         />
       ))}
 
-      <DisclaimerBanner text={MECHANICAL_DISCLAIMER} />
+      <DisclaimerBanner text={t("mct.disclaimer")} />
     </div>
   );
 }
@@ -108,7 +108,9 @@ function StepCard({
   point: MechanicalPoint;
   initial: MechanicalCheckItem | null;
 }) {
+  const { locale, t } = useI18n();
   const router = useRouter();
+  const loc = localizedMechPoint(point, locale);
   const docsRef = useRef<HTMLInputElement>(null);
 
   // Captured media (in-app camera/mic).
@@ -142,7 +144,7 @@ function StepCard({
     let data: { analysis: { score: number; severity: Severity; suspicious_observations?: string[] }; error?: string };
     try {
       const userId = await getUserId();
-      if (!userId) throw new Error("Please sign in again.");
+      if (!userId) throw new Error(t("ui.signIn"));
       const base = `${userId}/${sessionId}/${point.code}`;
 
       const upImg = async (f: File, suffix: string) => {
@@ -169,16 +171,16 @@ function StepCard({
         body: JSON.stringify(payload),
       });
       data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Save failed.");
+      if (!res.ok) throw new Error(data.error ?? t("mct.saveFailed"));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Could not save this check.";
+      const msg = e instanceof Error ? e.message : t("mct.couldNotSave");
       setError(msg);
       toast.error(msg);
       setSaving(false);
       return;
     }
     setSaving(false);
-    toast.success(`${point.title} saved.`);
+    toast.success(`${loc.title} ${t("mct.savedSuffix")}`);
     setSkipped(false);
     setResult({
       score: data.analysis.score,
@@ -204,39 +206,39 @@ function StepCard({
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2 text-base">
           <span>
-            {point.order_index}. {point.title}
-            {!point.required && <span className="ml-2 text-xs font-normal text-muted-foreground">(optional)</span>}
+            {point.order_index}. {loc.title}
+            {!point.required && <span className="ml-2 text-xs font-normal text-muted-foreground">{t("mct.optional")}</span>}
           </span>
           {skipped ? (
-            <Badge variant="secondary">Skipped</Badge>
+            <Badge variant="secondary">{t("ui.skipped")}</Badge>
           ) : result ? (
             <Badge variant={sevBadge[result.severity]}>{result.score}/100</Badge>
           ) : null}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-sm">{point.instruction}</p>
+        <p className="text-sm">{loc.instruction}</p>
         <div className="flex gap-2 rounded-md bg-accent/5 p-2 text-xs text-muted-foreground">
           <Info className="mt-0.5 size-4 shrink-0 text-accent" />
-          <span>{point.why_it_matters}</span>
+          <span>{loc.why}</span>
         </div>
 
         {/* Media capture (in-app camera / mic) */}
         {point.media_type === "docs" ? (
           <div>
-            <p className="mb-1 text-xs font-medium">Upload invoices / logbook photos</p>
+            <p className="mb-1 text-xs font-medium">{t("mct.uploadDocs")}</p>
             <input ref={docsRef} type="file" accept="image/*,application/pdf" multiple className="text-xs" />
           </div>
         ) : point.media_type === "photo_pair" ? (
           <div className="grid grid-cols-2 gap-2">
             <CaptureTile
-              label="Ignition ON / engine OFF"
+              label={t("mct.ignitionOn")}
               file={primaryFile}
               icon={Camera}
               onClick={() => setCapture({ slot: "primary", mode: "photo" })}
             />
             <CaptureTile
-              label="Engine running"
+              label={t("mct.engineRunning")}
               file={secondaryFile}
               icon={Camera}
               onClick={() => setCapture({ slot: "secondary", mode: "photo" })}
@@ -244,7 +246,7 @@ function StepCard({
           </div>
         ) : point.media_type !== "questionnaire" ? (
           <CaptureTile
-            label={point.media_type === "video" ? "Film (video + sound)" : "Take a photo"}
+            label={point.media_type === "video" ? t("mct.film") : t("mct.takePhoto")}
             file={primaryFile}
             icon={point.media_type === "video" ? Video : Camera}
             onClick={() => setCapture({ slot: "primary", mode: captureMode })}
@@ -254,8 +256,8 @@ function StepCard({
 
         {/* Observations */}
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground">What did you observe?</p>
-          {point.observations.map((o) => (
+          <p className="text-xs font-semibold text-muted-foreground">{t("mct.whatObserve")}</p>
+          {loc.observations.map((o) => (
             <label key={o.key} className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={!!obs[o.key]} onChange={() => toggle(o.key)} />
               <span className={o.kind === "good" ? "text-risk-low" : undefined}>{o.label}</span>
@@ -273,10 +275,10 @@ function StepCard({
         <div className="flex gap-2">
           <Button size="sm" onClick={save} disabled={saving}>
             {result ? <CheckCircle2 className="size-4" /> : <Upload className="size-4" />}
-            {saving ? "Saving…" : result ? "Update" : "Save check"}
+            {saving ? t("ui.saving") : result ? t("mct.update") : t("mct.saveCheck")}
           </Button>
           <Button size="sm" variant="ghost" onClick={skip} disabled={saving}>
-            {point.required ? "I can't do this" : "Skip"}
+            {point.required ? t("mct.cantDo") : t("ui.skip")}
           </Button>
         </div>
       </CardContent>
@@ -284,7 +286,7 @@ function StepCard({
       {capture && (
         <MediaCapture
           mode={capture.mode}
-          title={`${point.order_index}. ${point.title}`}
+          title={`${point.order_index}. ${loc.title}`}
           onClose={() => setCapture(null)}
           onCapture={(file) => {
             if (capture.slot === "primary") setPrimaryFile(file);
@@ -309,6 +311,7 @@ function CaptureTile({
   onClick: () => void;
   full?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -328,8 +331,8 @@ function CaptureTile({
         {file ? <CheckCircle className="size-5" aria-hidden /> : <Icon className="size-5" aria-hidden />}
       </span>
       <span className="min-w-0">
-        <span className="block font-medium text-[#111827]">{file ? "Captured — tap to retake" : label}</span>
-        {!file && <span className="block text-xs text-muted-foreground">Tap to open the camera</span>}
+        <span className="block font-medium text-[#111827]">{file ? t("mct.captured") : label}</span>
+        {!file && <span className="block text-xs text-muted-foreground">{t("mct.tapOpenCamera")}</span>}
       </span>
     </button>
   );

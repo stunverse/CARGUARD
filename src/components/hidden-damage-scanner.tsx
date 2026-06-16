@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { compressImage, getUserId, uploadToStorage } from "@/lib/upload";
 import { AnalyzingOverlay } from "@/components/analyzing-overlay";
+import { useI18n } from "@/components/i18n-provider";
+import { localizedPhotoPoint } from "@/lib/content-i18n";
 import type { InspectionPhoto, PhotoPointCode, QualityStatus } from "@/types";
 
 interface PhotoState {
@@ -52,6 +54,7 @@ export function HiddenDamageScanner({
   sessionId: string;
   initialPhotos: InspectionPhoto[];
 }) {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [states, setStates] = useState(() => initialState(initialPhotos));
   const [activeCode, setActiveCode] = useState<PhotoPointCode>(
@@ -64,6 +67,7 @@ export function HiddenDamageScanner({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const active = PHOTO_POINTS.find((p) => p.code === activeCode)!;
+  const activeLoc = localizedPhotoPoint(active, locale);
   const activeIndex = PHOTO_POINTS.findIndex((p) => p.code === activeCode);
 
   const completed = useMemo(
@@ -87,7 +91,7 @@ export function HiddenDamageScanner({
     setState(activeCode, { uploading: true, error: null });
     try {
       const userId = await getUserId();
-      if (!userId) throw new Error("Please sign in again.");
+      if (!userId) throw new Error(t("ui.signIn"));
       const compressed = await compressImage(file);
       const path = `${userId}/${sessionId}/${activeCode}.jpg`;
       await uploadToStorage(STORAGE_BUCKETS.inspectionPhotos, path, compressed);
@@ -104,7 +108,7 @@ export function HiddenDamageScanner({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      if (!res.ok) throw new Error(data.error ?? t("ui.uploadFailed"));
       setState(activeCode, {
         uploading: false,
         status: data.photo.quality_status,
@@ -113,13 +117,13 @@ export function HiddenDamageScanner({
       });
       // Auto-advance on success.
       if (data.photo.quality_status === "passed") {
-        toast.success("Photo looks good.");
+        toast.success(t("scan.photoGood"));
         advance();
       } else if (data.photo.quality_status === "needs_retake") {
-        toast.error("This photo needs a retake.");
+        toast.error(t("scan.needsRetake"));
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Upload failed.";
+      const msg = e instanceof Error ? e.message : t("ui.uploadFailed");
       setState(activeCode, { uploading: false, error: msg });
       toast.error(msg);
     }
@@ -136,7 +140,7 @@ export function HiddenDamageScanner({
       setState(activeCode, { uploading: false, status: "skipped", imageUrl: null });
       advance();
     } else {
-      setState(activeCode, { uploading: false, error: "Could not skip." });
+      setState(activeCode, { uploading: false, error: t("scan.couldNotSkip") });
     }
   }
 
@@ -155,13 +159,13 @@ export function HiddenDamageScanner({
     });
     const data = await res.json();
     if (!res.ok) {
-      const msg = data.error ?? "Analysis failed.";
+      const msg = data.error ?? t("scan.analysisFailed");
       setAnalyzeError(msg);
       toast.error(msg);
       setAnalyzing(false);
       return;
     }
-    toast.success("Analysis complete.");
+    toast.success(t("scan.analysisComplete"));
     router.push(`/inspections/${sessionId}/analysis`);
   }
 
@@ -177,7 +181,7 @@ export function HiddenDamageScanner({
           <span className="font-semibold">
             {completed}/{REQUIRED_PHOTO_COUNT}
           </span>{" "}
-          <span className="text-muted-foreground">photos completed</span>
+          <span className="text-muted-foreground">{t("scan.photosCompleted")}</span>
         </div>
       </div>
 
@@ -188,20 +192,20 @@ export function HiddenDamageScanner({
             <div className="flex items-center justify-between">
               <div>
                 <Badge variant="accent" className="mb-2">
-                  Photo {active.order_index} / {REQUIRED_PHOTO_COUNT}
+                  {t("scan.photo")} {active.order_index} / {REQUIRED_PHOTO_COUNT}
                 </Badge>
-                <h2 className="text-xl font-bold">{active.title}</h2>
+                <h2 className="text-xl font-bold">{activeLoc.title}</h2>
               </div>
               <PhotoQualityStatus status={activeState.status} />
             </div>
 
-            <p className="text-sm">{active.instruction}</p>
+            <p className="text-sm">{activeLoc.instruction}</p>
 
             <div className="flex gap-2 rounded-md bg-accent/5 p-3 text-xs text-muted-foreground">
               <Info className="mt-0.5 size-4 shrink-0 text-accent" />
               <span>
-                <strong className="text-foreground">Why it matters: </strong>
-                {active.why_it_matters}
+                <strong className="text-foreground">{t("scan.whyMatters")} </strong>
+                {activeLoc.why}
               </span>
             </div>
 
@@ -211,13 +215,13 @@ export function HiddenDamageScanner({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={activeState.imageUrl}
-                  alt={active.title}
+                  alt={activeLoc.title}
                   className="h-full w-full object-cover"
                 />
               ) : (
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <Camera className="size-10" />
-                  <span className="text-sm">{active.title} — example placeholder</span>
+                  <span className="text-sm">{activeLoc.title} {t("scan.examplePlaceholder")}</span>
                 </div>
               )}
               {activeState.uploading && (
@@ -252,17 +256,17 @@ export function HiddenDamageScanner({
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => fileInputRef.current?.click()} disabled={activeState.uploading}>
                 <Camera className="size-4" />
-                {activeState.imageUrl ? "Retake photo" : "Take photo"}
+                {activeState.imageUrl ? t("scan.retakePhoto") : t("scan.takePhoto")}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={activeState.uploading}
               >
-                <ImageUp className="size-4" /> Upload from gallery
+                <ImageUp className="size-4" /> {t("scan.uploadGallery")}
               </Button>
               <Button variant="ghost" onClick={skip} disabled={activeState.uploading}>
-                <SkipForward className="size-4" /> I can&apos;t take this photo
+                <SkipForward className="size-4" /> {t("scan.cantTake")}
               </Button>
             </div>
           </CardContent>
@@ -274,12 +278,12 @@ export function HiddenDamageScanner({
           <div className="text-sm text-muted-foreground">
             {allDone
               ? passed > 0
-                ? "All photos completed. You can run the analysis."
-                : "All photos were skipped — analysis needs at least one usable photo."
-              : `Complete all ${REQUIRED_PHOTO_COUNT} photos to run the analysis.`}
+                ? t("scan.allDone")
+                : t("scan.allSkipped")
+              : `${t("scan.completeAllPre")} ${REQUIRED_PHOTO_COUNT} ${t("scan.completeAllPost")}`}
           </div>
           <Button onClick={runAnalysis} disabled={!allDone || passed === 0 || analyzing}>
-            {analyzing ? "Analyzing…" : "Run AI analysis"}
+            {analyzing ? t("scan.analyzing") : t("scan.runAnalysis")}
           </Button>
         </div>
         {analyzeError && <p className="text-sm text-destructive">{analyzeError}</p>}
@@ -297,6 +301,7 @@ function EightPhotoProgress({
   activeCode: PhotoPointCode;
   onSelect: (code: PhotoPointCode) => void;
 }) {
+  const { locale } = useI18n();
   return (
     <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
       {PHOTO_POINTS.map((p) => {
@@ -307,7 +312,7 @@ function EightPhotoProgress({
           <button
             key={p.code}
             onClick={() => onSelect(p.code)}
-            aria-label={`${p.order_index}. ${p.title}`}
+            aria-label={`${p.order_index}. ${localizedPhotoPoint(p, locale).title}`}
             className={cn(
               "flex shrink-0 flex-col items-center gap-1 rounded-xl border px-3 py-2 transition-colors",
               active ? "border-primary bg-primary/5" : "hover:bg-secondary",

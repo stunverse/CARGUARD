@@ -8,9 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/lib/toast";
+import { useI18n } from "@/components/i18n-provider";
 import type { Profile } from "@/types";
 
+const FIELD_LABEL: Record<string, string> = {
+  first_name: "set.firstName",
+  last_name: "set.lastName",
+  phone: "set.phone",
+  country: "set.country",
+};
+
 export function SettingsForm({ profile }: { profile: Partial<Profile> }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [form, setForm] = useState({
     first_name: profile.first_name ?? "",
@@ -34,9 +43,9 @@ export function SettingsForm({ profile }: { profile: Partial<Profile> }) {
     setSaving(false);
     if (res.ok) {
       setSaved(true);
-      toast.success("Profile saved.");
+      toast.success(t("set.profileSaved"));
     } else {
-      toast.error("Could not save your profile.");
+      toast.error(t("set.saveError"));
     }
   }
 
@@ -59,15 +68,15 @@ export function SettingsForm({ profile }: { profile: Partial<Profile> }) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Profile</CardTitle>
+          <CardTitle className="text-base">{t("set.profile")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={save} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               {(["first_name", "last_name", "phone", "country"] as const).map((k) => (
                 <div key={k} className="space-y-2">
-                  <Label htmlFor={k} className="capitalize">
-                    {k.replace("_", " ")}
+                  <Label htmlFor={k}>
+                    {t(FIELD_LABEL[k])}
                   </Label>
                   <Input
                     id={k}
@@ -79,9 +88,9 @@ export function SettingsForm({ profile }: { profile: Partial<Profile> }) {
             </div>
             <div className="flex items-center gap-3">
               <Button type="submit" disabled={saving}>
-                {saving ? "Saving…" : "Save changes"}
+                {saving ? t("set.saving") : t("set.saveChanges")}
               </Button>
-              {saved && <span className="text-sm text-risk-low">Saved.</span>}
+              {saved && <span className="text-sm text-risk-low">{t("set.saved")}</span>}
             </div>
           </form>
         </CardContent>
@@ -89,27 +98,26 @@ export function SettingsForm({ profile }: { profile: Partial<Profile> }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Account</CardTitle>
+          <CardTitle className="text-base">{t("set.account")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Button variant="outline" onClick={signOut}>
-              Sign out
+              {t("set.signOut")}
             </Button>
           </div>
           <div className="rounded-lg border border-destructive/30 p-4">
-            <h3 className="font-medium text-destructive">Delete account</h3>
+            <h3 className="font-medium text-destructive">{t("set.deleteAccount")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Permanently deletes your account, inspections, photos and reports.
-              This cannot be undone.
+              {t("set.deleteDesc")}
             </p>
             {confirmDelete ? (
               <div className="mt-3 flex gap-2">
                 <Button variant="destructive" onClick={deleteAccount}>
-                  Yes, delete everything
+                  {t("set.confirmDelete")}
                 </Button>
                 <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
-                  Cancel
+                  {t("set.cancel")}
                 </Button>
               </div>
             ) : (
@@ -118,7 +126,7 @@ export function SettingsForm({ profile }: { profile: Partial<Profile> }) {
                 className="mt-3"
                 onClick={() => setConfirmDelete(true)}
               >
-                Delete my account
+                {t("set.deleteMyAccount")}
               </Button>
             )}
           </div>

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Download, FileText, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
+import { useI18n } from "@/components/i18n-provider";
 
 export function GenerateReportButton({ sessionId }: { sessionId: string }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,13 +21,13 @@ export function GenerateReportButton({ sessionId }: { sessionId: string }) {
     });
     const data = await res.json();
     if (!res.ok) {
-      const msg = data.error ?? "Could not generate report.";
+      const msg = data.error ?? t("ra.couldNotGenerate");
       setError(msg);
       toast.error(msg);
       setLoading(false);
       return;
     }
-    toast.success("Report generated.");
+    toast.success(t("ra.reportGenerated"));
     router.push(`/inspections/${sessionId}/report?generated=1`);
     router.refresh();
   }
@@ -34,7 +36,7 @@ export function GenerateReportButton({ sessionId }: { sessionId: string }) {
     <div className="flex flex-col items-end gap-1">
       <Button onClick={generate} disabled={loading}>
         <FileText className="size-4" />
-        {loading ? "Generating…" : "Generate report"}
+        {loading ? t("ra.generating") : t("ra.generateReport")}
       </Button>
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
@@ -44,6 +46,7 @@ export function GenerateReportButton({ sessionId }: { sessionId: string }) {
 // Server-rendered PDF (pdfkit). Falls back to browser print if the user
 // prefers; the primary action downloads a real PDF file.
 export function PdfExportButton({ sessionId }: { sessionId: string }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
   async function download() {
@@ -68,7 +71,7 @@ export function PdfExportButton({ sessionId }: { sessionId: string }) {
 
   return (
     <Button variant="outline" onClick={download} disabled={loading}>
-      <Download className="size-4" /> {loading ? "Preparing…" : "Export PDF"}
+      <Download className="size-4" /> {loading ? t("ra.preparing") : t("ra.exportPdf")}
     </Button>
   );
 }
@@ -82,6 +85,7 @@ export function ShareReportButton({
   shareToken: string | null;
   isPublic: boolean;
 }) {
+  const { t } = useI18n();
   const [enabled, setEnabled] = useState(isPublic);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -112,11 +116,11 @@ export function ShareReportButton({
     <div className="flex items-center gap-2">
       <Button variant="outline" onClick={toggle} disabled={loading}>
         <Share2 className="size-4" />
-        {enabled ? "Sharing on" : "Enable share link"}
+        {enabled ? t("ra.sharingOn") : t("ra.enableShare")}
       </Button>
       {enabled && shareUrl && (
         <Button variant="ghost" size="sm" onClick={copy}>
-          {copied ? "Copied!" : "Copy link"}
+          {copied ? t("ra.copied") : t("ra.copyLink")}
         </Button>
       )}
     </div>

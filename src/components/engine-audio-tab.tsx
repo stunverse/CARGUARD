@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { RiskScoreCircle } from "@/components/risk-indicators";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import {
-  ENGINE_AUDIO_DISCLAIMER,
   ENGINE_AUDIO_RECOMMENDATION_COPY,
   ENGINE_AUDIO_RISK_COPY,
   ENGINE_SOUND_LABELS,
@@ -26,22 +25,24 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { STORAGE_BUCKETS } from "@/lib/constants";
 import { fileExt, getUserId, uploadToStorage } from "@/lib/upload";
+import { useI18n } from "@/components/i18n-provider";
+import { ENGINE_AUDIO_RECO_FR, ENGINE_AUDIO_RISK_FR, ENGINE_SOUND_FR, pick } from "@/lib/content-i18n";
 import type {
   DetectedEngineSound,
   EngineAudioCheck,
   EngineAudioRiskLevel,
 } from "@/types";
 
-const RECORDING_TIPS = [
-  "Turn off the radio.",
-  "Close the doors if possible.",
-  "Ask the seller not to rev the engine immediately.",
-  "Record 10–20s before starting if you can.",
-  "Continue 20–40s after startup.",
-  "Open the hood if possible.",
-  "Avoid noisy environments and wind.",
-  "Don't place the phone near the exhaust.",
-  "Don't touch the microphone while recording.",
+const RECORDING_TIP_KEYS = [
+  "eat.tips.radio",
+  "eat.tips.doors",
+  "eat.tips.noRev",
+  "eat.tips.before",
+  "eat.tips.after",
+  "eat.tips.hood",
+  "eat.tips.noisy",
+  "eat.tips.exhaust",
+  "eat.tips.noTouch",
 ];
 
 const riskVariant: Record<EngineAudioRiskLevel, "low" | "moderate" | "high" | "critical" | "secondary"> = {
@@ -59,6 +60,7 @@ export function EngineAudioTab({
   sessionId: string;
   initialCheck: EngineAudioCheck | null;
 }) {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [check, setCheck] = useState<EngineAudioCheck | null>(initialCheck);
   const [busy, setBusy] = useState(false);
@@ -92,7 +94,7 @@ export function EngineAudioTab({
       mediaRef.current = mr;
       setRecording(true);
     } catch {
-      setError("Microphone access was denied or is unavailable. Upload a file instead.");
+      setError(t("eat.micDenied"));
     }
   }
 
@@ -106,7 +108,7 @@ export function EngineAudioTab({
     setError(null);
     try {
       const userId = await getUserId();
-      if (!userId) throw new Error("Please sign in again.");
+      if (!userId) throw new Error(t("ui.signIn"));
       const isVideo = file.type.startsWith("video/");
       const path = `${userId}/${sessionId}/engine.${fileExt(file)}`;
       await uploadToStorage(STORAGE_BUCKETS.engineAudio, path, file);
@@ -123,11 +125,11 @@ export function EngineAudioTab({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      if (!res.ok) throw new Error(data.error ?? t("ui.uploadFailed"));
       setCheck(data.check);
       router.refresh();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Upload failed.";
+      const msg = e instanceof Error ? e.message : t("ui.uploadFailed");
       setError(msg);
       toast.error(msg);
     } finally {
@@ -146,11 +148,11 @@ export function EngineAudioTab({
     const data = await res.json();
     setAnalyzing(false);
     if (!res.ok) {
-      setError(data.error ?? "Analysis failed.");
-      toast.error(data.error ?? "Engine audio analysis failed.");
+      setError(data.error ?? t("eat.analysisFailed"));
+      toast.error(data.error ?? t("eat.analysisFailedToast"));
       return;
     }
-    toast.success("Engine audio analyzed.");
+    toast.success(t("eat.analyzedToast"));
     setCheck(data.check);
     router.refresh();
   }
@@ -165,15 +167,11 @@ export function EngineAudioTab({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Volume2 className="size-5 text-accent" /> Engine Start Audio Check
+            <Volume2 className="size-5 text-accent" /> {t("eat.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Record the vehicle starting from cold or upload a short audio/video.
-            CarGuard AI will listen for unusual startup noises such as knocking,
-            rattling, squealing, misfires, or rough idle. This module is optional.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("eat.intro")}</p>
 
           <input
             ref={fileRef}
@@ -189,22 +187,21 @@ export function EngineAudioTab({
           <div className="flex flex-wrap gap-2">
             {recording ? (
               <Button variant="destructive" onClick={stopRecording}>
-                <Square className="size-4" /> Stop recording
+                <Square className="size-4" /> {t("eat.stopRecording")}
               </Button>
             ) : (
               <Button onClick={startRecording} disabled={busy}>
-                <Mic className="size-4" /> Record audio
+                <Mic className="size-4" /> {t("eat.recordAudio")}
               </Button>
             )}
             <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy || recording}>
-              <Upload className="size-4" /> Upload file
+              <Upload className="size-4" /> {t("eat.uploadFile")}
             </Button>
           </div>
-          {busy && <p className="text-sm text-muted-foreground">Uploading & checking quality…</p>}
+          {busy && <p className="text-sm text-muted-foreground">{t("eat.uploadingChecking")}</p>}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <p className="text-xs text-muted-foreground">
-            Tip: for the most reliable AI analysis, upload an <strong>MP3 or WAV</strong> file.
-            Other formats are stored but analyzed in a limited mode.
+            {t("eat.tipFormatPre")} <strong>{t("eat.tipFormatStrong")}</strong>{t("eat.tipFormatPost")}
           </p>
         </CardContent>
       </Card>
@@ -212,18 +209,14 @@ export function EngineAudioTab({
       {/* Section 2 — instructions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">How to record</CardTitle>
+          <CardTitle className="text-base">{t("eat.howToRecord")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            For a more reliable analysis, record the engine at startup, ideally cold.
-            Place the phone 1–2 m from the open hood or the front of the vehicle.
-            Avoid wind, music, conversations and traffic noise.
-          </p>
+          <p>{t("eat.howToRecordDesc")}</p>
           <ul className="grid gap-1 sm:grid-cols-2">
-            {RECORDING_TIPS.map((t) => (
-              <li key={t} className="flex items-start gap-2">
-                <Circle className="mt-1.5 size-1.5 shrink-0 fill-current" /> {t}
+            {RECORDING_TIP_KEYS.map((key) => (
+              <li key={key} className="flex items-start gap-2">
+                <Circle className="mt-1.5 size-1.5 shrink-0 fill-current" /> {t(key)}
               </li>
             ))}
           </ul>
@@ -234,7 +227,7 @@ export function EngineAudioTab({
       {check && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Uploaded recording</CardTitle>
+            <CardTitle className="text-base">{t("eat.uploadedRecording")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -245,13 +238,13 @@ export function EngineAudioTab({
               <QualityBadge status={check.quality_status} />
               {quality?.audio_quality_score != null && (
                 <span className="text-muted-foreground">
-                  Quality {quality.audio_quality_score}/100
+                  {t("eat.quality")} {quality.audio_quality_score}/100
                 </span>
               )}
             </div>
             {check.file_url && (
               <audio controls src={check.file_url} className="w-full">
-                Your browser does not support audio playback.
+                {t("eat.audioUnsupported")}
               </audio>
             )}
             {check.quality_status === "needs_retake" && quality?.retake_instructions && (
@@ -261,7 +254,7 @@ export function EngineAudioTab({
             )}
             {!analyzed && (
               <Button onClick={analyze} disabled={analyzing}>
-                {analyzing ? "Analyzing…" : "Analyze engine audio"}
+                {analyzing ? t("eat.analyzing") : t("eat.analyzeBtn")}
               </Button>
             )}
           </CardContent>
@@ -272,23 +265,23 @@ export function EngineAudioTab({
       {analyzed && analysis && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Engine audio analysis</CardTitle>
+            <CardTitle className="text-base">{t("eat.analysisTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex flex-col items-center gap-4 sm:flex-row">
-              <RiskScoreCircle score={analysis.engine_audio_score} label="Engine audio score" />
+              <RiskScoreCircle score={analysis.engine_audio_score} label={t("eat.engineAudioScore")} />
               <div className="flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={riskVariant[analysis.risk_level]}>
-                    {ENGINE_AUDIO_RISK_COPY[analysis.risk_level]}
+                    {pick(locale, analysis.risk_level, ENGINE_AUDIO_RISK_FR, ENGINE_AUDIO_RISK_COPY)}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    Confidence {analysis.confidence_score}%
+                    {t("eat.confidence")} {analysis.confidence_score}%
                   </span>
                 </div>
                 <p className="text-sm">{analysis.summary}</p>
                 <p className="rounded-md bg-muted/50 p-2 text-sm">
-                  {ENGINE_AUDIO_RECOMMENDATION_COPY[analysis.recommendation]}
+                  {pick(locale, analysis.recommendation, ENGINE_AUDIO_RECO_FR, ENGINE_AUDIO_RECOMMENDATION_COPY)}
                 </p>
               </div>
             </div>
@@ -296,51 +289,53 @@ export function EngineAudioTab({
             {/* Detected sounds */}
             {analysis.detected_sounds.length > 0 ? (
               <div className="space-y-2">
-                <h4 className="font-semibold">Detected sounds</h4>
+                <h4 className="font-semibold">{t("eat.detectedSounds")}</h4>
                 {analysis.detected_sounds.map((s, i) => (
                   <DetectedSoundCard key={i} sound={s} />
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-risk-low">No suspicious sound was detected in the audio.</p>
+              <p className="text-sm text-risk-low">{t("eat.noSuspicious")}</p>
             )}
 
             {/* Questions */}
             <div className="grid gap-4 md:grid-cols-2">
-              <QuestionList title="Questions for the seller" items={analysis.seller_questions} />
-              <QuestionList title="Questions for the mechanic" items={analysis.mechanic_questions} />
+              <QuestionList title={t("eat.qSeller")} items={analysis.seller_questions} />
+              <QuestionList title={t("eat.qMechanic")} items={analysis.mechanic_questions} />
             </div>
 
             {analysis.next_steps.length > 0 && (
-              <QuestionList title="Recommended next steps" items={analysis.next_steps} />
+              <QuestionList title={t("eat.nextSteps")} items={analysis.next_steps} />
             )}
           </CardContent>
         </Card>
       )}
 
-      <DisclaimerBanner text={ENGINE_AUDIO_DISCLAIMER} />
+      <DisclaimerBanner text={t("eat.disclaimer")} />
     </div>
   );
 }
 
 function QualityBadge({ status }: { status: string }) {
+  const { t } = useI18n();
   if (status === "passed")
     return (
       <Badge variant="low">
-        <CheckCircle2 className="mr-1 size-3" /> Quality OK
+        <CheckCircle2 className="mr-1 size-3" /> {t("eat.qualityOK")}
       </Badge>
     );
   if (status === "needs_retake")
     return (
       <Badge variant="moderate">
-        <AlertTriangle className="mr-1 size-3" /> Retake recommended
+        <AlertTriangle className="mr-1 size-3" /> {t("eat.retakeRecommended")}
       </Badge>
     );
-  if (status === "failed") return <Badge variant="critical">Failed</Badge>;
-  return <Badge variant="secondary">Pending</Badge>;
+  if (status === "failed") return <Badge variant="critical">{t("eat.failed")}</Badge>;
+  return <Badge variant="secondary">{t("eat.pending")}</Badge>;
 }
 
 function DetectedSoundCard({ sound }: { sound: DetectedEngineSound }) {
+  const { locale, t } = useI18n();
   const sevVariant =
     sound.severity === "critical"
       ? "critical"
@@ -351,7 +346,7 @@ function DetectedSoundCard({ sound }: { sound: DetectedEngineSound }) {
     <div className="rounded-md border p-3 text-sm">
       <div className="flex items-center justify-between">
         <span className="font-medium">
-          {ENGINE_SOUND_LABELS[sound.sound_type] ?? sound.sound_type}
+          {pick(locale, sound.sound_type, ENGINE_SOUND_FR, ENGINE_SOUND_LABELS)}
         </span>
         <Badge variant={sevVariant as never}>
           {sound.severity} · {sound.confidence}%
@@ -360,12 +355,12 @@ function DetectedSoundCard({ sound }: { sound: DetectedEngineSound }) {
       <p className="mt-1 text-muted-foreground">{sound.explanation}</p>
       {(sound.timestamp_start > 0 || sound.timestamp_end > 0) && (
         <p className="mt-1 text-xs text-muted-foreground">
-          Around {sound.timestamp_start}s–{sound.timestamp_end}s
+          {t("eat.around")} {sound.timestamp_start}s–{sound.timestamp_end}s
         </p>
       )}
       {sound.possible_causes?.length > 0 && (
         <p className="mt-1 text-xs">
-          Possible causes: {sound.possible_causes.join(", ")}
+          {t("eat.possibleCauses")} {sound.possible_causes.join(", ")}
         </p>
       )}
       {sound.recommended_action && (

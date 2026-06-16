@@ -9,6 +9,8 @@ import {
   PdfExportButton,
   ShareReportButton,
 } from "@/components/report-actions";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import type { FinalReport } from "@/types";
 
 export const metadata = { title: "Report — CarGuard AI" };
@@ -22,6 +24,7 @@ export default async function ReportPage({
 }) {
   const { id } = await params;
   const { generated } = await searchParams;
+  const locale = await getServerLocale();
   const supabase = await createClient();
 
   const { data: report } = await supabase
@@ -36,9 +39,9 @@ export default async function ReportPage({
     return (
       <div className="px-5 py-6">
         <EmptyState
-          title="No report yet"
-          description="Run the analysis and generate a report first."
-          actionLabel="Go to analysis"
+          title={t(locale, "rp.noReport")}
+          description={t(locale, "rp.noReportDesc")}
+          actionLabel={t(locale, "rp.goAnalysis")}
           actionHref={`/inspections/${id}/analysis`}
         />
       </div>
@@ -54,9 +57,9 @@ export default async function ReportPage({
         <div className="mb-5 flex items-center gap-3 rounded-2xl border border-risk-low/40 bg-risk-low/10 p-4 print:hidden">
           <CheckCircle2 className="size-7 shrink-0 text-risk-low" aria-hidden />
           <div>
-            <p className="font-semibold text-[#111827]">Your report is ready</p>
+            <p className="font-semibold text-[#111827]">{t(locale, "rp.ready")}</p>
             <p className="text-sm text-muted-foreground">
-              Review the findings below, export the PDF, or share a secure link.
+              {t(locale, "rp.readyDesc")}
             </p>
           </div>
         </div>
@@ -66,7 +69,7 @@ export default async function ReportPage({
           href={`/inspections/${id}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-4" /> Back
+          <ArrowLeft className="size-4" /> {t(locale, "rp.back")}
         </Link>
         <div className="flex items-center gap-2">
           <ShareReportButton
@@ -82,7 +85,7 @@ export default async function ReportPage({
 
       <div className="mt-6 flex justify-center print:hidden">
         <Button asChild variant="outline">
-          <Link href="/dashboard">Back to dashboard</Link>
+          <Link href="/dashboard">{t(locale, "rp.backDashboard")}</Link>
         </Button>
       </div>
     </div>

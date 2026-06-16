@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { STORAGE_BUCKETS } from "@/lib/constants";
 import { compressImage, getUserId, uploadToStorage } from "@/lib/upload";
+import { useI18n } from "@/components/i18n-provider";
 
 interface FollowUp {
   id: string;
@@ -27,6 +28,7 @@ export function FollowUpPhotoRequestCard({
   sessionId: string;
   request: FollowUp;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState(request.status);
@@ -40,7 +42,7 @@ export function FollowUpPhotoRequestCard({
     setError(null);
     try {
       const userId = await getUserId();
-      if (!userId) throw new Error("Please sign in again.");
+      if (!userId) throw new Error(t("ui.signIn"));
       const compressed = await compressImage(file);
       const path = `${userId}/${sessionId}/followup-${request.id}.jpg`;
       await uploadToStorage(STORAGE_BUCKETS.inspectionPhotos, path, compressed);
@@ -51,13 +53,13 @@ export function FollowUpPhotoRequestCard({
         body: JSON.stringify({ storage_path: path }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Upload failed.");
+      if (!res.ok) throw new Error(data.error ?? t("ui.uploadFailed"));
       setStatus("analyzed");
       setImageUrl(data.request.image_url);
       setSummary(data.analysis?.summary ?? null);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed.");
+      setError(e instanceof Error ? e.message : t("ui.uploadFailed"));
     } finally {
       setBusy(false);
     }
@@ -85,12 +87,12 @@ export function FollowUpPhotoRequestCard({
           </div>
           {status === "analyzed" ? (
             <Badge variant="low">
-              <CheckCircle2 className="mr-1 size-3" /> Analyzed
+              <CheckCircle2 className="mr-1 size-3" /> {t("fu.analyzed")}
             </Badge>
           ) : status === "skipped" ? (
-            <Badge variant="secondary">Skipped</Badge>
+            <Badge variant="secondary">{t("ui.skipped")}</Badge>
           ) : (
-            <Badge variant="moderate">Requested</Badge>
+            <Badge variant="moderate">{t("fu.requested")}</Badge>
           )}
         </div>
 
@@ -120,11 +122,11 @@ export function FollowUpPhotoRequestCard({
               }}
             />
             <Button size="sm" onClick={() => fileRef.current?.click()} disabled={busy}>
-              <Camera className="size-4" /> {busy ? "…" : "Upload close-up"}
+              <Camera className="size-4" /> {busy ? "…" : t("fu.uploadCloseup")}
             </Button>
             {status !== "skipped" && (
               <Button size="sm" variant="ghost" onClick={skip} disabled={busy}>
-                <SkipForward className="size-4" /> Skip
+                <SkipForward className="size-4" /> {t("ui.skip")}
               </Button>
             )}
           </div>

@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
+import { useI18n } from "@/components/i18n-provider";
 
 export function SupportForm() {
+  const { t } = useI18n();
   const router = useRouter();
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -28,11 +30,11 @@ export function SupportForm() {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setError(data.error ?? "Could not submit.");
-      toast.error(data.error ?? "Could not submit your ticket.");
+      setError(data.error ?? t("sf.couldNotSubmit"));
+      toast.error(data.error ?? t("sf.couldNotSubmitTicket"));
       return;
     }
-    toast.success("Ticket submitted.");
+    toast.success(t("sf.ticketSubmitted"));
     setDone(true);
     setSubject("");
     setMessage("");
@@ -42,17 +44,17 @@ export function SupportForm() {
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="subject">Subject</Label>
+        <Label htmlFor="subject">{t("sf.subject")}</Label>
         <Input id="subject" value={subject} required onChange={(e) => setSubject(e.target.value)} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="message">Message</Label>
+        <Label htmlFor="message">{t("sf.message")}</Label>
         <Textarea id="message" rows={5} value={message} required onChange={(e) => setMessage(e.target.value)} />
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
-      {done && <p className="text-sm text-risk-low">Ticket submitted. We&apos;ll get back to you.</p>}
+      {done && <p className="text-sm text-risk-low">{t("sf.ticketSubmittedMsg")}</p>}
       <Button type="submit" disabled={loading}>
-        {loading ? "Sending…" : "Submit ticket"}
+        {loading ? t("sf.sending") : t("sf.submitTicket")}
       </Button>
     </form>
   );

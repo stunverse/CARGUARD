@@ -1,6 +1,9 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PHOTO_POINTS } from "@/lib/constants";
+import { useI18n } from "@/components/i18n-provider";
 import type { InspectionPhoto } from "@/types";
 
 const severityVariant = {
@@ -11,6 +14,7 @@ const severityVariant = {
 } as const;
 
 export function PhotoAnalysisCard({ photo }: { photo: InspectionPhoto }) {
+  const { t } = useI18n();
   const point = PHOTO_POINTS.find((p) => p.code === photo.photo_point_code);
   const a = photo.ai_analysis;
 
@@ -21,9 +25,9 @@ export function PhotoAnalysisCard({ photo }: { photo: InspectionPhoto }) {
           <span>{point?.title ?? photo.photo_point_code}</span>
           <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
             {photo.ai_quality_check?.quality_score != null && (
-              <span>Quality {photo.ai_quality_check.quality_score}</span>
+              <span>{t("pac.quality")} {photo.ai_quality_check.quality_score}</span>
             )}
-            {a?.risk_score != null && <span>Risk {a.risk_score}/100</span>}
+            {a?.risk_score != null && <span>{t("pac.risk")} {a.risk_score}/100</span>}
           </span>
         </CardTitle>
       </CardHeader>
@@ -40,7 +44,7 @@ export function PhotoAnalysisCard({ photo }: { photo: InspectionPhoto }) {
 
         {a?.suspicious_observations && a.suspicious_observations.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-risk-moderate">Suspicious observations</p>
+            <p className="text-xs font-semibold text-risk-moderate">{t("pac.suspiciousObs")}</p>
             <ul className="mt-1 space-y-1 text-sm">
               {a.suspicious_observations.map((o, i) => (
                 <li key={i}>• {o}</li>
@@ -66,7 +70,7 @@ export function PhotoAnalysisCard({ photo }: { photo: InspectionPhoto }) {
         )}
 
         {(!a?.detected_issues || a.detected_issues.length === 0) && (
-          <p className="text-sm text-risk-low">No obvious issue detected on this photo.</p>
+          <p className="text-sm text-risk-low">{t("pac.noIssue")}</p>
         )}
       </CardContent>
     </Card>

@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n-provider";
 import type { Plan } from "@/lib/billing";
 import type { PlanName } from "@/types";
 
@@ -15,6 +16,7 @@ export function BillingPlanCard({
   plan: Plan;
   current: PlanName;
 }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isCurrent = plan.name === current;
@@ -33,7 +35,7 @@ export function BillingPlanCard({
     if (res.ok && data.url) {
       window.location.href = data.url;
     } else {
-      setError(data.error ?? "Checkout unavailable.");
+      setError(data.error ?? t("bpc.checkoutUnavailable"));
     }
   }
 
@@ -44,13 +46,13 @@ export function BillingPlanCard({
           {plan.label}
           {isCurrent && (
             <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
-              Current
+              {t("bpc.current")}
             </span>
           )}
         </CardTitle>
         <div className="text-2xl font-bold">
           ${plan.priceMonthly}
-          <span className="text-sm font-normal text-muted-foreground">/mo</span>
+          <span className="text-sm font-normal text-muted-foreground">{t("bpc.perMo")}</span>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -64,7 +66,7 @@ export function BillingPlanCard({
         </ul>
         {!isCurrent && plan.name !== "free" && (
           <Button className="w-full" onClick={choose} disabled={loading}>
-            {loading ? "…" : "Choose plan"}
+            {loading ? "…" : t("bpc.choosePlan")}
           </Button>
         )}
         {error && <p className="text-xs text-destructive">{error}</p>}
@@ -74,6 +76,7 @@ export function BillingPlanCard({
 }
 
 export function ManageBillingButton() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,14 +89,14 @@ export function ManageBillingButton() {
     if (res.ok && data.url) {
       window.location.href = data.url;
     } else {
-      setError(data.error ?? "Unable to open billing portal.");
+      setError(data.error ?? t("bpc.unablePortal"));
     }
   }
 
   return (
     <div className="flex flex-col items-start gap-1">
       <Button variant="outline" onClick={openPortal} disabled={loading}>
-        {loading ? "Opening…" : "Manage subscription"}
+        {loading ? t("bpc.opening") : t("bpc.manageSub")}
       </Button>
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
