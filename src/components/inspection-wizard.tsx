@@ -7,6 +7,7 @@ import {
   Camera,
   CheckCircle2,
   ChevronRight,
+  Clock,
   RefreshCw,
   Sparkles,
   Video,
@@ -277,6 +278,14 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     }
   }
 
+  // Exit the wizard, leaving the in-progress inspection saved as a draft.
+  // Photos and mechanical steps are persisted as they go, so there is
+  // nothing extra to save — we just confirm and return to the list.
+  function continueLater() {
+    toast.success(t("wiz.draftSaved"));
+    router.push("/inspections");
+  }
+
   const passedCount = PHOTO_POINTS.filter((p) => photoState[p.code]?.status === "passed").length;
 
   return (
@@ -298,6 +307,19 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
           {Math.min(stepNumber + 1, total)}/{total}
         </span>
       </div>
+
+      {/* Continue later — the draft is auto-saved; this just exits. */}
+      {sessionId && phase !== "finishing" && (
+        <div className="-mt-3 mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={continueLater}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] px-3 py-1.5 text-xs font-medium text-[#6B7280] transition-colors hover:bg-secondary"
+          >
+            <Clock className="size-3.5" aria-hidden /> {t("wiz.continueLater")}
+          </button>
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex flex-1 flex-col">

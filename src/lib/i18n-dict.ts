@@ -76,6 +76,8 @@ export const dict: Record<Locale, Record<string, string>> = {
     "wiz.building": "Building your report",
     "wiz.photo": "Photo",
     "wiz.engineCheck": "Engine check",
+    "wiz.continueLater": "Continue later",
+    "wiz.draftSaved": "Inspection saved as a draft. You can resume it anytime.",
     "wiz.allSet": "All set!",
     "wiz.reviewBody": "exterior photo(s) captured + engine & mechanical checks. CarGuard AI will now analyze everything and produce your report with a confidence score.",
     // vehicle questions
@@ -553,6 +555,8 @@ export const dict: Record<Locale, Record<string, string>> = {
     "wiz.building": "Génération de votre rapport",
     "wiz.photo": "Photo",
     "wiz.engineCheck": "Contrôle moteur",
+    "wiz.continueLater": "Continuer plus tard",
+    "wiz.draftSaved": "Inspection enregistrée en brouillon. Vous pourrez la reprendre à tout moment.",
     "wiz.allSet": "Tout est prêt !",
     "wiz.reviewBody": "photo(s) extérieure(s) capturée(s) + contrôles moteur & mécanique. CarGuard AI va tout analyser et produire votre rapport avec un score de confiance.",
     // vehicle questions
