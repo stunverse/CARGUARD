@@ -102,12 +102,8 @@ export default async function HomePage() {
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0B12]/85 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-3 lg:px-8">
           <Link href="/" className="flex items-center gap-2 text-lg font-extrabold text-white">
-            <span
-              className="flex size-8 items-center justify-center rounded-lg text-white"
-              style={{ backgroundImage: RED_GRADIENT }}
-            >
-              <ShieldCheck className="size-5" aria-hidden />
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.svg" alt="" aria-hidden className="size-9" />
             CarGuard <span className="text-[#FF4D4D]">AI</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -438,7 +434,8 @@ export default async function HomePage() {
       <footer className="bg-[#0B0B12] text-white/60">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-5 py-10 text-center text-xs lg:px-8">
           <div className="flex items-center gap-2 text-base font-extrabold text-white">
-            <ShieldCheck className="size-5 text-[#FF4D4D]" aria-hidden /> CarGuard <span className="text-[#FF4D4D]">AI</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.svg" alt="" aria-hidden className="size-7" /> CarGuard <span className="text-[#FF4D4D]">AI</span>
           </div>
           <div className="flex justify-center gap-5">
             <Link href="/terms" className="hover:text-white">Terms</Link>

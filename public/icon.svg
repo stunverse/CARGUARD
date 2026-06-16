@@ -1,11 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="CarGuard AI">
-  <rect width="512" height="512" rx="112" fill="#b91c1c"/>
-  <!-- Shield -->
-  <path d="M256 96l120 44v104c0 92-62 142-120 172-58-30-120-80-120-172V140l120-44z"
-        fill="none" stroke="#ffffff" stroke-width="26" stroke-linejoin="round"/>
-  <!-- Check mark -->
-  <path d="M206 258l36 36 72-78" fill="none" stroke="#ffffff" stroke-width="26"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- AI accent dot -->
-  <circle cx="372" cy="150" r="30" fill="#14b8a6"/>
+  <!-- Transparent background — no fill rect. -->
+  <defs>
+    <linearGradient id="cgRed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF3030"/>
+      <stop offset="0.55" stop-color="#E50914"/>
+      <stop offset="1" stop-color="#A60008"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield outer outline -->
+  <path d="M256 56 L430 122 V264 C430 372 352 420 256 456 C160 420 82 372 82 264 V122 Z"
+        fill="none" stroke="url(#cgRed)" stroke-width="30" stroke-linejoin="round"/>
+  <!-- Shield inner outline (double-line look) -->
+  <path d="M256 100 L396 152 V266 C396 348 336 386 256 416 C176 386 116 348 116 266 V152 Z"
+        fill="none" stroke="url(#cgRed)" stroke-width="12" stroke-linejoin="round" opacity="0.85"/>
+  <!-- Sleek car silhouette crossing the shield -->
+  <path d="M40 302
+           C150 298 206 294 248 280
+           C262 256 300 248 334 262
+           C364 274 372 288 380 294
+           C414 302 442 304 472 302
+           C442 308 412 310 380 306
+           C366 312 352 318 334 320
+           C300 330 262 320 248 302
+           C206 314 150 314 40 302 Z"
+        fill="url(#cgRed)"/>
 </svg>

@@ -48,7 +48,8 @@ export function SideNav({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-1 border-r border-[#E5E7EB] bg-white px-4 py-6 lg:flex">
       <Link href="/dashboard" className="mb-5 flex items-center gap-2 px-2 text-lg font-bold">
-        <ShieldCheck className="size-6 text-[#E50914]" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icon.svg" alt="" aria-hidden className="size-8" />
         CarGuard <span className="text-[#E50914]">AI</span>
       </Link>
 
