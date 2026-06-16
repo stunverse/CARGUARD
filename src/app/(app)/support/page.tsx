@@ -8,23 +8,13 @@ import { t } from "@/lib/i18n";
 
 export const metadata = { title: "Support — CarGuard AI" };
 
-const FAQ = [
-  {
-    q: "How many photos do I need?",
-    a: "8 mandatory exterior photos: front, rear, both sides, and the 4 diagonals. No interior or engine photos are required.",
-  },
-  {
-    q: "Does CarGuard AI replace a mechanic?",
-    a: "No. It is a preliminary, photo-based screening tool. Always consider a professional inspection before purchase.",
-  },
-  {
-    q: "Can it guarantee the car was never in an accident?",
-    a: "No. It highlights possible visual signs only and speaks in probabilities, never certainties.",
-  },
-];
-
 export default async function SupportPage() {
   const locale = await getServerLocale();
+  const FAQ = [
+    { q: t(locale, "sup.q1"), a: t(locale, "sup.a1") },
+    { q: t(locale, "sup.q2"), a: t(locale, "sup.a2") },
+    { q: t(locale, "sup.q3"), a: t(locale, "sup.a3") },
+  ];
   const supabase = await createClient();
   const { data: tickets } = await supabase
     .from("support_tickets")
@@ -37,7 +27,7 @@ export default async function SupportPage() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-base">FAQ</CardTitle>
+          <CardTitle className="text-base">{t(locale, "sup.faq")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {FAQ.map((f) => (
@@ -51,7 +41,7 @@ export default async function SupportPage() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Contact support</CardTitle>
+          <CardTitle className="text-base">{t(locale, "sup.contact")}</CardTitle>
         </CardHeader>
         <CardContent>
           <SupportForm />
@@ -61,7 +51,7 @@ export default async function SupportPage() {
       {tickets && tickets.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Your tickets</CardTitle>
+            <CardTitle className="text-base">{t(locale, "sup.yourTickets")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {tickets.map((ticket) => (

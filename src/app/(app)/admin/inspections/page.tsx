@@ -2,11 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { RiskLevelBadge, RecommendationBadge } from "@/components/risk-indicators";
 import { formatDate } from "@/lib/utils";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import type { InspectionSession } from "@/types";
 
 export const metadata = { title: "Admin · Inspections — CarGuard AI" };
 
 export default async function AdminInspectionsPage() {
+  const locale = await getServerLocale();
   const supabase = await createClient();
   const { data: sessions } = await supabase
     .from("inspection_sessions")
@@ -20,12 +23,12 @@ export default async function AdminInspectionsPage() {
         <table className="w-full text-sm">
           <thead className="border-b text-left text-muted-foreground">
             <tr>
-              <th className="p-3">Vehicle</th>
-              <th className="p-3">Status</th>
-              <th className="p-3">Score</th>
-              <th className="p-3">Risk</th>
-              <th className="p-3">Recommendation</th>
-              <th className="p-3">Created</th>
+              <th className="p-3">{t(locale, "adm.vehicle")}</th>
+              <th className="p-3">{t(locale, "adm.status")}</th>
+              <th className="p-3">{t(locale, "adm.score")}</th>
+              <th className="p-3">{t(locale, "adm.risk")}</th>
+              <th className="p-3">{t(locale, "adm.recommendation")}</th>
+              <th className="p-3">{t(locale, "adm.created")}</th>
             </tr>
           </thead>
           <tbody>

@@ -3,10 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state";
 import { Database } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const metadata = { title: "Admin · Model knowledge — CarGuard AI" };
 
 export default async function AdminVehicleKnowledgePage() {
+  const locale = await getServerLocale();
   const supabase = await createClient();
   const { data: rows } = await supabase
     .from("vehicle_model_knowledge")
@@ -17,8 +20,8 @@ export default async function AdminVehicleKnowledgePage() {
     return (
       <EmptyState
         icon={Database}
-        title="No model knowledge yet"
-        description="The model knowledge base is empty. Entries enrich the model risk score and seller questions for known makes/models."
+        title={t(locale, "adm.noModelKnowledge")}
+        description={t(locale, "adm.noModelKnowledgeDesc")}
       />
     );
   }
@@ -29,11 +32,11 @@ export default async function AdminVehicleKnowledgePage() {
         <table className="w-full text-sm">
           <thead className="border-b text-left text-muted-foreground">
             <tr>
-              <th className="p-3">Make</th>
-              <th className="p-3">Model</th>
-              <th className="p-3">Years</th>
-              <th className="p-3">Body</th>
-              <th className="p-3">Verified</th>
+              <th className="p-3">{t(locale, "adm.make")}</th>
+              <th className="p-3">{t(locale, "adm.model")}</th>
+              <th className="p-3">{t(locale, "adm.years")}</th>
+              <th className="p-3">{t(locale, "adm.body")}</th>
+              <th className="p-3">{t(locale, "adm.verified")}</th>
             </tr>
           </thead>
           <tbody>

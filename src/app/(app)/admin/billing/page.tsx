@@ -3,10 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AdminMetricCard } from "@/components/admin-metric-card";
 import { CreditCard } from "lucide-react";
 import { PLANS } from "@/lib/billing";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 
 export const metadata = { title: "Admin · Billing — CarGuard AI" };
 
 export default async function AdminBillingPage() {
+  const locale = await getServerLocale();
   const supabase = await createClient();
   const { data: subs } = await supabase.from("subscriptions").select("plan_name, status");
 
@@ -23,13 +26,13 @@ export default async function AdminBillingPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        <AdminMetricCard label="Active subscriptions" value={active} icon={CreditCard} />
-        <AdminMetricCard label="Estimated MRR" value={`$${mrr.toFixed(2)}`} icon={CreditCard} />
+        <AdminMetricCard label={t(locale, "adm.activeSubs")} value={active} icon={CreditCard} />
+        <AdminMetricCard label={t(locale, "adm.estMrr")} value={`$${mrr.toFixed(2)}`} icon={CreditCard} />
       </div>
       <Card>
         <CardContent className="p-4 text-sm text-muted-foreground">
           {/* TODO: surface real MRR via Stripe once billing is wired. */}
-          Subscriptions by plan:{" "}
+          {t(locale, "adm.subsByPlan")}{" "}
           {PLANS.map((p) => `${p.label}: ${byPlan.get(p.name) ?? 0}`).join(" · ")}
         </CardContent>
       </Card>

@@ -2,11 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PHOTO_POINTS } from "@/lib/constants";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import type { PhotoPoint } from "@/types";
 
 export const metadata = { title: "Admin · Photo points — CarGuard AI" };
 
 export default async function AdminPhotoPointsPage() {
+  const locale = await getServerLocale();
   const supabase = await createClient();
   const { data } = await supabase
     .from("inspection_photo_points")
@@ -19,7 +22,7 @@ export default async function AdminPhotoPointsPage() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        The 8 mandatory exterior photo points used by the Hidden Damage Scanner.
+        {t(locale, "adm.photoPointsIntro")}
         {/* TODO: admin editing of instructions / example images. */}
       </p>
       {points.map((p) => (
@@ -27,16 +30,16 @@ export default async function AdminPhotoPointsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               {p.order_index}. {p.title}
-              {p.required && <Badge variant="accent">required</Badge>}
+              {p.required && <Badge variant="accent">{t(locale, "adm.required")}</Badge>}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>{p.instruction}</p>
             <p className="text-muted-foreground">{p.why_it_matters}</p>
             <div className="flex flex-wrap gap-1">
-              {(p.ai_detection_targets ?? []).map((t) => (
-                <Badge key={t} variant="outline" className="text-xs">
-                  {t}
+              {(p.ai_detection_targets ?? []).map((target) => (
+                <Badge key={target} variant="outline" className="text-xs">
+                  {target}
                 </Badge>
               ))}
             </div>

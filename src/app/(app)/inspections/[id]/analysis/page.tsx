@@ -19,7 +19,7 @@ import { PhotoAnalysisCard } from "@/components/photo-analysis-card";
 import { GenerateReportButton } from "@/components/report-actions";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { EmptyState } from "@/components/empty-state";
-import { RECOMMENDATION_COPY, REPORT_DISCLAIMER } from "@/lib/constants";
+import { RECOMMENDATION_COPY } from "@/lib/constants";
 import { getServerLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { RECO_TEXT_FR } from "@/lib/content-i18n";
@@ -139,7 +139,7 @@ export default async function AnalysisPage({
         ))}
       </div>
 
-      <DisclaimerBanner text={REPORT_DISCLAIMER} />
+      <DisclaimerBanner text={t(locale, "legal.reportDisclaimer")} />
     </div>
   );
 }

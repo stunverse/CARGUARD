@@ -44,16 +44,6 @@ import type {
   Vehicle,
 } from "@/types";
 
-const SCORE_HELP: Record<string, string> = {
-  "Accident / repair": "Overall likelihood of previous accident or body repair signs.",
-  Alignment: "Hood, trunk, doors, fenders, bumpers, lights gaps.",
-  "Paint / tone": "Color/gloss differences and possible repaint.",
-  Symmetry: "Left/right and front/rear visual balance.",
-  "Bumpers / lights": "Bumper fitment and replaced headlights/taillights.",
-  "Overall consistency": "Repetition of anomalies across all photos.",
-  "Model risk": "Known weak spots for this make/model (when available).",
-};
-
 export function InspectionTabs({
   session,
   vehicle,
@@ -279,13 +269,13 @@ export function InspectionTabs({
             <CardContent className="p-6">
               <ScoreBreakdown
                 scores={[
-                  { label: t("score.accidentRepair"), value: session.accident_repair_score, description: SCORE_HELP["Accident / repair"] },
-                  { label: t("score.alignment"), value: session.alignment_score, description: SCORE_HELP["Alignment"] },
-                  { label: t("score.paintTone"), value: session.paint_tone_score, description: SCORE_HELP["Paint / tone"] },
-                  { label: t("score.symmetry"), value: session.symmetry_score, description: SCORE_HELP["Symmetry"] },
-                  { label: t("score.bumpersLights"), value: session.bumpers_lights_score, description: SCORE_HELP["Bumpers / lights"] },
-                  { label: t("score.overallConsistency"), value: session.overall_consistency_score, description: SCORE_HELP["Overall consistency"] },
-                  { label: t("score.modelRisk"), value: session.model_risk_score, description: SCORE_HELP["Model risk"] },
+                  { label: t("score.accidentRepair"), value: session.accident_repair_score, description: t("help.accidentRepair") },
+                  { label: t("score.alignment"), value: session.alignment_score, description: t("help.alignment") },
+                  { label: t("score.paintTone"), value: session.paint_tone_score, description: t("help.paintTone") },
+                  { label: t("score.symmetry"), value: session.symmetry_score, description: t("help.symmetry") },
+                  { label: t("score.bumpersLights"), value: session.bumpers_lights_score, description: t("help.bumpersLights") },
+                  { label: t("score.overallConsistency"), value: session.overall_consistency_score, description: t("help.overallConsistency") },
+                  { label: t("score.modelRisk"), value: session.model_risk_score, description: t("help.modelRisk") },
                 ]}
               />
             </CardContent>

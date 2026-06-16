@@ -8,6 +8,8 @@ import { PLANS, isStripeConfigured } from "@/lib/billing";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { Badge } from "@/components/ui/badge";
 import { getPlanLimits } from "@/lib/quota";
+import { getServerLocale } from "@/lib/i18n-server";
+import { t } from "@/lib/i18n";
 import type { PlanName } from "@/types";
 
 export const metadata = { title: "Billing — CarGuard AI" };
@@ -18,6 +20,7 @@ export default async function BillingPage({
   searchParams: Promise<{ checkout?: string }>;
 }) {
   const { checkout } = await searchParams;
+  const locale = await getServerLocale();
   const supabase = await createClient();
   const {
     data: { user },
@@ -55,10 +58,10 @@ export default async function BillingPage({
 
   return (
     <div className="px-5 py-6">
-      <h1 className="mb-2 text-2xl font-bold">Billing &amp; plan</h1>
+      <h1 className="mb-2 text-2xl font-bold">{t(locale, "bill.title")}</h1>
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <p className="text-muted-foreground">
-          You are on the <strong className="capitalize">{current}</strong> plan.
+          {t(locale, "bill.youAreOnPre")} <strong className="capitalize">{current}</strong> {t(locale, "bill.youAreOnPost")}
         </p>
         {subscription?.status && current !== "free" && (
           <Badge variant={subscription.status === "active" ? "low" : "moderate"}>
@@ -70,30 +73,30 @@ export default async function BillingPage({
 
       {checkout === "success" && (
         <div className="mb-6 rounded-lg border border-risk-low/40 bg-risk-low/10 p-4 text-sm">
-          Payment received. Your plan will update within a few seconds.
+          {t(locale, "bill.paymentReceived")}
         </div>
       )}
       {checkout === "cancelled" && (
         <div className="mb-6 rounded-lg border p-4 text-sm text-muted-foreground">
-          Checkout cancelled — no changes were made.
+          {t(locale, "bill.checkoutCancelled")}
         </div>
       )}
 
       {!isStripeConfigured() && (
         <DisclaimerBanner
           className="mb-6"
-          text="Online checkout is not enabled in this environment yet. Plans are shown for preview; add Stripe keys to enable upgrades."
+          text={t(locale, "bill.notEnabled")}
         />
       )}
 
       <div className="mb-8 grid gap-3 sm:grid-cols-2">
         <UsageLimitBanner
-          label="Inspections this month"
+          label={t(locale, "bill.inspectionsThisMonth")}
           used={inspectionsThisMonth ?? 0}
           limit={limits.inspections_per_month}
         />
         <UsageLimitBanner
-          label="Reports this month"
+          label={t(locale, "bill.reportsThisMonth")}
           used={reportsThisMonth ?? 0}
           limit={limits.reports_per_month}
         />

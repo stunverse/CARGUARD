@@ -12,6 +12,7 @@ import {
   ZapOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/i18n-provider";
 
 export type CaptureMode = "photo" | "video" | "audio";
 
@@ -42,6 +43,7 @@ export function MediaCapture({
   onCapture: (file: File) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -110,9 +112,7 @@ export function MediaCapture({
         }
         setReady(true);
       } catch {
-        setError(
-          "Camera/microphone not available or permission denied. You can upload a file instead.",
-        );
+        setError(t("cap.cameraError"));
       }
     }
     start();
@@ -212,11 +212,11 @@ export function MediaCapture({
         <span className="text-sm font-semibold">{title}</span>
         <div className="flex items-center gap-3">
           {caps.torch && !error && mode !== "audio" && (
-            <button onClick={toggleTorch} aria-label="Toggle flashlight" className="p-1">
+            <button onClick={toggleTorch} aria-label={t("cap.toggleFlash")} className="p-1">
               {torch ? <Zap className="size-6 text-yellow-300" /> : <ZapOff className="size-6" />}
             </button>
           )}
-          <button onClick={() => { stop(); onClose(); }} aria-label="Close" className="p-1">
+          <button onClick={() => { stop(); onClose(); }} aria-label={t("cap.close")} className="p-1">
             <X className="size-6" aria-hidden />
           </button>
         </div>
@@ -228,7 +228,7 @@ export function MediaCapture({
           <div className="px-8 text-center text-white/90">
             <p className="text-sm">{error}</p>
             <Button variant="outline" className="mt-4 bg-white" onClick={() => fileRef.current?.click()}>
-              <Upload className="size-4" /> Upload a file
+              <Upload className="size-4" /> {t("cap.uploadFile")}
             </Button>
           </div>
         ) : mode === "audio" ? (
@@ -236,7 +236,7 @@ export function MediaCapture({
             <span className="flex size-24 items-center justify-center rounded-full bg-white/10">
               <Mic className={recording ? "size-12 animate-pulse text-[#FF2A2A]" : "size-12"} aria-hidden />
             </span>
-            <span className="text-sm">{recording ? "Recording…" : "Ready to record"}</span>
+            <span className="text-sm">{recording ? t("cap.recording") : t("cap.readyToRecord")}</span>
           </div>
         ) : (
           <>
@@ -256,7 +256,7 @@ export function MediaCapture({
             )}
             {ready && (
               <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs text-white/80">
-                Tap the image to focus
+                {t("cap.tapFocus")}
               </p>
             )}
           </>
@@ -272,7 +272,7 @@ export function MediaCapture({
       {/* Zoom slider */}
       {!error && caps.zoom && zoom != null && (
         <div className="flex items-center gap-3 px-6 pb-1 text-white">
-          <span className="text-xs">Zoom</span>
+          <span className="text-xs">{t("cap.zoom")}</span>
           <input
             type="range"
             min={caps.zoom.min}
@@ -281,7 +281,7 @@ export function MediaCapture({
             value={zoom}
             onChange={(e) => changeZoom(Number(e.target.value))}
             className="flex-1 accent-[#E50914]"
-            aria-label="Zoom"
+            aria-label={t("cap.zoom")}
           />
           <span className="w-8 text-right text-xs">{zoom.toFixed(1)}×</span>
         </div>
@@ -293,7 +293,7 @@ export function MediaCapture({
           <button
             onClick={capturePhoto}
             disabled={!ready}
-            aria-label="Take photo"
+            aria-label={t("cap.takePhoto")}
             className="flex size-20 items-center justify-center rounded-full border-4 border-white/70 bg-white/10 text-white transition active:scale-95 disabled:opacity-40"
           >
             <Camera className="size-8" aria-hidden />
@@ -303,7 +303,7 @@ export function MediaCapture({
           <button
             onClick={recording ? stopRecording : startRecording}
             disabled={!ready}
-            aria-label={recording ? "Stop recording" : "Start recording"}
+            aria-label={recording ? t("cap.stopRecording") : t("cap.startRecording")}
             className="flex size-20 items-center justify-center rounded-full border-4 border-white/70 text-white transition active:scale-95 disabled:opacity-40"
             style={{ background: recording ? "#111" : "#E50914" }}
           >
@@ -313,7 +313,7 @@ export function MediaCapture({
         {!error && !recording && (
           <button
             onClick={() => fileRef.current?.click()}
-            aria-label="Use device camera or upload"
+            aria-label={t("cap.useUpload")}
             className="flex size-12 items-center justify-center rounded-full bg-white/15 text-white"
           >
             <Upload className="size-5" aria-hidden />
