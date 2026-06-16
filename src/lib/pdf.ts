@@ -76,9 +76,13 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       ["Symmetry", s.symmetry_score],
       ["Bumpers / lights", s.bumpers_lights_score],
       ["Overall consistency", s.overall_consistency_score],
+      ...(s.mechanical_score != null
+        ? ([["Engine & mechanical", s.mechanical_score]] as [string, number][])
+        : []),
       ["Model risk", s.model_risk_score],
     ];
     rows.forEach(([label, val]) => body(`${label}: ${val}/100`));
+    if (report.summary.confidence != null) body(`AI confidence: ${report.summary.confidence}%`);
 
     // 4 + 5
     h1("4. Positive points");

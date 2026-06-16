@@ -75,6 +75,9 @@ export function ReportPreview({ report }: { report: FinalReport }) {
                 { label: "Symmetry", value: report.scores.symmetry_score },
                 { label: "Bumpers / lights", value: report.scores.bumpers_lights_score },
                 { label: "Overall consistency", value: report.scores.overall_consistency_score },
+                ...(report.scores.mechanical_score != null
+                  ? [{ label: "Engine & mechanical", value: report.scores.mechanical_score }]
+                  : []),
                 { label: "Model risk", value: report.scores.model_risk_score },
               ]}
             />

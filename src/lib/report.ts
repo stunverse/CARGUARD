@@ -48,8 +48,10 @@ export function generateFinalReport(params: {
   engineAudio?: EngineAudioReportSection | null;
   mechanical?: MechanicalReportSection | null;
   vehicleHistory?: VehicleHistorySection | null;
+  /** Overall confidence across all modules (falls back to photo avg). */
+  overallConfidence?: number;
 }): FinalReport {
-  const { vehicle, photos, global, globalScore, engineAudio, mechanical, vehicleHistory } = params;
+  const { vehicle, photos, global, globalScore, engineAudio, mechanical, vehicleHistory, overallConfidence } = params;
 
   const titleFor = (code: PhotoPointCode) =>
     PHOTO_POINTS.find((p) => p.code === code)?.title ?? code;
@@ -74,13 +76,16 @@ export function generateFinalReport(params: {
     };
   });
 
-  // Overall AI confidence = average of per-photo confidences (0-100).
-  const confidences = photo_analysis
+  // Overall AI confidence: use the cross-module value when provided,
+  // otherwise fall back to the average of per-photo confidences.
+  const photoConfidences = photo_analysis
     .map((p) => p.confidence)
     .filter((c): c is number => c != null);
-  const confidence = confidences.length
-    ? Math.round(confidences.reduce((a, b) => a + b, 0) / confidences.length)
-    : undefined;
+  const confidence =
+    overallConfidence ??
+    (photoConfidences.length
+      ? Math.round(photoConfidences.reduce((a, b) => a + b, 0) / photoConfidences.length)
+      : undefined);
 
   return {
     generated_at: new Date().toISOString(),
@@ -101,6 +106,7 @@ export function generateFinalReport(params: {
       bumpers_lights_score: global.bumpers_lights_score,
       overall_consistency_score: global.overall_consistency_score,
       model_risk_score: global.model_risk_score,
+      mechanical_score: mechanical?.mechanical_score ?? null,
     },
     positive_points: global.positive_points,
     suspicious_points: global.suspicious_points,

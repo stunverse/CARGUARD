@@ -264,6 +264,7 @@ export interface FinalReport {
     bumpers_lights_score: number;
     overall_consistency_score: number;
     model_risk_score: number;
+    mechanical_score?: number | null;
   };
   positive_points: string[];
   suspicious_points: string[];

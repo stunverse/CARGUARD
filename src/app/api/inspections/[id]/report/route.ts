@@ -9,10 +9,15 @@ import {
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
 import { aggregateMechanical } from "@/lib/ai/mechanical";
 import { getVehicleHistory } from "@/lib/vehicle-history";
+import { computeOverall } from "@/lib/score";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { checkReportQuota } from "@/lib/quota";
 import { logActivity } from "@/lib/activity";
-import { scoreToRiskLevel } from "@/lib/constants";
-import type { InspectionPhoto, PhotoAnalysisResult } from "@/types";
+import {
+  riskLevelToRecommendation,
+  scoreToRiskLevel,
+} from "@/lib/constants";
+import type { InspectionPhoto, MechanicalCheckItem, PhotoAnalysisResult } from "@/types";
 
 // POST /api/inspections/[id]/report — assemble + persist the final report.
 export async function POST(
@@ -104,7 +109,8 @@ export async function POST(
     .from("mechanical_checks")
     .select("*")
     .eq("inspection_session_id", sessionId);
-  const mechanical = aggregateMechanical((mechItems ?? []) as never);
+  const mechItemList = (mechItems ?? []) as MechanicalCheckItem[];
+  const mechanical = aggregateMechanical(mechItemList as never);
 
   // Free vehicle history (US NHTSA recalls + complaints). Best-effort.
   const v = vehicle as { vin?: string; make?: string; model?: string; year?: number };
@@ -115,14 +121,63 @@ export async function POST(
     year: v.year,
   });
 
+  // Confirmed salvage / total-loss from a purchased per-VIN report (if any).
+  let salvageTitle = false;
+  if (v.vin) {
+    try {
+      const { data: purchase } = await supabase
+        .from("vin_report_purchases")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("vin", v.vin.toUpperCase())
+        .eq("status", "paid")
+        .maybeSingle();
+      if (purchase) {
+        const admin = createAdminClient();
+        const { data: vr } = await admin
+          .from("vin_reports")
+          .select("data")
+          .eq("vin", v.vin.toUpperCase())
+          .maybeSingle();
+        salvageTitle = Boolean((vr?.data as { salvage_or_total_loss?: boolean })?.salvage_or_total_loss);
+      }
+    } catch (e) {
+      console.error("salvage lookup skipped:", e);
+    }
+  }
+
+  // --- Overall score + confidence across ALL modules ---
+  const photoConfidences = results
+    .map((r) => r.confidence)
+    .filter((c): c is number => c != null);
+  const photoConfidence = photoConfidences.length
+    ? Math.round(photoConfidences.reduce((a, b) => a + b, 0) / photoConfidences.length)
+    : 50;
+  const mechConfidences = mechItemList
+    .filter((m) => m.analysis_status === "completed" && m.confidence != null)
+    .map((m) => m.confidence as number);
+  const mechConfidence = mechConfidences.length
+    ? Math.round(mechConfidences.reduce((a, b) => a + b, 0) / mechConfidences.length)
+    : null;
+
+  const overall = computeOverall({
+    photoScore: scores.accident_repair_score,
+    photoConfidence,
+    mechanicalScore: mechanical?.mechanical_score ?? null,
+    mechanicalConfidence: mechConfidence,
+    history: vehicleHistory,
+    salvageTitle,
+  });
+
   const report = generateFinalReport({
     vehicle: vehicle as never,
     photos: photoList,
     global,
-    globalScore: scores.global_score,
+    globalScore: overall.score,
     engineAudio,
     mechanical,
     vehicleHistory,
+    overallConfidence: overall.confidence,
   });
 
   if (engineAudio) {
@@ -166,7 +221,9 @@ export async function POST(
     .update({
       status: "report_generated",
       final_report: report,
-      risk_level: scoreToRiskLevel(scores.global_score),
+      global_score: overall.score,
+      risk_level: scoreToRiskLevel(overall.score),
+      recommendation: riskLevelToRecommendation(scoreToRiskLevel(overall.score)),
     })
     .eq("id", sessionId);
 
