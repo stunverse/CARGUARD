@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { purgeSessionStorage } from "@/lib/storage-cleanup";
 
 // PATCH /api/inspections/[id] — update a draft inspection's vehicle details
 // and goal as the buyer answers the guided questions. Only the fields that
@@ -76,6 +78,42 @@ export async function PATCH(
       .eq("id", id);
     if (sErr) return NextResponse.json({ error: sErr.message }, { status: 500 });
   }
+
+  return NextResponse.json({ ok: true });
+}
+
+// DELETE /api/inspections/[id] — remove an inspection and all its media (GDPR).
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // RLS scopes this to the owner's own session.
+  const { data: session } = await supabase
+    .from("inspection_sessions")
+    .select("id, user_id")
+    .eq("id", id)
+    .single();
+  if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
+  if (session.user_id !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Remove stored media for this inspection (best-effort), then the DB rows
+  // (photos/mechanical/documents/reports cascade off the session FK).
+  try {
+    await purgeSessionStorage(createAdminClient(), user.id, id);
+  } catch (e) {
+    console.error("inspection storage purge failed:", e);
+  }
+  const { error } = await supabase.from("inspection_sessions").delete().eq("id", id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

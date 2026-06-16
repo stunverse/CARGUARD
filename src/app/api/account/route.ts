@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { purgeUserStorage } from "@/lib/storage-cleanup";
 
-// DELETE /api/account — permanently delete the current user's account.
-// Cascades remove all user-owned rows (FKs on delete cascade). Storage
-// objects under {user_id}/ are also removed.
+// DELETE /api/account — permanently delete the current user's account (GDPR
+// erasure). Removes all media across every bucket, then deletes the auth user
+// (DB rows cascade via on-delete-cascade FKs).
 export async function DELETE() {
   const supabase = await createClient();
   const {
@@ -14,30 +15,12 @@ export async function DELETE() {
 
   try {
     const admin = createAdminClient();
-    const bucket =
-      process.env.STORAGE_BUCKET_INSPECTION_PHOTOS || "inspection-photos";
 
-    // Best-effort storage cleanup.
-    const { data: files } = await admin.storage.from(bucket).list(user.id, {
-      limit: 1000,
-    });
-    if (files?.length) {
-      // list() is shallow; for the MVP we remove top-level + per-session dirs.
-      const { data: sessions } = await admin.storage
-        .from(bucket)
-        .list(user.id);
-      for (const dir of sessions ?? []) {
-        const { data: inner } = await admin.storage
-          .from(bucket)
-          .list(`${user.id}/${dir.name}`);
-        const paths = (inner ?? []).map(
-          (f) => `${user.id}/${dir.name}/${f.name}`,
-        );
-        if (paths.length) await admin.storage.from(bucket).remove(paths);
-      }
-    }
+    // 1) Remove every stored file owned by the user (photos, audio, mechanical
+    //    media, documents). Best-effort — does not block deletion.
+    await purgeUserStorage(admin, user.id);
 
-    // Deleting the auth user cascades all public.* rows.
+    // 2) Delete the auth user — cascades all public.* rows.
     const { error } = await admin.auth.admin.deleteUser(user.id);
     if (error) throw error;
   } catch (e) {
