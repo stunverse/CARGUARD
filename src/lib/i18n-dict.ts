@@ -97,6 +97,11 @@ export const dict: Record<Locale, Record<string, string>> = {
     "landing.faq.a5": "No — every photo and check is guided step by step.",
     "landing.final.title": "Buy your next used car with confidence",
     "landing.final.subtitle": "Spot hidden damage and engine issues before you pay.",
+    "landing.stats.photos": "guided exterior photos",
+    "landing.stats.checks": "engine & mechanical checks",
+    "landing.stats.sections": "report sections",
+    "landing.stats.markets": "coverage",
+    "landing.marquee.line": "Hidden accident repairs · Repainted panels · Odometer fraud · Head-gasket signs · Exhaust smoke · Coolant & oil issues · Frame damage · Warning lights",
     "common.start": "Start",
     "step.continue": "Continue",
     // wizard
@@ -722,6 +727,11 @@ export const dict: Record<Locale, Record<string, string>> = {
     "landing.faq.a5": "Non — chaque photo et chaque contrôle est guidé étape par étape.",
     "landing.final.title": "Achetez votre prochaine occasion en confiance",
     "landing.final.subtitle": "Détectez les dommages cachés et les problèmes moteur avant de payer.",
+    "landing.stats.photos": "photos extérieures guidées",
+    "landing.stats.checks": "contrôles moteur & mécanique",
+    "landing.stats.sections": "sections de rapport",
+    "landing.stats.markets": "couverture",
+    "landing.marquee.line": "Réparations d'accident masquées · Panneaux repeints · Compteur trafiqué · Signes de joint de culasse · Fumée d'échappement · Problèmes huile & liquide · Châssis endommagé · Voyants moteur",
     "common.start": "Démarrer",
     "step.continue": "Continuer",
     // wizard

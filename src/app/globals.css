@@ -85,3 +85,62 @@
     min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
+
+/* =====================================================================
+   Landing animations (dependency-free). Used by the marketing homepage.
+   ===================================================================== */
+@keyframes cg-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(24px, -32px) scale(1.12); }
+  66% { transform: translate(-20px, 22px) scale(0.94); }
+}
+@keyframes cg-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes cg-scan {
+  0% { top: 4%; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { top: 96%; opacity: 0; }
+}
+@keyframes cg-gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes cg-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-cg-blob { animation: cg-blob 16s ease-in-out infinite; }
+.animate-cg-float { animation: cg-float 6s ease-in-out infinite; }
+.animate-cg-scan { animation: cg-scan 3.2s ease-in-out infinite; }
+.cg-animated-gradient { background-size: 200% 200%; animation: cg-gradient 9s ease infinite; }
+.cg-marquee { animation: cg-marquee 32s linear infinite; }
+
+/* Scroll-reveal: hidden until the <Reveal> client component adds .is-visible */
+.cg-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cg-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cg-blob,
+  .animate-cg-float,
+  .animate-cg-scan,
+  .cg-animated-gradient,
+  .cg-marquee {
+    animation: none !important;
+  }
+  .cg-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

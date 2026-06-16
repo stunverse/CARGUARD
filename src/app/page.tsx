@@ -3,6 +3,7 @@ import {
   AlignVerticalJustifyCenter,
   Camera,
   Car,
+  CheckCircle2,
   ChevronRight,
   CreditCard,
   Droplets,
@@ -17,6 +18,7 @@ import {
   ScanSearch,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   Star,
   Volume2,
   Wrench,
@@ -24,12 +26,14 @@ import {
 } from "lucide-react";
 import { LogoMark } from "@/components/mobile/logo-mark";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { Reveal } from "@/components/landing/reveal";
+import { CountUp } from "@/components/landing/count-up";
 import { createClient } from "@/lib/supabase/server";
 import { getServerLocale } from "@/lib/i18n-server";
 import { t, formatMoney, localeCurrency } from "@/lib/i18n";
 import { INSPECTION_PRICE } from "@/lib/billing";
 
-const HOW_IT_WORKS = [
+const HOW = [
   { icon: Car, k: "s1" },
   { icon: Camera, k: "s2" },
   { icon: Wrench, k: "s3" },
@@ -55,8 +59,15 @@ const TRUST = [
   { icon: Zap, k: "landing.trust.instant" },
   { icon: Smartphone, k: "landing.trust.devices" },
 ];
+const STATS = [
+  { value: 8, k: "landing.stats.photos" },
+  { value: 14, k: "landing.stats.checks" },
+  { value: 17, k: "landing.stats.sections" },
+];
 const REVIEWS = ["r1", "r2", "r3"];
 const FAQ = ["q1", "q2", "q3", "q4", "q5"];
+
+const RED_GRADIENT = "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)";
 
 export default async function HomePage() {
   let authed = false;
@@ -72,192 +83,303 @@ export default async function HomePage() {
   const startHref = authed ? "/dashboard" : "/signup";
   const locale = await getServerLocale();
   const priceLabel = formatMoney(INSPECTION_PRICE, localeCurrency(locale));
+  const marquee = t(locale, "landing.marquee.line");
 
   return (
-    <div className="min-h-screen w-full bg-[#EEF0F3] lg:bg-white">
-      <div className="relative mx-auto min-h-screen w-full max-w-[480px] overflow-hidden bg-white shadow-[0_0_80px_rgba(0,0,0,0.08)] md:max-w-3xl md:border-x md:border-[#E5E7EB] lg:max-w-none lg:overflow-visible lg:border-0 lg:shadow-none">
-        {/* Decorative phone gradient + glow — small screens only. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 lg:hidden"
-          style={{ backgroundImage: "linear-gradient(135deg,#FFFFFF 0%,#FAFAFA 45%,#FFF5F5 100%)" }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-[-100px] top-[-60px] h-64 w-64 rounded-full blur-3xl lg:hidden"
-          style={{ background: "rgba(229,9,20,0.10)" }}
-        />
-
-        {/* Header */}
-        <header className="sticky top-0 z-40 border-b border-[#EFEFEF] bg-white/85 px-5 py-3 backdrop-blur lg:px-8">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
-            <LogoMark href="/" size={24} />
-            <div className="flex items-center gap-2">
-              <LanguageSwitcher />
-              <Link href="/login" className="px-2 py-1 text-sm font-medium text-[#374151]">
-                {t(locale, "landing.login")}
-              </Link>
-              <Link
-                href={startHref}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-white lg:px-5 lg:py-2"
-                style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
-              >
-                {t(locale, "common.start")}
-              </Link>
-            </div>
-          </div>
-        </header>
-
-        <main className="relative px-5 pb-16 lg:px-8">
-          {/* Hero */}
-          <section className="mx-auto max-w-3xl pt-8 text-center lg:pt-24">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-3 py-1 text-xs font-medium text-[#374151]">
-              <ShieldCheck className="size-3.5 text-[#E50914]" aria-hidden />
-              {t(locale, "landing.badge")}
+    <div className="min-h-screen w-full overflow-x-hidden bg-white text-[#111827]">
+      {/* Sticky dark header */}
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0B12]/85 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-3 lg:px-8">
+          <Link href="/" className="flex items-center gap-2 text-lg font-extrabold text-white">
+            <span
+              className="flex size-8 items-center justify-center rounded-lg text-white"
+              style={{ backgroundImage: RED_GRADIENT }}
+            >
+              <ShieldCheck className="size-5" aria-hidden />
             </span>
-            <h1 className="mt-5 text-[30px] font-extrabold leading-[1.1] tracking-tight text-[#111827] lg:text-5xl xl:text-6xl">
-              {t(locale, "landing.hero.pre")}{" "}
-              <span className="text-[#E50914]">{t(locale, "landing.hero.defect")}</span>{" "}
-              {t(locale, "landing.hero.mid")}{" "}
-              <span className="text-[#E50914]">{t(locale, "landing.hero.before")}</span>{" "}
-              {t(locale, "landing.hero.suffix")}
-            </h1>
-            <p className="mx-auto mt-3 max-w-xl text-[15px] leading-snug text-[#6B7280] lg:mt-5 lg:text-lg">
-              {t(locale, "landing.hero.subtitle")}
-            </p>
-
-            <div className="mt-6 space-y-3 sm:flex sm:justify-center sm:gap-3 sm:space-y-0 lg:mt-8">
-              <Link
-                href={startHref}
-                className="relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-base font-semibold text-white shadow-[0_12px_30px_rgba(229,9,20,0.28)] transition-transform active:scale-[0.98] sm:w-auto sm:px-8"
-                style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
-              >
-                <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-white/15" />
-                <ScanLine className="size-5" aria-hidden />
-                {t(locale, "landing.start")}
-              </Link>
-              <Link
-                href="#how"
-                className="flex h-14 w-full items-center justify-center rounded-2xl border border-[#E5E7EB] bg-white text-base font-semibold text-[#111827] transition-transform active:scale-[0.98] sm:w-auto sm:px-8"
-              >
-                {t(locale, "landing.how")}
-              </Link>
-            </div>
-            <p className="mt-3 text-xs text-[#6B7280]">{t(locale, "landing.tagline")}</p>
-          </section>
-
-          {/* Trust bar */}
-          <section className="mx-auto mt-10 max-w-4xl">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {TRUST.map((it) => (
-                <div
-                  key={it.k}
-                  className="flex flex-col items-center gap-2 rounded-2xl border border-[#E5E7EB] bg-white/90 p-4 text-center shadow-sm"
-                >
-                  <span className="flex size-9 items-center justify-center rounded-lg bg-[rgba(39,211,216,0.12)] text-[#1FAEB3]">
-                    <it.icon className="size-5" aria-hidden />
-                  </span>
-                  <span className="text-xs font-medium text-[#374151]">{t(locale, it.k)}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* How it works */}
-          <section id="how" className="mx-auto mt-12 max-w-6xl lg:mt-24">
-            <h2 className="text-center text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.how.title")}</h2>
-            <div className="mt-5 grid gap-3 lg:mt-10 lg:grid-cols-4 lg:gap-5">
-              {HOW_IT_WORKS.map((step, i) => (
-                <div
-                  key={step.k}
-                  className="flex items-start gap-3 rounded-2xl border border-[#E5E7EB] bg-white/90 p-4 shadow-sm lg:flex-col lg:gap-3"
-                >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(229,9,20,0.10)] text-[#E50914]">
-                    <step.icon className="size-5" aria-hidden />
-                  </span>
-                  <div>
-                    <div className="text-xs font-semibold text-[#27D3D8]">Step {i + 1}</div>
-                    <h3 className="font-semibold text-[#111827]">{t(locale, `landing.how.${step.k}.title`)}</h3>
-                    <p className="text-sm text-[#6B7280]">{t(locale, `landing.how.${step.k}.text`)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* What we check */}
-          <section id="checks" className="mx-auto mt-12 max-w-5xl lg:mt-24">
-            <h2 className="text-center text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.checks.title")}</h2>
-            <p className="mx-auto mt-2 max-w-md text-center text-sm text-[#6B7280]">
-              {t(locale, "landing.checks.subtitle")}
-            </p>
-            <div className="mt-5 grid gap-4 lg:mt-10 lg:grid-cols-2">
-              <CheckGroup title={t(locale, "landing.checks.bodywork")} icon={Camera} items={BODYWORK} locale={locale} />
-              <CheckGroup title={t(locale, "landing.checks.engine")} icon={Wrench} items={ENGINE} locale={locale} />
-            </div>
-          </section>
-
-          {/* Price vs risk comparison */}
-          <section className="mx-auto mt-12 max-w-4xl text-center lg:mt-24">
-            <h2 className="text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.compare.title")}</h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-[#6B7280]">{t(locale, "landing.compare.subtitle")}</p>
-            <div className="mt-6 grid gap-4 text-left sm:grid-cols-2">
-              <div className="rounded-2xl border border-risk-low/40 bg-risk-low/5 p-5">
-                <div className="text-3xl font-extrabold text-[#111827]">{priceLabel}</div>
-                <h3 className="mt-1 font-semibold text-[#111827]">{t(locale, "landing.compare.now.title")}</h3>
-                <p className="mt-1 text-sm text-[#6B7280]">{t(locale, "landing.compare.now.desc")}</p>
-              </div>
-              <div className="rounded-2xl border border-risk-critical/40 bg-risk-critical/5 p-5">
-                <div className="text-3xl font-extrabold text-[#B00008]">{t(locale, "landing.compare.risk.price")}</div>
-                <h3 className="mt-1 font-semibold text-[#111827]">{t(locale, "landing.compare.risk.title")}</h3>
-                <p className="mt-1 text-sm text-[#6B7280]">{t(locale, "landing.compare.risk.desc")}</p>
-              </div>
-            </div>
+            CarGuard <span className="text-[#FF4D4D]">AI</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Link href="/login" className="hidden px-2 py-1 text-sm font-medium text-white/80 hover:text-white sm:block">
+              {t(locale, "landing.login")}
+            </Link>
             <Link
               href={startHref}
-              className="mt-6 inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(229,9,20,0.28)]"
-              style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(229,9,20,0.45)]"
+              style={{ backgroundImage: RED_GRADIENT }}
+            >
+              {t(locale, "common.start")}
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ============================ HERO (dark) ============================ */}
+      <section className="relative overflow-hidden bg-[#0B0B12] text-white">
+        {/* Animated red blobs */}
+        <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-[#E50914]/30 blur-3xl animate-cg-blob" />
+        <div aria-hidden className="pointer-events-none absolute -right-16 top-40 size-72 rounded-full bg-[#FF2A2A]/20 blur-3xl animate-cg-blob" style={{ animationDelay: "3s" }} />
+        {/* Grid texture */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)",
+            backgroundSize: "44px 44px",
+          }}
+        />
+
+        <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-5 py-16 lg:grid-cols-2 lg:gap-12 lg:px-8 lg:py-24">
+          {/* Copy */}
+          <div className="text-center lg:text-left">
+            <Reveal>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-white/85">
+                <Sparkles className="size-3.5 text-[#FF4D4D]" aria-hidden />
+                {t(locale, "landing.badge")}
+              </span>
+            </Reveal>
+            <Reveal delay={80}>
+              <h1 className="mt-5 text-[34px] font-extrabold leading-[1.08] tracking-tight lg:text-[56px]">
+                {t(locale, "landing.hero.pre")}{" "}
+                <span className="text-[#FF4D4D]">{t(locale, "landing.hero.defect")}</span>{" "}
+                {t(locale, "landing.hero.mid")}{" "}
+                <span className="text-[#FF4D4D]">{t(locale, "landing.hero.before")}</span>{" "}
+                {t(locale, "landing.hero.suffix")}
+              </h1>
+            </Reveal>
+            <Reveal delay={160}>
+              <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/70 lg:mx-0 lg:text-lg">
+                {t(locale, "landing.hero.subtitle")}
+              </p>
+            </Reveal>
+            <Reveal delay={240}>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+                <Link
+                  href={startHref}
+                  className="relative flex h-14 items-center justify-center gap-2 overflow-hidden rounded-2xl px-8 text-base font-semibold text-white shadow-[0_16px_40px_rgba(229,9,20,0.45)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ backgroundImage: RED_GRADIENT }}
+                >
+                  <ScanLine className="size-5" aria-hidden />
+                  {t(locale, "landing.start")}
+                </Link>
+                <Link
+                  href="#how"
+                  className="flex h-14 items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-8 text-base font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  {t(locale, "landing.how")}
+                </Link>
+              </div>
+            </Reveal>
+            <Reveal delay={320}>
+              <p className="mt-4 text-xs text-white/50">{t(locale, "landing.tagline")}</p>
+            </Reveal>
+          </div>
+
+          {/* Floating report mockup with scan animation */}
+          <Reveal delay={200} className="hidden lg:block">
+            <div className="relative mx-auto w-full max-w-sm animate-cg-float">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl backdrop-blur">
+                {/* scan line */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 h-16 animate-cg-scan"
+                  style={{ background: "linear-gradient(180deg,transparent,rgba(229,9,20,0.25),transparent)" }}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-white/50">CarGuard AI</span>
+                  <span className="rounded-full bg-[#E50914]/20 px-2 py-0.5 text-[10px] font-bold text-[#FF7A7A]">RISK 18/100</span>
+                </div>
+                {/* ring */}
+                <div className="mt-4 flex items-center gap-4">
+                  <RiskRing />
+                  <div className="flex-1 space-y-2">
+                    {[78, 64, 90].map((w, i) => (
+                      <div key={i} className="h-2 rounded-full bg-white/10">
+                        <div className="h-full rounded-full" style={{ width: `${w}%`, backgroundImage: RED_GRADIENT }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* check rows */}
+                <div className="mt-4 space-y-2">
+                  {["landing.body.2", "landing.eng.1", "landing.eng.5"].map((k) => (
+                    <div key={k} className="flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-sm text-white/80">
+                      <CheckCircle2 className="size-4 shrink-0 text-[#27D3D8]" aria-hidden />
+                      <span className="truncate">{t(locale, k)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Marquee of detected issues */}
+        <div className="relative border-y border-white/10 bg-black/30 py-3">
+          <div className="flex w-max cg-marquee gap-8 whitespace-nowrap px-4 text-sm font-medium text-white/55">
+            <span>{marquee}</span>
+            <span aria-hidden>{marquee}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================ STATS ============================ */}
+      <section className="bg-white">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-4 px-5 py-12 sm:grid-cols-4 lg:px-8 lg:py-16">
+          {STATS.map((s) => (
+            <Reveal key={s.k} className="text-center">
+              <div className="text-4xl font-extrabold text-[#E50914] lg:text-5xl">
+                <CountUp value={s.value} />
+              </div>
+              <p className="mt-1 text-sm font-medium text-[#6B7280]">{t(locale, s.k)}</p>
+            </Reveal>
+          ))}
+          <Reveal className="text-center">
+            <div className="text-4xl font-extrabold text-[#E50914] lg:text-5xl">US·EU</div>
+            <p className="mt-1 text-sm font-medium text-[#6B7280]">{t(locale, "landing.stats.markets")}</p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ============================ TRUST ============================ */}
+      <section className="bg-[#F7F8FA]">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-3 px-5 py-10 sm:grid-cols-4 lg:px-8">
+          {TRUST.map((it, i) => (
+            <Reveal key={it.k} delay={i * 60}>
+              <div className="flex h-full flex-col items-center gap-2 rounded-2xl border border-[#E5E7EB] bg-white p-4 text-center shadow-sm transition-transform hover:-translate-y-1">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-[rgba(39,211,216,0.12)] text-[#1FAEB3]">
+                  <it.icon className="size-5" aria-hidden />
+                </span>
+                <span className="text-xs font-medium text-[#374151]">{t(locale, it.k)}</span>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ============================ HOW IT WORKS ============================ */}
+      <section id="how" className="bg-white">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:px-8 lg:py-24">
+          <Reveal>
+            <h2 className="text-center text-3xl font-extrabold lg:text-4xl">{t(locale, "landing.how.title")}</h2>
+            <p className="mx-auto mt-3 max-w-md text-center text-[#6B7280]">{t(locale, "landing.how.subtitle")}</p>
+          </Reveal>
+          <div className="mt-10 grid gap-4 lg:grid-cols-4 lg:gap-5">
+            {HOW.map((step, i) => (
+              <Reveal key={step.k} delay={i * 90}>
+                <div className="group relative h-full overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+                  <span className="absolute right-3 top-2 text-5xl font-black text-[#F2F3F5] transition-colors group-hover:text-[rgba(229,9,20,0.10)]">
+                    {i + 1}
+                  </span>
+                  <span className="relative flex size-11 items-center justify-center rounded-xl text-white" style={{ backgroundImage: RED_GRADIENT }}>
+                    <step.icon className="size-5" aria-hidden />
+                  </span>
+                  <h3 className="relative mt-4 font-bold">{t(locale, `landing.how.${step.k}.title`)}</h3>
+                  <p className="relative mt-1 text-sm text-[#6B7280]">{t(locale, `landing.how.${step.k}.text`)}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================ WHAT WE CHECK (tinted) ============================ */}
+      <section id="checks" className="bg-gradient-to-b from-[#FFF5F5] to-white">
+        <div className="mx-auto w-full max-w-5xl px-5 py-16 lg:px-8 lg:py-24">
+          <Reveal>
+            <h2 className="text-center text-3xl font-extrabold lg:text-4xl">{t(locale, "landing.checks.title")}</h2>
+            <p className="mx-auto mt-3 max-w-md text-center text-[#6B7280]">{t(locale, "landing.checks.subtitle")}</p>
+          </Reveal>
+          <div className="mt-10 grid gap-5 lg:grid-cols-2">
+            <Reveal>
+              <CheckGroup title={t(locale, "landing.checks.bodywork")} icon={Camera} items={BODYWORK} locale={locale} />
+            </Reveal>
+            <Reveal delay={120}>
+              <CheckGroup title={t(locale, "landing.checks.engine")} icon={Wrench} items={ENGINE} locale={locale} />
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================ COMPARISON (dark) ============================ */}
+      <section className="bg-[#0B0B12] text-white">
+        <div className="mx-auto w-full max-w-4xl px-5 py-16 text-center lg:px-8 lg:py-24">
+          <Reveal>
+            <h2 className="text-3xl font-extrabold lg:text-4xl">{t(locale, "landing.compare.title")}</h2>
+            <p className="mx-auto mt-3 max-w-lg text-white/70">{t(locale, "landing.compare.subtitle")}</p>
+          </Reveal>
+          <div className="mt-8 grid gap-4 text-left sm:grid-cols-2">
+            <Reveal>
+              <div className="h-full rounded-2xl border border-[#27D3D8]/40 bg-[#27D3D8]/10 p-6">
+                <div className="text-4xl font-extrabold text-white">{priceLabel}</div>
+                <h3 className="mt-2 font-bold">{t(locale, "landing.compare.now.title")}</h3>
+                <p className="mt-1 text-sm text-white/70">{t(locale, "landing.compare.now.desc")}</p>
+              </div>
+            </Reveal>
+            <Reveal delay={120}>
+              <div className="h-full rounded-2xl border border-[#FF4D4D]/40 bg-[#FF4D4D]/10 p-6">
+                <div className="text-4xl font-extrabold text-[#FF7A7A]">{t(locale, "landing.compare.risk.price")}</div>
+                <h3 className="mt-2 font-bold">{t(locale, "landing.compare.risk.title")}</h3>
+                <p className="mt-1 text-sm text-white/70">{t(locale, "landing.compare.risk.desc")}</p>
+              </div>
+            </Reveal>
+          </div>
+          <Reveal delay={160}>
+            <Link
+              href={startHref}
+              className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-7 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(229,9,20,0.45)] transition-transform hover:scale-[1.02]"
+              style={{ backgroundImage: RED_GRADIENT }}
             >
               <ScanLine className="size-5" aria-hidden /> {t(locale, "landing.compare.cta")}
             </Link>
-          </section>
+          </Reveal>
+        </div>
+      </section>
 
-          {/* Social proof */}
-          <section className="mx-auto mt-12 max-w-6xl lg:mt-24">
-            <h2 className="text-center text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.reviews.title")}</h2>
-            <p className="mx-auto mt-2 max-w-md text-center text-sm text-[#6B7280]">{t(locale, "landing.reviews.subtitle")}</p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {REVIEWS.map((r) => (
-                <figure key={r} className="rounded-2xl border border-[#E5E7EB] bg-white/90 p-5 shadow-sm">
-                  <Quote className="size-6 text-[#E50914]/30" aria-hidden />
+      {/* ============================ REVIEWS ============================ */}
+      <section className="bg-white">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:px-8 lg:py-24">
+          <Reveal>
+            <h2 className="text-center text-3xl font-extrabold lg:text-4xl">{t(locale, "landing.reviews.title")}</h2>
+            <p className="mx-auto mt-3 max-w-md text-center text-[#6B7280]">{t(locale, "landing.reviews.subtitle")}</p>
+          </Reveal>
+          <div className="mt-10 grid gap-5 sm:grid-cols-3">
+            {REVIEWS.map((r, i) => (
+              <Reveal key={r} delay={i * 90}>
+                <figure className="h-full rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
+                  <Quote className="size-7 text-[#E50914]/25" aria-hidden />
                   <div className="mt-2 flex gap-0.5 text-[#F5A623]">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="size-4 fill-current" aria-hidden />
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <Star key={j} className="size-4 fill-current" aria-hidden />
                     ))}
                   </div>
-                  <blockquote className="mt-2 text-sm text-[#374151]">{t(locale, `landing.reviews.${r}.quote`)}</blockquote>
-                  <figcaption className="mt-3 text-xs font-medium text-[#6B7280]">— {t(locale, `landing.reviews.${r}.author`)}</figcaption>
+                  <blockquote className="mt-3 text-sm leading-relaxed text-[#374151]">
+                    {t(locale, `landing.reviews.${r}.quote`)}
+                  </blockquote>
+                  <figcaption className="mt-4 text-xs font-semibold text-[#6B7280]">
+                    — {t(locale, `landing.reviews.${r}.author`)}
+                  </figcaption>
                 </figure>
-              ))}
-            </div>
-          </section>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          {/* Why it matters */}
-          <section className="mx-auto mt-12 max-w-2xl text-center lg:mt-24">
+      {/* ============================ WHY + FAQ (tinted) ============================ */}
+      <section className="bg-[#F7F8FA]">
+        <div className="mx-auto w-full max-w-3xl px-5 py-16 lg:px-8 lg:py-24">
+          <Reveal className="text-center">
             <Lightbulb className="mx-auto mb-3 size-9 text-[#27D3D8]" aria-hidden />
-            <h2 className="text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.why.title")}</h2>
-            <p className="mt-3 text-[15px] leading-snug text-[#6B7280] lg:text-lg">
-              {t(locale, "landing.why.body")}
-            </p>
-            <div className="mt-5 rounded-2xl border border-[#E5E7EB] bg-[#F7F8FA] p-4 text-left text-xs text-[#6B7280]">
-              {t(locale, "landing.why.disclaimer")}
-            </div>
-          </section>
+            <h2 className="text-3xl font-extrabold lg:text-4xl">{t(locale, "landing.why.title")}</h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-[#6B7280] lg:text-lg">{t(locale, "landing.why.body")}</p>
+          </Reveal>
 
-          {/* FAQ */}
-          <section className="mx-auto mt-12 max-w-3xl lg:mt-24">
-            <h2 className="text-center text-2xl font-bold text-[#111827] lg:text-3xl">{t(locale, "landing.faq.title")}</h2>
-            <div className="mt-5 divide-y divide-[#EFEFEF] overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white/90">
+          <Reveal delay={120}>
+            <h3 className="mt-14 text-center text-2xl font-bold">{t(locale, "landing.faq.title")}</h3>
+            <div className="mt-5 divide-y divide-[#EFEFEF] overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white">
               {FAQ.map((q) => (
                 <details key={q} className="group p-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium text-[#111827]">
@@ -268,35 +390,80 @@ export default async function HomePage() {
                 </details>
               ))}
             </div>
-          </section>
+          </Reveal>
 
-          {/* Final CTA */}
-          <section className="mx-auto mt-12 max-w-4xl lg:mt-20">
-            <div
-              className="rounded-3xl px-6 py-10 text-center text-white shadow-[0_20px_50px_rgba(229,9,20,0.30)]"
-              style={{ backgroundImage: "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)" }}
+          <Reveal>
+            <p className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#E5E7EB] bg-white p-4 text-center text-xs text-[#6B7280]">
+              {t(locale, "landing.why.disclaimer")}
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ============================ FINAL CTA ============================ */}
+      <section className="bg-white px-5 py-16 lg:py-24">
+        <Reveal className="mx-auto w-full max-w-5xl">
+          <div
+            className="cg-animated-gradient relative overflow-hidden rounded-3xl px-6 py-14 text-center text-white shadow-[0_30px_70px_rgba(229,9,20,0.35)]"
+            style={{ backgroundImage: "linear-gradient(120deg,#FF2A2A 0%,#E50914 40%,#B00008 70%,#7a0006 100%)" }}
+          >
+            <div aria-hidden className="pointer-events-none absolute -left-10 -top-10 size-44 rounded-full bg-white/10 blur-2xl animate-cg-blob" />
+            <h2 className="relative text-3xl font-extrabold lg:text-4xl">{t(locale, "landing.final.title")}</h2>
+            <p className="relative mx-auto mt-3 max-w-md text-white/90">{t(locale, "landing.final.subtitle")}</p>
+            <Link
+              href={startHref}
+              className="relative mt-7 inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-white px-9 text-base font-bold text-[#B00008] transition-transform hover:scale-[1.03] active:scale-[0.98]"
             >
-              <h2 className="text-2xl font-extrabold lg:text-3xl">{t(locale, "landing.final.title")}</h2>
-              <p className="mx-auto mt-2 max-w-md text-sm text-white/90">{t(locale, "landing.final.subtitle")}</p>
-              <Link
-                href={startHref}
-                className="mt-6 inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-white px-8 text-base font-semibold text-[#B00008] transition-transform active:scale-[0.98]"
-              >
-                <ScanLine className="size-5" aria-hidden /> {t(locale, "landing.start")}
-              </Link>
-            </div>
-          </section>
+              <ScanLine className="size-5" aria-hidden /> {t(locale, "landing.start")}
+            </Link>
+          </div>
+        </Reveal>
+      </section>
 
-          {/* Footer */}
-          <footer className="mx-auto mt-12 max-w-6xl border-t border-[#EFEFEF] pt-6 text-center text-xs text-[#9AA3AF] lg:mt-16">
-            <div className="flex justify-center gap-5">
-              <Link href="/terms">Terms</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/disclaimer">Disclaimer</Link>
-            </div>
-            <p className="mt-3">© {new Date().getFullYear()} CarGuard AI</p>
-          </footer>
-        </main>
+      {/* ============================ FOOTER (dark) ============================ */}
+      <footer className="bg-[#0B0B12] text-white/60">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-4 px-5 py-10 text-center text-xs lg:px-8">
+          <div className="flex items-center gap-2 text-base font-extrabold text-white">
+            <ShieldCheck className="size-5 text-[#FF4D4D]" aria-hidden /> CarGuard <span className="text-[#FF4D4D]">AI</span>
+          </div>
+          <div className="flex justify-center gap-5">
+            <Link href="/terms" className="hover:text-white">Terms</Link>
+            <Link href="/privacy" className="hover:text-white">Privacy</Link>
+            <Link href="/disclaimer" className="hover:text-white">Disclaimer</Link>
+            <Link href="/pricing" className="hover:text-white">{t(locale, "landing.pricing")}</Link>
+          </div>
+          <p>© {new Date().getFullYear()} CarGuard AI</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function RiskRing() {
+  const size = 84;
+  const r = (size - 10) / 2;
+  const circ = 2 * Math.PI * r;
+  const value = 82; // safety score for the mockup
+  const offset = circ - (value / 100) * circ;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} strokeWidth={8} className="fill-none stroke-white/10" />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          strokeWidth={8}
+          strokeLinecap="round"
+          className="fill-none"
+          stroke="#27D3D8"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-xl font-extrabold text-white">{value}</span>
+        <span className="text-[9px] text-white/50">/ 100</span>
       </div>
     </div>
   );
@@ -314,14 +481,14 @@ function CheckGroup({
   locale: Parameters<typeof t>[0];
 }) {
   return (
-    <div className="rounded-2xl border border-[#E5E7EB] bg-white/90 p-4 shadow-sm lg:p-6">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-[rgba(229,9,20,0.10)] text-[#E50914]">
+    <div className="h-full rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="flex size-10 items-center justify-center rounded-xl text-white" style={{ backgroundImage: RED_GRADIENT }}>
           <Icon className="size-5" aria-hidden />
         </span>
-        <h3 className="font-semibold text-[#111827]">{title}</h3>
+        <h3 className="text-lg font-bold text-[#111827]">{title}</h3>
       </div>
-      <ul className="space-y-2.5">
+      <ul className="space-y-3">
         {items.map((it) => (
           <li key={it.k} className="flex items-center gap-3">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[rgba(39,211,216,0.12)] text-[#1FAEB3]">
