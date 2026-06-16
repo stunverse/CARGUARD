@@ -79,12 +79,29 @@ export function isStripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
-// Pay-per-inspection: the buyer pays once per inspection (after the vehicle
-// questions, before the 8 photos). Default €29. Amount in major units for
-// display; cents are derived for Stripe.
-export const INSPECTION_PRICE = Number(process.env.INSPECTION_PRICE || 29);
-export const INSPECTION_PRICE_CENTS = Math.round(INSPECTION_PRICE * 100);
+// Pay-per-inspection: the buyer buys a pack of inspection credits; each new
+// inspection consumes one credit. Three tiers (1 / 2 / 3 inspections).
 export const INSPECTION_CURRENCY = (process.env.INSPECTION_CURRENCY || "eur").toLowerCase();
+
+export interface InspectionPack {
+  id: string;
+  credits: number;
+  price: number; // major units (e.g. euros)
+}
+
+export const INSPECTION_PACKS: InspectionPack[] = [
+  { id: "single", credits: 1, price: Number(process.env.PACK_SINGLE_PRICE || 29) },
+  { id: "duo", credits: 2, price: Number(process.env.PACK_DUO_PRICE || 49) },
+  { id: "trio", credits: 3, price: Number(process.env.PACK_TRIO_PRICE || 69) },
+];
+
+export function packById(id: string | undefined | null): InspectionPack | undefined {
+  return INSPECTION_PACKS.find((p) => p.id === id);
+}
+
+// Cheapest single-inspection price, shown on the landing.
+export const INSPECTION_PRICE = INSPECTION_PACKS[0].price;
+export const INSPECTION_PRICE_CENTS = Math.round(INSPECTION_PRICE * 100);
 
 // Pay-per-report price for the paid per-VIN history (VinAudit/NMVTIS).
 // Charged one-time via Stripe Checkout; margin over the provider cost.

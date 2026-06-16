@@ -34,7 +34,7 @@ import {
 } from "@/lib/vehicle-catalog";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { documentsForRegion } from "@/lib/documents";
-import { INSPECTION_PRICE } from "@/lib/billing";
+import { INSPECTION_PACKS } from "@/lib/billing";
 import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
 import { useI18n } from "@/components/i18n-provider";
@@ -176,14 +176,14 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   // CarGuard is pay-per-inspection (€29). The draft inspection is created only
   // once the buyer pays — right after the vehicle questions and before the 8
   // photos. So the vehicle phase keeps everything in local state until payment.
-  async function pay() {
+  async function pay(opts: { useCredit?: boolean; pack?: string } = {}) {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/inspections/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...vehicle, goal: vehicle.goal }),
+        body: JSON.stringify({ ...vehicle, goal: vehicle.goal, useCredit: opts.useCredit, pack: opts.pack }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not start the payment.");
@@ -376,7 +376,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
         )}
 
         {phase === "payment" && (
-          <PaymentStep vehicle={vehicle} busy={busy} onPay={pay} />
+          <PaymentStep busy={busy} onPay={pay} />
         )}
 
         {phase === "photos" && (() => {
@@ -1041,40 +1041,110 @@ function MechStep({
   );
 }
 
-// Pay-per-inspection gate shown after the vehicle questions, before photos.
+// Pay-per-inspection gate: spend a credit if available, otherwise buy a pack.
 function PaymentStep({
-  vehicle,
   busy,
   onPay,
 }: {
-  vehicle: Record<string, string>;
   busy: boolean;
-  onPay: () => void;
+  onPay: (opts?: { useCredit?: boolean; pack?: string }) => void;
 }) {
   const { t, formatMoney, currency } = useI18n();
-  const price = formatMoney(INSPECTION_PRICE, currency);
-  const label = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
+  const [credits, setCredits] = useState<number | null>(null);
+  const [stripe, setStripe] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/billing/credits")
+      .then((r) => r.json())
+      .then((d) => {
+        setCredits(typeof d.credits === "number" ? d.credits : 0);
+        setStripe(Boolean(d.stripe));
+      })
+      .catch(() => {
+        setCredits(0);
+        setStripe(false);
+      });
+  }, []);
+
   const features = [t("wiz.pay.f1"), t("wiz.pay.f2"), t("wiz.pay.f3"), t("wiz.pay.f4")];
-  return (
-    <StepShell kicker={t("wiz.pay.kicker")} question={t("wiz.pay.title")} helper={t("wiz.pay.subtitle")}>
-      <div className="rounded-2xl border border-[#E5E7EB] p-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="text-sm font-medium text-[#111827]">
-            {label || t("wiz.pay.yourInspection")}
-          </span>
-          <span className="text-2xl font-extrabold text-[#111827]">{price}</span>
+
+  // Loading.
+  if (credits === null) {
+    return (
+      <StepShell kicker={t("wiz.pay.kicker")} question={t("wiz.pay.title")} helper={t("wiz.pay.subtitle")}>
+        <div className="flex items-center gap-2 py-8 text-sm text-[#6B7280]">
+          <RefreshCw className="size-4 animate-spin" /> …
         </div>
-        <ul className="mt-4 space-y-2 text-sm text-[#374151]">
-          {features.map((f) => (
-            <li key={f} className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-risk-low" aria-hidden /> {f}
-            </li>
-          ))}
-        </ul>
+      </StepShell>
+    );
+  }
+
+  const featuresBlock = (
+    <ul className="mt-4 space-y-2 text-sm text-[#374151]">
+      {features.map((f) => (
+        <li key={f} className="flex items-start gap-2">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-risk-low" aria-hidden /> {f}
+        </li>
+      ))}
+    </ul>
+  );
+
+  // Demo (no Stripe) or has a credit → one tap to start.
+  if (!stripe || credits > 0) {
+    return (
+      <StepShell kicker={t("wiz.pay.kicker")} question={t("wiz.pay.title")} helper={t("wiz.pay.subtitle")}>
+        {stripe && credits > 0 && (
+          <div className="mb-3 rounded-xl bg-risk-low/10 px-4 py-3 text-sm font-medium text-[#111827]">
+            {credits} {t("wiz.pay.creditsLeft")}
+          </div>
+        )}
+        <div className="rounded-2xl border border-[#E5E7EB] p-4">{featuresBlock}</div>
+        <Button className="mt-5 w-full" onClick={() => onPay({ useCredit: stripe })} disabled={busy}>
+          {busy ? t("wiz.pay.processing") : stripe ? t("wiz.pay.useCredit") : t("wiz.pay.startDemo")}
+        </Button>
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#6B7280]">
+          <Lock className="size-3.5" aria-hidden /> {t("wiz.pay.secure")}
+        </p>
+      </StepShell>
+    );
+  }
+
+  // No credit → choose a pack.
+  return (
+    <StepShell kicker={t("wiz.pay.kicker")} question={t("wiz.pay.choosePack")} helper={t("wiz.pay.packHelper")}>
+      <div className="space-y-3">
+        {INSPECTION_PACKS.map((p, i) => {
+          const per = p.price / p.credits;
+          const best = i === INSPECTION_PACKS.length - 1;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPay({ pack: p.id })}
+              disabled={busy}
+              className={cn(
+                "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-colors",
+                best ? "border-[#E50914] bg-[rgba(229,9,20,0.04)]" : "border-[#E5E7EB] hover:bg-secondary",
+              )}
+            >
+              <div>
+                <div className="flex items-center gap-2 font-semibold text-[#111827]">
+                  {p.credits} {p.credits > 1 ? t("wiz.pay.inspections") : t("wiz.pay.inspection")}
+                  {best && (
+                    <span className="rounded-full bg-[#E50914] px-2 py-0.5 text-[10px] font-bold text-white">
+                      {t("wiz.pay.bestValue")}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-[#6B7280]">
+                  {formatMoney(per, currency)} {t("wiz.pay.perInspection")}
+                </div>
+              </div>
+              <div className="text-xl font-extrabold text-[#111827]">{formatMoney(p.price, currency)}</div>
+            </button>
+          );
+        })}
       </div>
-      <Button className="mt-5 w-full" onClick={onPay} disabled={busy}>
-        {busy ? t("wiz.pay.processing") : `${t("wiz.pay.cta")} ${price}`}
-      </Button>
       <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#6B7280]">
         <Lock className="size-3.5" aria-hidden /> {t("wiz.pay.secure")}
       </p>

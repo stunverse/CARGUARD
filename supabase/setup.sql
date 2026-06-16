@@ -914,3 +914,40 @@ create policy "inspection_documents_update_own"
 create policy "inspection_documents_delete_own"
   on storage.objects for delete
   using (bucket_id = 'inspection-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ###################################################################
+-- # 0010_credits.sql
+-- ###################################################################
+alter table public.profiles
+  add column if not exists inspection_credits integer not null default 0;
+
+create or replace function public.consume_inspection_credit(p_user uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  remaining integer;
+begin
+  update public.profiles
+    set inspection_credits = inspection_credits - 1
+    where id = p_user and inspection_credits > 0
+    returning inspection_credits into remaining;
+  if not found then
+    return -1;
+  end if;
+  return remaining;
+end;
+$$;
+revoke execute on function public.consume_inspection_credit(uuid) from public;
+revoke execute on function public.consume_inspection_credit(uuid) from authenticated;
+grant execute on function public.consume_inspection_credit(uuid) to service_role;
+create or replace function public.grant_inspection_credits(p_user uuid, p_amount integer)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  update public.profiles set inspection_credits = inspection_credits + greatest(p_amount, 0) where id = p_user;
+end; $$;
+revoke execute on function public.grant_inspection_credits(uuid, integer) from public;
+revoke execute on function public.grant_inspection_credits(uuid, integer) from authenticated;
+grant execute on function public.grant_inspection_credits(uuid, integer) to service_role;

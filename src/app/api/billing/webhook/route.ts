@@ -86,14 +86,30 @@ export async function POST(request: NextRequest) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      // One-time purchase: pay-per-inspection (€29).
+      // Inspection pack: mark this inspection paid + grant the remaining credits.
       if (session.metadata?.type === "inspection") {
         const inspectionId = session.metadata.session_id;
+        const userId = session.metadata.user_id;
+        const credits = Number(session.metadata.credits ?? "1");
         if (inspectionId) {
           await admin
             .from("inspection_sessions")
             .update({ payment_status: "paid" })
             .eq("id", inspectionId);
+        }
+        // One credit is consumed by this inspection; bank the rest.
+        if (userId && credits > 1) {
+          await admin.rpc("grant_inspection_credits", { p_user: userId, p_amount: credits - 1 });
+        }
+        break;
+      }
+
+      // Standalone pack purchase (from the billing page): grant all credits.
+      if (session.metadata?.type === "credits") {
+        const userId = session.metadata.user_id;
+        const credits = Number(session.metadata.credits ?? "0");
+        if (userId && credits > 0) {
+          await admin.rpc("grant_inspection_credits", { p_user: userId, p_amount: credits });
         }
         break;
       }
