@@ -28,6 +28,12 @@ function startOfMonthISO(): string {
   return d.toISOString();
 }
 
+// Quotas are OFF during development. Set ENFORCE_QUOTAS=true before launch
+// to re-enable plan limits on inspections and reports.
+export function quotasEnforced(): boolean {
+  return process.env.ENFORCE_QUOTAS === "true";
+}
+
 export async function getPlanLimits(
   supabase: SupabaseClient,
   userId: string,
@@ -61,6 +67,7 @@ export async function checkInspectionQuota(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<QuotaCheck> {
+  if (!quotasEnforced()) return { allowed: true, used: 0, limit: null, plan: "free" };
   const limits = await getPlanLimits(supabase, userId);
   const limit = limits.inspections_per_month;
   if (limit == null) return { allowed: true, used: 0, limit, plan: limits.plan };
@@ -79,6 +86,7 @@ export async function checkReportQuota(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<QuotaCheck> {
+  if (!quotasEnforced()) return { allowed: true, used: 0, limit: null, plan: "free" };
   const limits = await getPlanLimits(supabase, userId);
   const limit = limits.reports_per_month;
   if (limit == null) return { allowed: true, used: 0, limit, plan: limits.plan };
