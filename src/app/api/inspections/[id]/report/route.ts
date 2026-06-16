@@ -11,6 +11,8 @@ import { aggregateMechanical } from "@/lib/ai/mechanical";
 import { getVehicleHistory } from "@/lib/vehicle-history";
 import { buildVehicleSpecs } from "@/lib/vehicle-specs";
 import { assessMileage } from "@/lib/mileage-check";
+import { getSafetyRating } from "@/lib/safety-rating";
+import { deriveTitleFlags } from "@/lib/title-flags";
 import { computeOverall } from "@/lib/score";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkReportQuota } from "@/lib/quota";
@@ -130,6 +132,7 @@ export async function POST(
   // report (if any).
   let salvageTitle = false;
   let odometerReadings: { date?: string | null; mileage?: number | null }[] = [];
+  let titleFlags = null as Awaited<ReturnType<typeof deriveTitleFlags>>;
   if (v.vin) {
     try {
       const { data: purchase } = await supabase
@@ -146,12 +149,17 @@ export async function POST(
           .select("data")
           .eq("vin", v.vin.toUpperCase())
           .maybeSingle();
-        const vrData = vr?.data as {
-          salvage_or_total_loss?: boolean;
-          odometer_readings?: { date?: string | null; mileage?: number | null }[];
-        } | null;
+        const vrData = (vr?.data ?? null) as
+          | (Partial<import("@/types").VinHistoryReport> & {
+              odometer_readings?: { date?: string; mileage?: string }[];
+            })
+          | null;
         salvageTitle = Boolean(vrData?.salvage_or_total_loss);
-        odometerReadings = vrData?.odometer_readings ?? [];
+        odometerReadings = (vrData?.odometer_readings ?? []).map((o) => ({
+          date: o.date ?? null,
+          mileage: o.mileage != null ? Number(String(o.mileage).replace(/[^\d]/g, "")) : null,
+        }));
+        titleFlags = deriveTitleFlags(vrData);
       }
     } catch (e) {
       console.error("salvage lookup skipped:", e);
@@ -162,12 +170,20 @@ export async function POST(
   const specifications = await buildVehicleSpecs(vehicle as never, v.vin);
 
   // Mileage consistency / odometer-rollback heuristic — US + EU.
-  const veh = vehicle as { year?: number; mileage?: number; currency?: string };
+  const veh = vehicle as { year?: number; mileage?: number; currency?: string; country?: string };
   const mileageCheck = assessMileage({
     mileage: veh.mileage ?? null,
     year: veh.year ?? null,
     currency: veh.currency ?? null,
     odometerReadings,
+  });
+
+  // Safety rating — NHTSA NCAP (US) now; EU provider later. Best-effort.
+  const safety = await getSafetyRating({
+    year: v.year ?? null,
+    make: v.make ?? null,
+    model: v.model ?? null,
+    country: veh.country ?? null,
   });
 
   // --- Overall score + confidence across ALL modules ---
@@ -223,6 +239,8 @@ export async function POST(
     vehicleHistory,
     specifications,
     mileageCheck,
+    safety,
+    titleFlags,
     overallConfidence: overall.confidence,
   });
 

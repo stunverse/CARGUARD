@@ -293,6 +293,42 @@ export interface FinalReport {
   specifications?: VehicleSpecsSection | null;
   // Mileage consistency / odometer-rollback heuristic. US + EU.
   mileage_check?: MileageCheckSection | null;
+  // Safety rating (NHTSA NCAP for US; EU provider later). Null when unavailable.
+  safety?: SafetyRatingSection | null;
+  // Adverse title flags (salvage/flood/theft…) from a paid VIN report. US now.
+  title_flags?: TitleFlagsSection | null;
+}
+
+// ---------------------------------------------------------------------
+// Safety rating. US via NHTSA NCAP (free). EU (Euro NCAP) has no free API
+// today — a provider can be wired later behind the same shape.
+// ---------------------------------------------------------------------
+export interface SafetyRatingSection {
+  source: string; // "NHTSA NCAP"
+  matched: boolean;
+  vehicle: string;
+  overall: string | null;
+  frontal: string | null;
+  side: string | null;
+  rollover: string | null;
+  note: string;
+  disclaimer: string;
+}
+
+// ---------------------------------------------------------------------
+// Adverse title flags (salvage / flood / theft / total-loss…). Derived from
+// a purchased per-VIN report (NMVTIS via VinAudit). EU provider later.
+// ---------------------------------------------------------------------
+export interface TitleFlag {
+  category: string; // i18n key suffix, e.g. "salvage", "flood", "theft"
+  detail: string; // raw brand text from the provider
+}
+export interface TitleFlagsSection {
+  source: string; // "NMVTIS"
+  checked: boolean; // a paid report was available
+  clean: boolean; // no adverse brand found
+  flags: TitleFlag[];
+  disclaimer: string;
 }
 
 // ---------------------------------------------------------------------

@@ -252,6 +252,63 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         </Card>
       )}
 
+      {/* Safety rating (NHTSA NCAP for US; EU provider later) */}
+      {report.safety && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("rep.s.safety")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-xs text-muted-foreground">
+              {t("rep.source")}: {report.safety.source} · {report.safety.vehicle}
+            </p>
+            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {([
+                ["safety.overall", report.safety.overall],
+                ["safety.frontal", report.safety.frontal],
+                ["safety.side", report.safety.side],
+                ["safety.rollover", report.safety.rollover],
+              ] as const).map(([k, v]) =>
+                v ? (
+                  <div key={k}>
+                    <dt className="text-xs text-muted-foreground">{t(k)}</dt>
+                    <dd className="font-semibold">{v}★</dd>
+                  </div>
+                ) : null,
+              )}
+            </dl>
+            <p className="text-xs text-muted-foreground">{t("safety.disclaimer")}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Adverse title flags (salvage / flood / theft…) — from a paid VIN report */}
+      {report.title_flags && report.title_flags.checked && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("rep.s.titleFlags")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p className="text-xs text-muted-foreground">
+              {t("rep.source")}: {report.title_flags.source}
+            </p>
+            {report.title_flags.clean ? (
+              <p className="text-risk-low">{t("flag.clean")}</p>
+            ) : (
+              <div className="space-y-2">
+                {report.title_flags.flags.map((f, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Badge variant="critical">{t(`flag.${f.category}`)}</Badge>
+                    <span className="text-muted-foreground">{f.detail}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">{t("flag.disclaimer")}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Disclaimer */}
       <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
         <strong className="text-foreground">{t("rep.disclaimer")} </strong>

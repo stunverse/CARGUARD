@@ -226,6 +226,50 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       mc.flags.forEach((f) => body(`• ${FLAG[f] ?? f}`));
     }
 
+    // 15. Safety rating (NHTSA NCAP)
+    const sr = report.safety;
+    if (sr) {
+      h1("15. Safety rating");
+      muted(`Source: ${sr.source} · ${sr.vehicle}`);
+      [
+        ["Overall", sr.overall],
+        ["Frontal", sr.frontal],
+        ["Side", sr.side],
+        ["Rollover", sr.rollover],
+      ].forEach(([label, val]) => {
+        if (val) body(`${label}: ${val}/5`);
+      });
+      doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(
+        "Official crash-test ratings (out of 5). EU coverage coming soon.",
+      ).fillColor("#111");
+    }
+
+    // 16. Title & damage flags (NMVTIS)
+    const tf = report.title_flags;
+    if (tf && tf.checked) {
+      const FLAG: Record<string, string> = {
+        salvage: "Salvage",
+        total_loss: "Total loss",
+        flood: "Flood damage",
+        fire: "Fire damage",
+        hail: "Hail damage",
+        theft: "Theft record",
+        junk: "Junk",
+        lemon: "Lemon / buyback",
+        rebuilt: "Rebuilt",
+        odometer: "Odometer brand",
+        disaster: "Natural disaster",
+        damage: "Damage record",
+      };
+      h1("16. Title & damage flags");
+      muted(`Source: ${tf.source}`);
+      if (tf.clean) {
+        body("No adverse title brand found on the available record.");
+      } else {
+        tf.flags.forEach((f) => body(`• ${FLAG[f.category] ?? f.category}: ${f.detail}`));
+      }
+    }
+
     // Disclaimer
     doc.moveDown(0.8);
     doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(report.disclaimer);

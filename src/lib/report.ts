@@ -14,6 +14,8 @@ import type {
   MechanicalReportSection,
   MileageCheckSection,
   PhotoPointCode,
+  SafetyRatingSection,
+  TitleFlagsSection,
   Vehicle,
   VehicleHistorySection,
   VehicleSpecsSection,
@@ -52,6 +54,8 @@ export function generateFinalReport(params: {
   vehicleHistory?: VehicleHistorySection | null;
   specifications?: VehicleSpecsSection | null;
   mileageCheck?: MileageCheckSection | null;
+  safety?: SafetyRatingSection | null;
+  titleFlags?: TitleFlagsSection | null;
   /** Overall confidence across all modules (falls back to photo avg). */
   overallConfidence?: number;
 }): FinalReport {
@@ -65,6 +69,8 @@ export function generateFinalReport(params: {
     vehicleHistory,
     specifications,
     mileageCheck,
+    safety,
+    titleFlags,
     overallConfidence,
   } = params;
 
@@ -136,6 +142,8 @@ export function generateFinalReport(params: {
     vehicle_history: vehicleHistory ?? null,
     specifications: specifications ?? null,
     mileage_check: mileageCheck ?? null,
+    safety: safety ?? null,
+    title_flags: titleFlags ?? null,
   };
 }
 
