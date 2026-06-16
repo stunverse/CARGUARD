@@ -118,9 +118,6 @@ function StepCard({
   const [secondaryFile, setSecondaryFile] = useState<File | null>(null);
   const [capture, setCapture] = useState<null | { slot: "primary" | "secondary"; mode: CaptureMode }>(null);
 
-  const [obs, setObs] = useState<Record<string, boolean>>(
-    (initial?.observations as Record<string, boolean>) ?? {},
-  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ score: number; severity: Severity; suspicious: string[] } | null>(
@@ -133,10 +130,6 @@ function StepCard({
       : null,
   );
   const [skipped, setSkipped] = useState(initial?.quality_status === "skipped");
-
-  function toggle(key: string) {
-    setObs((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
 
   async function save() {
     setSaving(true);
@@ -155,7 +148,7 @@ function StepCard({
         return path;
       };
 
-      const payload: Record<string, unknown> = { observations: obs };
+      const payload: Record<string, unknown> = { observations: {} };
       if (primaryFile) payload.primary_path = await upImg(primaryFile, "");
       if (secondaryFile) payload.secondary_path = await upImg(secondaryFile, "-2");
       if (point.media_type === "docs") {
@@ -199,7 +192,8 @@ function StepCard({
     router.refresh();
   }
 
-  const captureMode: CaptureMode = point.media_type === "video" ? "video" : "photo";
+  const captureMode: CaptureMode =
+    point.media_type === "video" || point.media_type === "questionnaire" ? "video" : "photo";
 
   return (
     <Card className={cn(result && "border-accent/30")}>
@@ -244,26 +238,15 @@ function StepCard({
               onClick={() => setCapture({ slot: "secondary", mode: "photo" })}
             />
           </div>
-        ) : point.media_type !== "questionnaire" ? (
+        ) : (
           <CaptureTile
-            label={point.media_type === "video" ? t("mct.film") : t("mct.takePhoto")}
+            label={captureMode === "video" ? t("mct.film") : t("mct.takePhoto")}
             file={primaryFile}
-            icon={point.media_type === "video" ? Video : Camera}
+            icon={captureMode === "video" ? Video : Camera}
             onClick={() => setCapture({ slot: "primary", mode: captureMode })}
             full
           />
-        ) : null}
-
-        {/* Observations */}
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground">{t("mct.whatObserve")}</p>
-          {loc.observations.map((o) => (
-            <label key={o.key} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={!!obs[o.key]} onChange={() => toggle(o.key)} />
-              <span className={o.kind === "good" ? "text-risk-low" : undefined}>{o.label}</span>
-            </label>
-          ))}
-        </div>
+        )}
 
         {result && result.suspicious.length > 0 && (
           <div className="rounded-md border border-risk-moderate/40 bg-risk-moderate/10 p-2 text-xs text-risk-moderate">

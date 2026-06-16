@@ -811,7 +811,6 @@ function MechStep({
 }) {
   const { t, locale } = useI18n();
   const L = localizedMechPoint(point, locale);
-  const [obs, setObs] = useState<Record<string, boolean>>({});
   const [file, setFile] = useState<File | null>(null);
 
   // Receive the captured file from the parent's MediaCapture.
@@ -838,10 +837,9 @@ function MechStep({
       const res = await fetch(`/api/inspections/${sessionId}/mechanical/${point.code}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ observations: obs, primary_path }),
+        body: JSON.stringify({ observations: {}, primary_path }),
       });
       if (!res.ok) throw new Error("save failed");
-      setObs({});
       setFile(null);
       onSaved();
     } catch {
@@ -851,7 +849,8 @@ function MechStep({
     }
   }
 
-  const captureMode: CaptureMode = point.media_type === "video" ? "video" : "photo";
+  const captureMode: CaptureMode =
+    point.media_type === "video" || point.media_type === "questionnaire" ? "video" : "photo";
 
   return (
     <StepShell kicker={`${t("wiz.engineCheck")} ${point.order_index}`} question={L.title}>
@@ -861,37 +860,21 @@ function MechStep({
         {L.why}
       </p>
 
-      {point.media_type !== "questionnaire" && point.media_type !== "docs" && (
-        <button
-          type="button"
-          onClick={() => onOpenCapture(captureMode)}
-          className={cn(
-            "mt-4 flex w-full items-center gap-2 rounded-xl border border-dashed p-3 text-left text-sm",
-            file ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB]",
-          )}
-        >
-          <span className={cn("flex size-9 items-center justify-center rounded-lg", file ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]")}>
-            {file ? <CheckCircle2 className="size-5" /> : point.media_type === "video" ? <Video className="size-5" /> : <Camera className="size-5" />}
-          </span>
-          <span className="font-medium text-[#111827]">
-            {file ? t("wiz.captured") : point.media_type === "video" ? t("wiz.film") : t("wiz.openCamera")}
-          </span>
-        </button>
-      )}
-
-      <p className="mt-4 text-xs font-semibold text-[#6B7280]">{t("wiz.observe")}</p>
-      <div className="mt-1 space-y-1.5">
-        {L.observations.map((o) => (
-          <label key={o.key} className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={!!obs[o.key]}
-              onChange={() => setObs((p) => ({ ...p, [o.key]: !p[o.key] }))}
-            />
-            <span className={o.kind === "good" ? "text-risk-low" : undefined}>{o.label}</span>
-          </label>
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={() => onOpenCapture(captureMode)}
+        className={cn(
+          "mt-4 flex w-full items-center gap-2 rounded-xl border border-dashed p-3 text-left text-sm",
+          file ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB]",
+        )}
+      >
+        <span className={cn("flex size-9 items-center justify-center rounded-lg", file ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]")}>
+          {file ? <CheckCircle2 className="size-5" /> : captureMode === "video" ? <Video className="size-5" /> : <Camera className="size-5" />}
+        </span>
+        <span className="font-medium text-[#111827]">
+          {file ? t("wiz.captured") : captureMode === "video" ? t("wiz.film") : t("wiz.openCamera")}
+        </span>
+      </button>
 
       <Button className="mt-5 w-full" onClick={save} disabled={busy}>
         {busy ? t("wiz.saving") : t("wiz.saveContinue")}
