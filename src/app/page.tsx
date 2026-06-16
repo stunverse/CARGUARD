@@ -109,6 +109,9 @@ export default async function HomePage() {
             CarGuard <span className="text-[#FF4D4D]">AI</span>
           </Link>
           <div className="flex items-center gap-2">
+            <Link href="#pricing" className="hidden px-2 py-1 text-sm font-medium text-white/80 hover:text-white sm:block">
+              {t(locale, "landing.nav.pricing")}
+            </Link>
             <LanguageSwitcher />
             <Link href="/login" className="hidden px-2 py-1 text-sm font-medium text-white/80 hover:text-white sm:block">
               {t(locale, "landing.login")}
