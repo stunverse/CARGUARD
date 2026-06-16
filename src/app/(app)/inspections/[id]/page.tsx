@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -74,6 +74,13 @@ export default async function InspectionDetailPage({
   const report =
     (reportRow?.report_content as FinalReport | null) ??
     (session.final_report as FinalReport | null);
+
+  // An unfinished inspection must never show this detail view — resume the
+  // guided flow exactly where the user left off instead.
+  const isComplete = Boolean(reportRow) || session.status === "report_generated";
+  if (!isComplete) {
+    redirect(`/inspections/${id}/continue`);
+  }
 
   return (
     <div className="px-5 py-6">

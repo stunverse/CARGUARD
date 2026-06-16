@@ -61,18 +61,48 @@ const VEHICLE_STEPS: VStepDef[] = [
   { kind: "select", key: "goal", question: "What do you want to check?", options: INSPECTION_GOAL_OPTIONS },
 ];
 
-export function InspectionWizard() {
+// Resume payload for an in-progress inspection.
+export interface WizardResume {
+  sessionId: string;
+  vehicle: Record<string, string>;
+  photoStatuses: Record<string, string>;
+  photoUrls?: Record<string, string | null>;
+  mechDoneCodes: string[];
+}
+
+function resumeStart(r: WizardResume): { phase: Phase; pIndex: number; mIndex: number } {
+  const firstPhoto = PHOTO_POINTS.findIndex(
+    (p) => !["passed", "skipped"].includes(r.photoStatuses[p.code] ?? ""),
+  );
+  if (firstPhoto !== -1) return { phase: "photos", pIndex: firstPhoto, mIndex: 0 };
+  const firstMech = MECHANICAL_POINTS.findIndex((p) => !r.mechDoneCodes.includes(p.code));
+  if (firstMech !== -1)
+    return { phase: "mech", pIndex: PHOTO_POINTS.length - 1, mIndex: firstMech };
+  return { phase: "review", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1 };
+}
+
+export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   const router = useRouter();
+  const init = resume ? resumeStart(resume) : null;
 
-  const [phase, setPhase] = useState<Phase>("vehicle");
-  const [vIndex, setVIndex] = useState(0); // 0 = VIN, then VEHICLE_FIELDS at 1..n
-  const [vehicle, setVehicle] = useState<Record<string, string>>({});
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>(init ? init.phase : "vehicle");
+  const [vIndex, setVIndex] = useState(resume ? VEHICLE_STEPS.length - 1 : 0);
+  const [vehicle, setVehicle] = useState<Record<string, string>>(resume?.vehicle ?? {});
+  const [sessionId, setSessionId] = useState<string | null>(resume?.sessionId ?? null);
 
-  const [pIndex, setPIndex] = useState(0);
-  const [photoState, setPhotoState] = useState<Record<string, { status: string; url: string | null }>>({});
+  const [pIndex, setPIndex] = useState(init ? init.pIndex : 0);
+  const [photoState, setPhotoState] = useState<Record<string, { status: string; url: string | null }>>(
+    () => {
+      if (!resume) return {};
+      const m: Record<string, { status: string; url: string | null }> = {};
+      for (const code of Object.keys(resume.photoStatuses)) {
+        m[code] = { status: resume.photoStatuses[code], url: resume.photoUrls?.[code] ?? null };
+      }
+      return m;
+    },
+  );
 
-  const [mIndex, setMIndex] = useState(0);
+  const [mIndex, setMIndex] = useState(init ? init.mIndex : 0);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
