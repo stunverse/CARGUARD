@@ -16,8 +16,8 @@ export const metadata: Metadata = {
     title: BRAND.name,
   },
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 
