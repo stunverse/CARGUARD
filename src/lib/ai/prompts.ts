@@ -29,6 +29,13 @@ Output STRICT JSON matching the requested schema. No markdown, no prose outside 
 
 export const REPORT_DISCLAIMER_TEXT = REPORT_DISCLAIMER;
 
+// Append to a system prompt to force the language of the JSON text fields.
+export function languageDirective(language?: string): string {
+  return language === "fr"
+    ? "\n\nIMPORTANT: Write every human-readable text field of the JSON in French (français), keeping the JSON keys and enum values in English."
+    : "";
+}
+
 export function qualityCheckPrompt(): string {
   return `${AI_RULES}
 

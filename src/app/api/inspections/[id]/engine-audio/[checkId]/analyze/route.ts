@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { analyzeEngineAudio, audioModelFormat } from "@/lib/ai/engine-audio";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
+import { getServerLocale } from "@/lib/i18n-server";
 
 export const runtime = "nodejs";
 
@@ -65,6 +66,7 @@ export async function POST(
     audioBase64,
     format: fmt,
     durationSeconds: check.duration_seconds ?? 0,
+    language: await getServerLocale(),
   });
 
   const { data: updated, error } = await supabase

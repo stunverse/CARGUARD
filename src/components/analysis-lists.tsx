@@ -1,3 +1,5 @@
+"use client";
+
 import {
   AlertTriangle,
   CheckCircle2,
@@ -5,6 +7,7 @@ import {
   MessageCircleQuestion,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useI18n } from "@/components/i18n-provider";
 
 function BulletCard({
   title,
@@ -52,33 +55,36 @@ function BulletCard({
 }
 
 export function PositivePointsList({ items }: { items: string[] }) {
+  const { t } = useI18n();
   return (
     <BulletCard
-      title="Positive points"
+      title={t("rep.positive")}
       icon={CheckCircle2}
       items={items}
       tone="good"
-      empty="No specific reassuring point was highlighted."
+      empty="—"
     />
   );
 }
 
 export function SuspiciousPointsList({ items }: { items: string[] }) {
+  const { t } = useI18n();
   return (
     <BulletCard
-      title="Points to verify"
+      title={t("rep.suspicious")}
       icon={AlertTriangle}
       items={items}
       tone="warn"
-      empty="No suspicious point was detected from the provided photos."
+      empty="—"
     />
   );
 }
 
 export function SellerQuestionsList({ items }: { items: string[] }) {
+  const { t } = useI18n();
   return (
     <BulletCard
-      title="Questions to ask the seller"
+      title={t("rep.sellerQuestions")}
       icon={MessageCircleQuestion}
       items={items}
     />
@@ -86,12 +92,13 @@ export function SellerQuestionsList({ items }: { items: string[] }) {
 }
 
 export function NegotiationArgumentsList({ items }: { items: string[] }) {
+  const { t } = useI18n();
   return (
     <BulletCard
-      title="Negotiation arguments"
+      title={t("rep.negotiation")}
       icon={HandCoins}
       items={items}
-      empty="No negotiation argument was generated."
+      empty="—"
     />
   );
 }

@@ -6,7 +6,7 @@
 // =====================================================================
 
 import { isAIConfigured, runStructuredVision } from "./client";
-import { AI_RULES } from "./prompts";
+import { AI_RULES, languageDirective } from "./prompts";
 import {
   DEFAULT_MECHANICAL_MECHANIC_QUESTIONS,
   DEFAULT_MECHANICAL_SELLER_QUESTIONS,
@@ -36,6 +36,7 @@ interface PhotoAiPart {
 export async function analyzeMechanicalPhoto(
   imageUrls: string[],
   code: MechanicalPointCode,
+  language?: string,
 ): Promise<PhotoAiPart> {
   const point = MECHANICAL_POINTS.find((p) => p.code === code);
   if (!isAIConfigured() || imageUrls.length === 0) {
@@ -60,7 +61,7 @@ Be cautious and non-diagnostic. Return JSON exactly:
  "suspicious_observations": string[],
  "summary": string,
  "confidence": number
-}`,
+}${languageDirective(language)}`,
       userText: `Mechanical point: ${code}. Analyze and return the JSON.`,
       imageUrls,
     });

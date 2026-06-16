@@ -9,6 +9,7 @@ import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { STORAGE_BUCKETS } from "@/lib/constants";
+import { getServerLocale } from "@/lib/i18n-server";
 import type { MechanicalCheckItem, MechanicalPointCode } from "@/types";
 
 export const runtime = "nodejs";
@@ -124,7 +125,7 @@ export async function POST(
   }
 
   const ai = imageUrlsForAi.length
-    ? await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode)
+    ? await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode, await getServerLocale())
     : null;
   const analysis = buildMechanicalItemAnalysis(code as MechanicalPointCode, observations, ai);
   update.ai_analysis = analysis;

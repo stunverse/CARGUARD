@@ -18,6 +18,7 @@ import {
   scoreToRiskLevel,
 } from "@/lib/constants";
 import { MECHANICAL_RISK_COPY } from "@/lib/mechanical";
+import { getServerLocale } from "@/lib/i18n-server";
 import type { InspectionPhoto, MechanicalCheckItem, PhotoAnalysisResult } from "@/types";
 
 // POST /api/inspections/[id]/report — assemble + persist the final report.
@@ -76,10 +77,11 @@ export async function POST(
     );
   }
 
+  const language = await getServerLocale();
   const vehicle = (session as { vehicles?: unknown }).vehicles ?? {};
   const knowledge = await getModelKnowledge(supabase, vehicle as never);
   const scores = calculateInspectionScores(results, knowledge.model_risk_score);
-  const global = await analyzeFullInspection(vehicle as never, results);
+  const global = await analyzeFullInspection(vehicle as never, results, language);
   if (knowledge.matched) {
     global.model_risk_score = knowledge.model_risk_score;
     global.suspicious_points = [

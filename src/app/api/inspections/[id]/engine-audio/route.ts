@@ -4,6 +4,7 @@ import { checkEngineAudioQuality, audioModelFormat } from "@/lib/ai/engine-audio
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { STORAGE_BUCKETS } from "@/lib/constants";
+import { getServerLocale } from "@/lib/i18n-server";
 
 export const runtime = "nodejs";
 
@@ -53,7 +54,12 @@ export async function POST(
     const { data: blob } = await supabase.storage.from(BUCKET).download(storagePath);
     if (blob) audioBase64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
   }
-  const quality = await checkEngineAudioQuality({ audioBase64, format: fmt, durationSeconds });
+  const quality = await checkEngineAudioQuality({
+    audioBase64,
+    format: fmt,
+    durationSeconds,
+    language: await getServerLocale(),
+  });
   const qualityStatus = quality.is_usable
     ? quality.retake_required
       ? "needs_retake"

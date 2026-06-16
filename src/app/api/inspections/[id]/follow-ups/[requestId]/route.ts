@@ -4,6 +4,7 @@ import { analyzeFollowUpPhoto } from "@/lib/ai/functions";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { STORAGE_BUCKETS } from "@/lib/constants";
+import { getServerLocale } from "@/lib/i18n-server";
 
 export const runtime = "nodejs";
 
@@ -48,7 +49,7 @@ export async function POST(
     .createSignedUrl(storagePath, 3600);
 
   const analysis = signed?.signedUrl
-    ? await analyzeFollowUpPhoto(signed.signedUrl, reqRow.target_area ?? reqRow.title)
+    ? await analyzeFollowUpPhoto(signed.signedUrl, reqRow.target_area ?? reqRow.title, await getServerLocale())
     : null;
 
   const { data: updated, error } = await supabase

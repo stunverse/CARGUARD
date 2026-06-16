@@ -34,6 +34,7 @@ import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
 import { useI18n } from "@/components/i18n-provider";
+import { localizedMechPoint, localizedPhotoPoint } from "@/lib/content-i18n";
 import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
@@ -84,6 +85,7 @@ function resumeStart(r: WizardResume): { phase: Phase; pIndex: number; mIndex: n
 
 export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const init = resume ? resumeStart(resume) : null;
 
   const [phase, setPhase] = useState<Phase>(init ? init.phase : "vehicle");
@@ -279,7 +281,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col px-5 pt-4">
-      {phase === "finishing" && <AnalyzingOverlay label="Building your report" />}
+      {phase === "finishing" && <AnalyzingOverlay label={t("wiz.building")} />}
 
       {/* Top bar: progress + close */}
       <div className="mb-6 flex items-center gap-3">
@@ -312,19 +314,22 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
           />
         )}
 
-        {phase === "photos" && (
-          <CaptureStep
-            kicker={`Photo ${pIndex + 1} of ${PHOTO_POINTS.length}`}
-            title={PHOTO_POINTS[pIndex].title}
-            instruction={PHOTO_POINTS[pIndex].instruction}
-            why={PHOTO_POINTS[pIndex].why_it_matters}
-            previewUrl={photoState[PHOTO_POINTS[pIndex].code]?.url ?? null}
-            status={photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending"}
-            busy={busy}
-            mode="photo"
-            onOpenCapture={() => setCapture("photo")}
-          />
-        )}
+        {phase === "photos" && (() => {
+          const lp = localizedPhotoPoint(PHOTO_POINTS[pIndex], locale);
+          return (
+            <CaptureStep
+              kicker={`${t("wiz.photo")} ${pIndex + 1} / ${PHOTO_POINTS.length}`}
+              title={lp.title}
+              instruction={lp.instruction}
+              why={lp.why}
+              previewUrl={photoState[PHOTO_POINTS[pIndex].code]?.url ?? null}
+              status={photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending"}
+              busy={busy}
+              mode="photo"
+              onOpenCapture={() => setCapture("photo")}
+            />
+          );
+        })()}
 
         {phase === "mech" && (
           <MechStep
@@ -342,11 +347,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
             <span className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-risk-low/15 text-risk-low">
               <CheckCircle2 className="size-8" aria-hidden />
             </span>
-            <h2 className="text-2xl font-extrabold text-[#111827]">All set!</h2>
+            <h2 className="text-2xl font-extrabold text-[#111827]">{t("wiz.allSet")}</h2>
             <p className="mt-3 max-w-xs text-sm text-[#6B7280]">
-              {passedCount} exterior photo{passedCount > 1 ? "s" : ""} captured +
-              engine &amp; mechanical checks. CarGuard AI will now analyze
-              everything and produce your report with a confidence score.
+              {passedCount} {t("wiz.reviewBody")}
             </p>
           </div>
         )}
@@ -373,7 +376,13 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       {capture && (
         <MediaCapture
           mode={capture}
-          title={phase === "photos" ? PHOTO_POINTS[pIndex].title : MECHANICAL_POINTS[mIndex]?.title ?? "Capture"}
+          title={
+            phase === "photos"
+              ? localizedPhotoPoint(PHOTO_POINTS[pIndex], locale).title
+              : MECHANICAL_POINTS[mIndex]
+                ? localizedMechPoint(MECHANICAL_POINTS[mIndex], locale).title
+                : "Capture"
+          }
           onClose={() => setCapture(null)}
           onCapture={(file) => {
             if (phase === "photos") uploadPhoto(PHOTO_POINTS[pIndex].code, file);
@@ -400,19 +409,19 @@ function VehicleStep({
   onAutoFill: (data: Record<string, string>) => void;
   onPick: (updates: Record<string, string>) => void;
 }) {
-  const { currency, unit } = useI18n();
+  const { t, currency, unit } = useI18n();
   const step = VEHICLE_STEPS[vIndex];
 
   if (step.kind === "vin") return <VinStep vehicle={vehicle} setField={setField} onAutoFill={onAutoFill} />;
 
   if (step.kind === "make") {
     return (
-      <StepShell kicker="Vehicle" question="What's the make?">
+      <StepShell kicker={t("wiz.vehicle")} question={t("veh.q.make")}>
         <SearchableList
           options={POPULAR_MAKES}
           current={vehicle.make}
           onPick={(make) => onPick({ make })}
-          placeholder="Search make…"
+          placeholder={t("wiz.searchMake")}
         />
       </StepShell>
     );
@@ -420,7 +429,7 @@ function VehicleStep({
 
   if (step.kind === "year") {
     return (
-      <StepShell kicker="Vehicle" question="What year is it?">
+      <StepShell kicker={t("wiz.vehicle")} question={t("veh.q.year")}>
         <div className="grid max-h-[55vh] grid-cols-3 gap-2 overflow-y-auto">
           {catalogYears().map((y) => {
             const active = vehicle.year === String(y);
@@ -445,7 +454,7 @@ function VehicleStep({
 
   if (step.kind === "model") {
     return (
-      <StepShell kicker="Vehicle" question="Which model?">
+      <StepShell kicker={t("wiz.vehicle")} question={t("veh.q.model")}>
         <ModelStep
           make={vehicle.make}
           year={vehicle.year}
@@ -467,11 +476,22 @@ function VehicleStep({
         ? ` (${currency})`
         : ` (${unit})`
       : "";
+  const optGroup =
+    step.key === "fuel_type"
+      ? "fuel"
+      : step.key === "transmission"
+        ? "transmission"
+        : step.key === "seller_type"
+          ? "seller"
+          : step.key === "goal"
+            ? "goal"
+            : null;
   return (
-    <StepShell kicker="Vehicle" question={`${step.question!}${questionSuffix}`}>
+    <StepShell kicker={t("wiz.vehicle")} question={`${t(`veh.q.${step.key}`)}${questionSuffix}`}>
       <div className="space-y-2">
         {opts.map((o) => {
           const active = vehicle[step.key!] === o.value;
+          const label = optGroup ? t(`opt.${optGroup}.${o.value}`) : o.label;
           return (
             <button
               key={o.value}
@@ -482,7 +502,7 @@ function VehicleStep({
                 active ? "border-[#E50914] bg-[rgba(229,9,20,0.05)]" : "border-[#E5E7EB] hover:bg-secondary",
               )}
             >
-              {o.label}
+              {label}
               {active && <CheckCircle2 className="size-5 text-[#E50914]" aria-hidden />}
             </button>
           );
@@ -506,7 +526,7 @@ function ExactAmount({
   kind: "price" | "mileage";
   onSubmit: (value: number) => void;
 }) {
-  const { currency, unit } = useI18n();
+  const { t, currency, unit } = useI18n();
   const [open, setOpen] = useState(false);
   const [val, setVal] = useState("");
   const symbol = currency === "EUR" ? "€" : "$";
@@ -518,7 +538,7 @@ function ExactAmount({
         onClick={() => setOpen(true)}
         className="flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-[#E5E7EB] p-3 text-sm font-medium text-[#6B7280]"
       >
-        Enter the exact amount
+        {t("wiz.enterExact")}
       </button>
     );
   }
@@ -542,7 +562,7 @@ function ExactAmount({
         {kind === "mileage" && <span className="text-sm text-[#6B7280]">{unit}</span>}
       </div>
       <Button className="mt-3 w-full" onClick={() => n > 0 && onSubmit(n)} disabled={n <= 0}>
-        Use this amount
+        {t("wiz.useAmount")}
       </Button>
     </div>
   );
@@ -557,6 +577,7 @@ function VinStep({
   setField: (k: string, v: string) => void;
   onAutoFill: (data: Record<string, string>) => void;
 }) {
+  const { t } = useI18n();
   const [looking, setLooking] = useState(false);
   const [vinMsg, setVinMsg] = useState<string | null>(null);
 
@@ -581,16 +602,16 @@ function VinStep({
   }
 
   return (
-    <StepShell kicker="Vehicle" question="Do you have the VIN?" helper="Optional — we'll auto-fill the details for you. Or skip and pick them.">
+    <StepShell kicker={t("wiz.vehicle")} question={t("veh.q.vin")} helper={t("wiz.vinHelper")}>
       <Input
         autoFocus
-        placeholder="17-character VIN"
+        placeholder={t("wiz.vinPlaceholder")}
         value={vehicle.vin ?? ""}
         onChange={(e) => setField("vin", e.target.value)}
         className="h-14 text-base"
       />
       <Button type="button" variant="accent" className="mt-3 w-full" onClick={autofill} disabled={looking}>
-        <Sparkles className="size-4" /> {looking ? "Looking…" : "Auto-fill from VIN"}
+        <Sparkles className="size-4" /> {looking ? t("wiz.looking") : t("wiz.autofill")}
       </Button>
       {vinMsg && <p className="mt-2 text-xs text-[#6B7280]">{vinMsg}</p>}
     </StepShell>
@@ -608,6 +629,7 @@ function ModelStep({
   current?: string;
   onPick: (model: string) => void;
 }) {
+  const { t } = useI18n();
   const [models, setModels] = useState<string[] | null>(null);
 
   useEffect(() => {
@@ -628,7 +650,7 @@ function ModelStep({
   if (models === null) {
     return (
       <div className="flex items-center gap-2 py-8 text-sm text-[#6B7280]">
-        <RefreshCw className="size-4 animate-spin" /> Loading models for {make} {year}…
+        <RefreshCw className="size-4 animate-spin" /> {t("wiz.loadingModels")} {make} {year}…
       </div>
     );
   }
@@ -638,8 +660,8 @@ function ModelStep({
       options={models}
       current={current}
       onPick={onPick}
-      placeholder="Search model…"
-      emptyHint="No models found — type the model name."
+      placeholder={t("wiz.searchModel")}
+      emptyHint={t("wiz.noModels")}
     />
   );
 }
@@ -658,6 +680,7 @@ function SearchableList({
   placeholder: string;
   emptyHint?: string;
 }) {
+  const { t } = useI18n();
   const [q, setQ] = useState("");
   const filtered = q.trim()
     ? options.filter((o) => o.toLowerCase().includes(q.trim().toLowerCase()))
@@ -697,7 +720,7 @@ function SearchableList({
             onClick={() => onPick(q.trim())}
             className="flex w-full items-center gap-2 rounded-xl border border-dashed border-[#E5E7EB] p-3.5 text-left text-sm text-[#E50914]"
           >
-            <ChevronRight className="size-4" /> Use “{q.trim()}”
+            <ChevronRight className="size-4" /> {t("wiz.use")} « {q.trim()} »
           </button>
         )}
         {filtered.length === 0 && !q.trim() && emptyHint && (
@@ -728,11 +751,12 @@ function CaptureStep({
   mode: CaptureMode;
   onOpenCapture: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <StepShell kicker={kicker} question={title}>
       <p className="text-sm text-[#374151]">{instruction}</p>
       <p className="mt-2 rounded-lg bg-accent/5 p-3 text-xs text-[#6B7280]">
-        <strong className="text-[#111827]">Why it matters: </strong>
+        <strong className="text-[#111827]">{t("wiz.whyItMatters")}</strong>
         {why}
       </p>
 
@@ -748,7 +772,7 @@ function CaptureStep({
         ) : (
           <span className="flex flex-col items-center gap-2 text-[#9AA3AF]">
             <Camera className="size-10" aria-hidden />
-            <span className="text-sm font-medium">Tap to open the camera</span>
+            <span className="text-sm font-medium">{t("wiz.tapCamera")}</span>
           </span>
         )}
         {busy && (
@@ -760,11 +784,11 @@ function CaptureStep({
 
       {status === "passed" && (
         <p className="mt-2 flex items-center gap-1 text-sm text-risk-low">
-          <CheckCircle2 className="size-4" /> Looks good
+          <CheckCircle2 className="size-4" /> {t("wiz.looksGood")}
         </p>
       )}
       {status === "needs_retake" && (
-        <p className="mt-2 text-sm text-risk-moderate">This photo needs a retake — tap to try again.</p>
+        <p className="mt-2 text-sm text-risk-moderate">{t("wiz.needsRetake")}</p>
       )}
     </StepShell>
   );
@@ -785,6 +809,8 @@ function MechStep({
   sessionId: string;
   setBusy: (b: boolean) => void;
 }) {
+  const { t, locale } = useI18n();
+  const L = localizedMechPoint(point, locale);
   const [obs, setObs] = useState<Record<string, boolean>>({});
   const [file, setFile] = useState<File | null>(null);
 
@@ -828,11 +854,11 @@ function MechStep({
   const captureMode: CaptureMode = point.media_type === "video" ? "video" : "photo";
 
   return (
-    <StepShell kicker={`Engine check ${point.order_index}`} question={point.title}>
-      <p className="text-sm text-[#374151]">{point.instruction}</p>
+    <StepShell kicker={`${t("wiz.engineCheck")} ${point.order_index}`} question={L.title}>
+      <p className="text-sm text-[#374151]">{L.instruction}</p>
       <p className="mt-2 rounded-lg bg-accent/5 p-3 text-xs text-[#6B7280]">
-        <strong className="text-[#111827]">Why it matters: </strong>
-        {point.why_it_matters}
+        <strong className="text-[#111827]">{t("wiz.whyItMatters")}</strong>
+        {L.why}
       </p>
 
       {point.media_type !== "questionnaire" && point.media_type !== "docs" && (
@@ -848,14 +874,14 @@ function MechStep({
             {file ? <CheckCircle2 className="size-5" /> : point.media_type === "video" ? <Video className="size-5" /> : <Camera className="size-5" />}
           </span>
           <span className="font-medium text-[#111827]">
-            {file ? "Captured — tap to retake" : point.media_type === "video" ? "Film (video + sound)" : "Open camera"}
+            {file ? t("wiz.captured") : point.media_type === "video" ? t("wiz.film") : t("wiz.openCamera")}
           </span>
         </button>
       )}
 
-      <p className="mt-4 text-xs font-semibold text-[#6B7280]">What did you observe?</p>
+      <p className="mt-4 text-xs font-semibold text-[#6B7280]">{t("wiz.observe")}</p>
       <div className="mt-1 space-y-1.5">
-        {point.observations.map((o) => (
+        {L.observations.map((o) => (
           <label key={o.key} className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -868,7 +894,7 @@ function MechStep({
       </div>
 
       <Button className="mt-5 w-full" onClick={save} disabled={busy}>
-        {busy ? "Saving…" : "Save & continue"}
+        {busy ? t("wiz.saving") : t("wiz.saveContinue")}
       </Button>
       {!point.required && (
         <button
@@ -877,7 +903,7 @@ function MechStep({
           disabled={busy}
           className="mt-2 w-full py-2 text-sm font-medium text-[#6B7280]"
         >
-          Skip this step
+          {t("wiz.skipStep")}
         </button>
       )}
     </StepShell>
@@ -926,11 +952,12 @@ function Footer({
   onPhotoSkip: () => void;
   onFinish: () => void;
 }) {
+  const { t } = useI18n();
   if (phase === "vehicle") {
     if (busy) {
       return (
         <PrimaryButton onClick={() => {}} disabled loading>
-          Starting…
+          {t("wiz.starting")}
         </PrimaryButton>
       );
     }
@@ -938,7 +965,7 @@ function Footer({
     if (step.kind === "vin") {
       return (
         <PrimaryButton onClick={onVehicleNext}>
-          {vehicle.vin?.trim() ? "Continue" : "Skip — I don't have the VIN"}
+          {vehicle.vin?.trim() ? t("wiz.continue") : t("wiz.skipNoVin")}
         </PrimaryButton>
       );
     }
@@ -950,7 +977,7 @@ function Footer({
         onClick={onVehicleNext}
         className="w-full py-3 text-sm font-medium text-[#6B7280]"
       >
-        Skip
+        {t("wiz.skip")}
       </button>
     );
   }
@@ -959,10 +986,10 @@ function Footer({
     return (
       <div className="flex gap-2">
         <PrimaryButton onClick={onPhotoNext} disabled={!done || busy} className="flex-1">
-          Continue
+          {t("wiz.continue")}
         </PrimaryButton>
         <Button variant="ghost" onClick={onPhotoSkip} disabled={busy}>
-          Can&apos;t take it
+          {t("wiz.cantTake")}
         </Button>
       </div>
     );
@@ -970,7 +997,7 @@ function Footer({
   if (phase === "review" || phase === "finishing") {
     return (
       <PrimaryButton onClick={onFinish} disabled={busy || phase === "finishing"} loading={phase === "finishing"}>
-        Get my report
+        {t("wiz.getReport")}
       </PrimaryButton>
     );
   }

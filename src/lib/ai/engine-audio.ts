@@ -8,6 +8,7 @@
 // =====================================================================
 
 import { isAIConfigured, runStructuredAudio } from "./client";
+import { languageDirective } from "./prompts";
 import {
   DEFAULT_MECHANIC_QUESTIONS,
   DEFAULT_SELLER_AUDIO_QUESTIONS,
@@ -57,8 +58,9 @@ export async function checkEngineAudioQuality(params: {
   audioBase64: string | null;
   format: "wav" | "mp3" | null;
   durationSeconds: number;
+  language?: string;
 }): Promise<EngineAudioQualityCheck> {
-  const { audioBase64, format, durationSeconds } = params;
+  const { audioBase64, format, durationSeconds, language } = params;
 
   const tooShort = durationSeconds > 0 && durationSeconds < 8;
 
@@ -102,7 +104,7 @@ wind noise, volume too low. Return JSON exactly:
  "retake_required": boolean,
  "retake_instructions": string,
  "confidence": number
-}`,
+}${languageDirective(language)}`,
       userText: `Approximate duration: ${durationSeconds}s. Quality-check this engine-start audio.`,
       audioBase64,
       format,
@@ -132,8 +134,9 @@ export async function analyzeEngineAudio(params: {
   audioBase64: string | null;
   format: "wav" | "mp3" | null;
   durationSeconds: number;
+  language?: string;
 }): Promise<EngineAudioAnalysis> {
-  const { audioBase64, format } = params;
+  const { audioBase64, format, language } = params;
 
   if (!isAIConfigured() || !audioBase64 || !format) {
     // Cautious neutral placeholder (demo mode or unsupported format).
@@ -195,7 +198,7 @@ Return JSON exactly:
  "next_steps": string[],
  "disclaimer": string,
  "confidence_score": number
-}`,
+}${languageDirective(language)}`,
       userText:
         "Analyze this engine-start recording and return the JSON schema. Be cautious and non-diagnostic.",
       audioBase64,

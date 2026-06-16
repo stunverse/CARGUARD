@@ -14,6 +14,7 @@ import {
 } from "./client";
 import {
   fullInspectionPrompt,
+  languageDirective,
   photoAnalysisPrompt,
   qualityCheckPrompt,
 } from "./prompts";
@@ -42,6 +43,7 @@ const MOCK_NOTICE =
 export async function checkPhotoQuality(
   imageUrl: string,
   requestedCode: PhotoPointCode,
+  language?: string,
 ): Promise<PhotoQualityResult> {
   if (!isAIConfigured()) {
     return {
@@ -57,7 +59,7 @@ export async function checkPhotoQuality(
   }
   try {
     return await runStructuredVision<PhotoQualityResult>({
-      system: qualityCheckPrompt(),
+      system: qualityCheckPrompt() + languageDirective(language),
       userText: `Requested angle: ${requestedCode}. Quality-check this photo and return the JSON schema.`,
       imageUrls: [imageUrl],
     });
@@ -82,6 +84,7 @@ export async function checkPhotoQuality(
 export async function analyzeInspectionPhoto(
   imageUrl: string,
   code: PhotoPointCode,
+  language?: string,
 ): Promise<PhotoAnalysisResult> {
   if (!isAIConfigured()) {
     const point = PHOTO_POINTS.find((p) => p.code === code);
@@ -101,7 +104,7 @@ export async function analyzeInspectionPhoto(
   }
   try {
     return await runStructuredVision<PhotoAnalysisResult>({
-      system: photoAnalysisPrompt(),
+      system: photoAnalysisPrompt() + languageDirective(language),
       userText: `This photo is for angle "${code}". Analyze it and return the JSON schema. Set photo_point_code to "${code}".`,
       imageUrls: [imageUrl],
     });
@@ -128,6 +131,7 @@ export async function analyzeInspectionPhoto(
 export async function analyzeFullInspection(
   vehicle: Partial<Vehicle>,
   photoResults: PhotoAnalysisResult[],
+  language?: string,
 ): Promise<FullInspectionResult> {
   if (!isAIConfigured()) {
     const scores = calculateInspectionScores(photoResults);
@@ -160,7 +164,7 @@ export async function analyzeFullInspection(
   }
   try {
     const result = await runStructuredVision<FullInspectionResult>({
-      system: fullInspectionPrompt(),
+      system: fullInspectionPrompt() + languageDirective(language),
       userText: JSON.stringify({
         vehicle,
         per_photo_results: photoResults,
@@ -388,6 +392,7 @@ export interface FollowUpAnalysis {
 export async function analyzeFollowUpPhoto(
   imageUrl: string,
   targetArea: string,
+  language?: string,
 ): Promise<FollowUpAnalysis> {
   if (!isAIConfigured()) {
     return {
@@ -399,7 +404,7 @@ export async function analyzeFollowUpPhoto(
   }
   try {
     return await runStructuredVision<FollowUpAnalysis>({
-      system: photoAnalysisPrompt(),
+      system: photoAnalysisPrompt() + languageDirective(language),
       userText: `This is a close-up follow-up photo of "${targetArea}". Analyze it for signs of repair/repaint/damage and return JSON with keys: summary (string), suspicious_observations (string[]), detected_issues (array as in the schema), confidence (number).`,
       imageUrls: [imageUrl],
     });

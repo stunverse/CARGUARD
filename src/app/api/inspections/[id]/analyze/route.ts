@@ -9,6 +9,7 @@ import {
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
+import { getServerLocale } from "@/lib/i18n-server";
 import type {
   DetectedIssue,
   InspectionPhoto,
@@ -73,6 +74,8 @@ export async function POST(
     );
   }
 
+  const language = await getServerLocale();
+
   await supabase
     .from("inspection_sessions")
     .update({ status: "analysis_in_progress" })
@@ -89,6 +92,7 @@ export async function POST(
     const analysis = await analyzeInspectionPhoto(
       signed.signedUrl,
       photo.photo_point_code,
+      language,
     );
     results.push(analysis);
 
@@ -114,7 +118,7 @@ export async function POST(
   // Global analysis + scores, enriched with model knowledge when available.
   const vehicle = (session as { vehicles?: unknown }).vehicles ?? {};
   const knowledge = await getModelKnowledge(supabase, vehicle as never);
-  const global = await analyzeFullInspection(vehicle as never, results);
+  const global = await analyzeFullInspection(vehicle as never, results, language);
   const scores = calculateInspectionScores(results, knowledge.model_risk_score);
 
   // Merge model-specific vigilance points and seller questions.
