@@ -9,6 +9,8 @@ import {
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
 import { aggregateMechanical } from "@/lib/ai/mechanical";
 import { getVehicleHistory } from "@/lib/vehicle-history";
+import { buildVehicleSpecs } from "@/lib/vehicle-specs";
+import { assessMileage } from "@/lib/mileage-check";
 import { computeOverall } from "@/lib/score";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkReportQuota } from "@/lib/quota";
@@ -124,8 +126,10 @@ export async function POST(
     year: v.year,
   });
 
-  // Confirmed salvage / total-loss from a purchased per-VIN report (if any).
+  // Confirmed salvage / total-loss + odometer records from a purchased per-VIN
+  // report (if any).
   let salvageTitle = false;
+  let odometerReadings: { date?: string | null; mileage?: number | null }[] = [];
   if (v.vin) {
     try {
       const { data: purchase } = await supabase
@@ -142,12 +146,29 @@ export async function POST(
           .select("data")
           .eq("vin", v.vin.toUpperCase())
           .maybeSingle();
-        salvageTitle = Boolean((vr?.data as { salvage_or_total_loss?: boolean })?.salvage_or_total_loss);
+        const vrData = vr?.data as {
+          salvage_or_total_loss?: boolean;
+          odometer_readings?: { date?: string | null; mileage?: number | null }[];
+        } | null;
+        salvageTitle = Boolean(vrData?.salvage_or_total_loss);
+        odometerReadings = vrData?.odometer_readings ?? [];
       }
     } catch (e) {
       console.error("salvage lookup skipped:", e);
     }
   }
+
+  // Specifications & equipment (VIN decode + provided data) — US + EU.
+  const specifications = await buildVehicleSpecs(vehicle as never, v.vin);
+
+  // Mileage consistency / odometer-rollback heuristic — US + EU.
+  const veh = vehicle as { year?: number; mileage?: number; currency?: string };
+  const mileageCheck = assessMileage({
+    mileage: veh.mileage ?? null,
+    year: veh.year ?? null,
+    currency: veh.currency ?? null,
+    odometerReadings,
+  });
 
   // --- Overall score + confidence across ALL modules ---
   const photoConfidences = results
@@ -200,6 +221,8 @@ export async function POST(
     engineAudio,
     mechanical,
     vehicleHistory,
+    specifications,
+    mileageCheck,
     overallConfidence: overall.confidence,
   });
 

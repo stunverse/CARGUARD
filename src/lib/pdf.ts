@@ -185,6 +185,47 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(vh.disclaimer).fillColor("#111");
     }
 
+    // 13. Specifications & equipment
+    const sp = report.specifications;
+    if (sp && sp.groups.length) {
+      const GROUP: Record<string, string> = {
+        identity: "Identity",
+        engine: "Engine",
+        drivetrain: "Drivetrain",
+        manufacture: "Manufacture",
+        safety: "Safety equipment",
+      };
+      const humanize = (k: string) =>
+        k.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+      h1("13. Specifications & equipment");
+      muted(`Source: ${sp.source}`);
+      sp.groups.forEach((g) => {
+        doc.moveDown(0.2);
+        doc.fontSize(10).font("Helvetica-Bold").fillColor("#111").text(GROUP[g.group] ?? g.group);
+        g.items.forEach((it) => body(`${humanize(it.key)}: ${it.value}`));
+      });
+    }
+
+    // 14. Mileage consistency
+    const mc = report.mileage_check;
+    if (mc && mc.status !== "unknown") {
+      const STATUS: Record<string, string> = {
+        ok: "Mileage looks consistent",
+        attention: "Worth checking",
+        suspicious: "Possible odometer issue",
+        unknown: "Not enough data",
+      };
+      const FLAG: Record<string, string> = {
+        very_low_for_age: "Unusually low for the vehicle's age — verify the odometer.",
+        very_high: "Very high yearly usage — expect more wear.",
+        rollback_records: "An odometer record is lower than a previous one — strong rollback signal.",
+      };
+      h1("14. Mileage consistency");
+      body(`Status: ${STATUS[mc.status] ?? mc.status}`);
+      if (mc.avg_per_year != null) muted(`${mc.avg_per_year.toLocaleString()} ${mc.unit}/yr`);
+      mc.flags.forEach((f) => body(`• ${FLAG[f] ?? f}`));
+    }
+
     // Disclaimer
     doc.moveDown(0.8);
     doc.fontSize(8).font("Helvetica-Oblique").fillColor(MUTED).text(report.disclaimer);

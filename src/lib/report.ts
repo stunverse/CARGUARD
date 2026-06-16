@@ -12,9 +12,11 @@ import type {
   FullInspectionResult,
   InspectionPhoto,
   MechanicalReportSection,
+  MileageCheckSection,
   PhotoPointCode,
   Vehicle,
   VehicleHistorySection,
+  VehicleSpecsSection,
 } from "@/types";
 
 // Build the embedded report section from a completed engine-audio check.
@@ -48,10 +50,23 @@ export function generateFinalReport(params: {
   engineAudio?: EngineAudioReportSection | null;
   mechanical?: MechanicalReportSection | null;
   vehicleHistory?: VehicleHistorySection | null;
+  specifications?: VehicleSpecsSection | null;
+  mileageCheck?: MileageCheckSection | null;
   /** Overall confidence across all modules (falls back to photo avg). */
   overallConfidence?: number;
 }): FinalReport {
-  const { vehicle, photos, global, globalScore, engineAudio, mechanical, vehicleHistory, overallConfidence } = params;
+  const {
+    vehicle,
+    photos,
+    global,
+    globalScore,
+    engineAudio,
+    mechanical,
+    vehicleHistory,
+    specifications,
+    mileageCheck,
+    overallConfidence,
+  } = params;
 
   const titleFor = (code: PhotoPointCode) =>
     PHOTO_POINTS.find((p) => p.code === code)?.title ?? code;
@@ -119,6 +134,8 @@ export function generateFinalReport(params: {
     engine_audio: engineAudio ?? null,
     mechanical: mechanical ?? null,
     vehicle_history: vehicleHistory ?? null,
+    specifications: specifications ?? null,
+    mileage_check: mileageCheck ?? null,
   };
 }
 

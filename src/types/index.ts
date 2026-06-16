@@ -289,6 +289,45 @@ export interface FinalReport {
   mechanical?: MechanicalReportSection | null;
   // Optional vehicle history (recalls/complaints) — null when unavailable.
   vehicle_history?: VehicleHistorySection | null;
+  // Specifications & equipment (VIN decode + provided data). US + EU.
+  specifications?: VehicleSpecsSection | null;
+  // Mileage consistency / odometer-rollback heuristic. US + EU.
+  mileage_check?: MileageCheckSection | null;
+}
+
+// ---------------------------------------------------------------------
+// Specifications & equipment (NHTSA vPIC decode + user-provided data).
+// Works worldwide: richer with a decodable VIN, falls back to the fields
+// the buyer entered (make/model/year/fuel/transmission…).
+// ---------------------------------------------------------------------
+export interface VehicleSpecItem {
+  key: string; // i18n key suffix, e.g. "displacement_l"
+  value: string;
+}
+export interface VehicleSpecGroup {
+  group: "identity" | "engine" | "drivetrain" | "manufacture" | "safety";
+  items: VehicleSpecItem[];
+}
+export interface VehicleSpecsSection {
+  source: string; // "NHTSA vPIC" or "Provided"
+  vin_decoded: boolean;
+  groups: VehicleSpecGroup[];
+}
+
+// ---------------------------------------------------------------------
+// Mileage consistency (odometer-rollback heuristic). US + EU.
+// ---------------------------------------------------------------------
+export type MileageCheckStatus = "ok" | "attention" | "suspicious" | "unknown";
+export interface MileageCheckSection {
+  status: MileageCheckStatus;
+  mileage: number | null;
+  unit: "km" | "mi";
+  vehicle_age_years: number | null;
+  avg_per_year: number | null;
+  expected_per_year: number;
+  flags: string[]; // i18n key suffixes, e.g. "very_low_for_age"
+  note: string;
+  disclaimer: string;
 }
 
 // ---------------------------------------------------------------------

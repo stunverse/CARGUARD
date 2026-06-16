@@ -188,6 +188,70 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         </Card>
       )}
 
+      {/* Specifications & equipment (US + EU) */}
+      {report.specifications && report.specifications.groups.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("rep.s.specs")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <p className="text-xs text-muted-foreground">
+              {t("rep.source")}: {report.specifications.source}
+            </p>
+            {report.specifications.groups.map((g) => (
+              <div key={g.group}>
+                <p className="font-medium">{t(`spec.group.${g.group}`)}</p>
+                <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-3">
+                  {g.items.map((it) => (
+                    <div key={it.key}>
+                      <dt className="text-xs text-muted-foreground">{t(`spec.${it.key}`)}</dt>
+                      <dd className="font-medium">{it.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Mileage consistency / odometer-rollback (US + EU) */}
+      {report.mileage_check && report.mileage_check.status !== "unknown" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("rep.s.mileage")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant={
+                  report.mileage_check.status === "ok"
+                    ? "low"
+                    : report.mileage_check.status === "attention"
+                      ? "moderate"
+                      : "critical"
+                }
+              >
+                {t(`mileage.status.${report.mileage_check.status}`)}
+              </Badge>
+              {report.mileage_check.avg_per_year != null && (
+                <span className="text-muted-foreground">
+                  {report.mileage_check.avg_per_year.toLocaleString()} {report.mileage_check.unit}/{t("mileage.perYear")}
+                </span>
+              )}
+            </div>
+            {report.mileage_check.flags.length > 0 && (
+              <ul className="list-disc pl-5 text-muted-foreground">
+                {report.mileage_check.flags.map((f) => (
+                  <li key={f}>{t(`mileage.flag.${f}`)}</li>
+                ))}
+              </ul>
+            )}
+            <p className="text-xs text-muted-foreground">{t("mileage.disclaimer")}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Disclaimer */}
       <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
         <strong className="text-foreground">{t("rep.disclaimer")} </strong>
