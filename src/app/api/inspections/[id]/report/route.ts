@@ -17,6 +17,8 @@ import { fetchEuTitleFlags } from "@/lib/providers/eu-history";
 import { estimateMarketValue } from "@/lib/market-value";
 import { buildDocumentsSection, documentsRatio } from "@/lib/documents";
 import { computeOverall } from "@/lib/score";
+import { isAIConfigured } from "@/lib/ai/client";
+import { isStripeConfigured } from "@/lib/billing";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkReportQuota } from "@/lib/quota";
 import { logActivity } from "@/lib/activity";
@@ -46,6 +48,21 @@ export async function POST(
     .eq("id", sessionId)
     .single();
   if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
+
+  // Pay-per-inspection gate (no-op in demo mode without Stripe).
+  if (isStripeConfigured() && session.payment_status !== "paid") {
+    return NextResponse.json(
+      { error: "This inspection hasn't been paid for yet.", code: "payment_required" },
+      { status: 402 },
+    );
+  }
+  // Don't sell a report produced by the deterministic demo engine.
+  if (isStripeConfigured() && !isAIConfigured()) {
+    return NextResponse.json(
+      { error: "AI is temporarily unavailable — your report can't be generated right now.", code: "ai_unavailable" },
+      { status: 503 },
+    );
+  }
 
   // Enforce the monthly report quota — but allow regenerating an existing
   // report for this session without consuming another unit.

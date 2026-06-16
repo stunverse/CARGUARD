@@ -7,6 +7,8 @@ import {
   generateFollowUpPhotoRequests,
 } from "@/lib/ai/functions";
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
+import { isAIConfigured } from "@/lib/ai/client";
+import { isStripeConfigured } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { getServerLocale } from "@/lib/i18n-server";
@@ -56,6 +58,22 @@ export async function POST(
     .eq("id", sessionId)
     .single();
   if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
+
+  // Pay-per-inspection gate. In demo mode (no Stripe) nothing to enforce;
+  // when payments are live, the inspection must be paid before any AI runs.
+  if (isStripeConfigured() && session.payment_status !== "paid") {
+    return NextResponse.json(
+      { error: "This inspection hasn't been paid for yet.", code: "payment_required" },
+      { status: 402 },
+    );
+  }
+  // Never run a paid analysis on the deterministic demo engine.
+  if (isStripeConfigured() && !isAIConfigured()) {
+    return NextResponse.json(
+      { error: "AI analysis is temporarily unavailable. Please try again later.", code: "ai_unavailable" },
+      { status: 503 },
+    );
+  }
 
   const { data: photos } = await supabase
     .from("inspection_photos")
