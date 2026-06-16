@@ -11,8 +11,8 @@ export default async function DashboardPage() {
   const title = t(locale, "home.hero.title").split("\n");
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col px-5">
-      {/* Header */}
-      <header className="flex items-center justify-between pt-4">
+      {/* Header (mobile only — desktop uses the sidebar) */}
+      <header className="flex items-center justify-between pt-4 lg:hidden">
         <Link
           href="/settings"
           aria-label="Menu"

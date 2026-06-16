@@ -22,7 +22,7 @@ export function BottomNavigation() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[82px] w-full max-w-[430px] items-stretch justify-around border-t border-[#E5E7EB] bg-white/92 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.08)]"
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex h-[82px] w-full max-w-[480px] items-stretch justify-around border-t border-[#E5E7EB] bg-white/92 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.08)] md:max-w-2xl lg:hidden"
     >
       {/* left two */}
       {ITEMS.slice(0, 2).map((item) => (

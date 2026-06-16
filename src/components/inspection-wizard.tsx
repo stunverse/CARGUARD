@@ -324,7 +324,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   const passedCount = PHOTO_POINTS.filter((p) => photoState[p.code]?.status === "passed").length;
 
   return (
-    <div className="flex min-h-[calc(100vh-7rem)] flex-col px-5 pt-4">
+    <div className="flex min-h-[calc(100vh-7rem)] flex-col px-5 pt-4 lg:mx-auto lg:max-w-xl">
       {phase === "finishing" && <AnalyzingOverlay label={t("wiz.building")} />}
 
       {/* Top bar: progress + close */}

@@ -14,6 +14,9 @@ export const dict: Record<Locale, Record<string, string>> = {
     "nav.inspections": "Inspections",
     "nav.reports": "Reports",
     "nav.profile": "Profile",
+    "nav.billing": "Billing",
+    "nav.newInspection": "New inspection",
+    "nav.signOut": "Sign out",
     // home
     "home.hero.title": "Protect your\nnext car purchase",
     "home.hero.subtitle": "Detect hidden accident or mechanical defects before you buy a used car.",
@@ -582,6 +585,9 @@ export const dict: Record<Locale, Record<string, string>> = {
     "nav.inspections": "Inspections",
     "nav.reports": "Rapports",
     "nav.profile": "Profil",
+    "nav.billing": "Facturation",
+    "nav.newInspection": "Nouvelle inspection",
+    "nav.signOut": "Se déconnecter",
     // home
     "home.hero.title": "Protégez votre\nprochain achat auto",
     "home.hero.subtitle": "Détectez les vices cachés (accident ou mécanique) avant d'acheter une voiture d'occasion.",

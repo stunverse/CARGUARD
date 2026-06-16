@@ -14,7 +14,7 @@ export function MobileShell({
   return (
     <div className="min-h-screen w-full bg-[#EEF0F3]">
       <div
-        className="relative mx-auto min-h-screen w-full max-w-[430px] overflow-hidden bg-white shadow-[0_0_80px_rgba(0,0,0,0.08)] md:border-x md:border-[#E5E7EB]"
+        className="relative mx-auto min-h-screen w-full max-w-[480px] overflow-hidden bg-white shadow-[0_0_80px_rgba(0,0,0,0.08)] md:max-w-3xl md:border-x md:border-[#E5E7EB]"
         style={{ backgroundImage: "linear-gradient(135deg,#FFFFFF 0%,#FAFAFA 45%,#FFF5F5 100%)" }}
       >
         <div
