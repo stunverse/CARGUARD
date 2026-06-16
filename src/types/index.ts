@@ -247,6 +247,8 @@ export interface FullInspectionResult {
 export interface FinalReport {
   generated_at: string;
   vehicle: Partial<Vehicle>;
+  // Prose summary covering all modules (photos + engine + history).
+  ai_summary?: string;
   summary: {
     photos_analyzed: number;
     photo_quality_summary: string;

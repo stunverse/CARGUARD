@@ -90,6 +90,7 @@ export function generateFinalReport(params: {
   return {
     generated_at: new Date().toISOString(),
     vehicle,
+    ai_summary: global.global_summary,
     summary: {
       photos_analyzed: usable.length,
       photo_quality_summary: `${passed} of ${photos.length} photos passed quality control.`,

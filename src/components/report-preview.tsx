@@ -82,6 +82,11 @@ export function ReportPreview({ report }: { report: FinalReport }) {
               ]}
             />
           </div>
+          {report.ai_summary && (
+            <p className="mt-4 rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
+              {report.ai_summary}
+            </p>
+          )}
         </CardContent>
       </Card>
 

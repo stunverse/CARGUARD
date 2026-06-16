@@ -17,6 +17,7 @@ import {
   riskLevelToRecommendation,
   scoreToRiskLevel,
 } from "@/lib/constants";
+import { MECHANICAL_RISK_COPY } from "@/lib/mechanical";
 import type { InspectionPhoto, MechanicalCheckItem, PhotoAnalysisResult } from "@/types";
 
 // POST /api/inspections/[id]/report — assemble + persist the final report.
@@ -169,6 +170,26 @@ export async function POST(
     salvageTitle,
   });
 
+  // Augment the photo-based summary so it also covers the engine/mechanical
+  // module and the vehicle history.
+  const summaryParts: string[] = [global.global_summary];
+  if (mechanical) {
+    summaryParts.push(
+      `Engine & mechanical checks scored ${mechanical.mechanical_score}/100 (${MECHANICAL_RISK_COPY[mechanical.risk_level]}). ${mechanical.summary}`,
+    );
+  }
+  if (salvageTitle) {
+    summaryParts.push(
+      "A purchased VIN history report indicates a salvage or total-loss record — treat this vehicle with strong caution and confirm with a professional.",
+    );
+  }
+  if (vehicleHistory?.matched) {
+    summaryParts.push(
+      `Vehicle history (NHTSA, model-level): ${vehicleHistory.recall_count} recall(s) and ${vehicleHistory.complaints_count} consumer complaint(s) reported for this make/model/year.`,
+    );
+  }
+  global.global_summary = summaryParts.filter(Boolean).join(" ");
+
   const report = generateFinalReport({
     vehicle: vehicle as never,
     photos: photoList,
@@ -221,6 +242,7 @@ export async function POST(
     .update({
       status: "report_generated",
       final_report: report,
+      ai_summary: global.global_summary,
       global_score: overall.score,
       risk_level: scoreToRiskLevel(overall.score),
       recommendation: riskLevelToRecommendation(scoreToRiskLevel(overall.score)),

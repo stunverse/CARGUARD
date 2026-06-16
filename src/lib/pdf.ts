@@ -64,6 +64,10 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
     if (report.summary.confidence != null) {
       body(`AI confidence: ${report.summary.confidence}%`);
     }
+    if (report.ai_summary) {
+      doc.moveDown(0.3);
+      body(report.ai_summary);
+    }
 
     // 3. Scores
     h1("3. Scores (higher = safer)");
