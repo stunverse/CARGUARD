@@ -1,12 +1,15 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
   AlignVerticalJustifyCenter,
+  Award,
   Camera,
   Car,
   CheckCircle2,
   ChevronRight,
   CreditCard,
   Droplets,
+  FileSearch,
   FileText,
   Flame,
   Gauge,
@@ -16,6 +19,7 @@ import {
   Quote,
   ScanLine,
   ScanSearch,
+  ShieldAlert,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -52,6 +56,13 @@ const ENGINE = [
   { k: "landing.eng.3", icon: Droplets },
   { k: "landing.eng.4", icon: Droplets },
   { k: "landing.eng.5", icon: Gauge },
+];
+const HISTORY = [
+  { k: "landing.hist.1", icon: AlertTriangle },
+  { k: "landing.hist.2", icon: ShieldAlert },
+  { k: "landing.hist.3", icon: Gauge },
+  { k: "landing.hist.4", icon: FileText },
+  { k: "landing.hist.5", icon: Award },
 ];
 const TRUST = [
   { icon: Lock, k: "landing.trust.secure" },
@@ -287,17 +298,20 @@ export default async function HomePage() {
 
       {/* ============================ WHAT WE CHECK (tinted) ============================ */}
       <section id="checks" className="bg-gradient-to-b from-[#FFF5F5] to-white">
-        <div className="mx-auto w-full max-w-5xl px-5 py-16 lg:px-8 lg:py-24">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:px-8 lg:py-24">
           <Reveal>
             <h2 className="text-center text-3xl font-extrabold lg:text-4xl">{t(locale, "landing.checks.title")}</h2>
-            <p className="mx-auto mt-3 max-w-md text-center text-[#6B7280]">{t(locale, "landing.checks.subtitle")}</p>
+            <p className="mx-auto mt-3 max-w-xl text-center text-[#6B7280]">{t(locale, "landing.checks.subtitle")}</p>
           </Reveal>
-          <div className="mt-10 grid gap-5 lg:grid-cols-2">
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
             <Reveal>
               <CheckGroup title={t(locale, "landing.checks.bodywork")} icon={Camera} items={BODYWORK} locale={locale} />
             </Reveal>
             <Reveal delay={120}>
               <CheckGroup title={t(locale, "landing.checks.engine")} icon={Wrench} items={ENGINE} locale={locale} />
+            </Reveal>
+            <Reveal delay={240}>
+              <CheckGroup title={t(locale, "landing.checks.history")} icon={FileSearch} items={HISTORY} locale={locale} />
             </Reveal>
           </div>
         </div>
