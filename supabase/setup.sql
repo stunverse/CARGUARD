@@ -150,6 +150,12 @@ create table if not exists public.inspection_sessions (
   ai_summary text,
   final_report jsonb,
   report_pdf_url text,
+  -- Pay-per-inspection (€29): draft is created at payment time.
+  payment_status text not null default 'unpaid'
+    check (payment_status in ('unpaid', 'paid', 'refunded')),
+  payment_amount_cents integer,
+  payment_currency text,
+  stripe_checkout_session_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

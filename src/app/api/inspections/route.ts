@@ -28,10 +28,12 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { goal, ...vehicleInput } = body ?? {};
 
-  // A draft can be created before make/model are filled in (the wizard
-  // saves progress from the first question). Required fields are enforced
-  // later, when the analysis is run. make/model are NOT NULL in the DB, so
-  // we default to empty strings for an early draft.
+  if (!vehicleInput.make || !vehicleInput.model) {
+    return NextResponse.json(
+      { error: "Make and model are required." },
+      { status: 400 },
+    );
+  }
 
   // Coerce numeric fields.
   const num = (v: unknown) =>
@@ -41,8 +43,8 @@ export async function POST(request: NextRequest) {
     .from("vehicles")
     .insert({
       user_id: user.id,
-      make: vehicleInput.make || "",
-      model: vehicleInput.model || "",
+      make: vehicleInput.make,
+      model: vehicleInput.model,
       year: num(vehicleInput.year),
       generation: vehicleInput.generation || null,
       trim: vehicleInput.trim || null,

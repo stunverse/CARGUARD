@@ -86,6 +86,18 @@ export async function POST(request: NextRequest) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      // One-time purchase: pay-per-inspection (€29).
+      if (session.metadata?.type === "inspection") {
+        const inspectionId = session.metadata.session_id;
+        if (inspectionId) {
+          await admin
+            .from("inspection_sessions")
+            .update({ payment_status: "paid" })
+            .eq("id", inspectionId);
+        }
+        break;
+      }
+
       // One-time purchase: paid per-VIN history report.
       if (session.metadata?.type === "vin_history") {
         const vin = (session.metadata.vin ?? "").toUpperCase();

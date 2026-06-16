@@ -79,6 +79,13 @@ export function isStripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
+// Pay-per-inspection: the buyer pays once per inspection (after the vehicle
+// questions, before the 8 photos). Default €29. Amount in major units for
+// display; cents are derived for Stripe.
+export const INSPECTION_PRICE = Number(process.env.INSPECTION_PRICE || 29);
+export const INSPECTION_PRICE_CENTS = Math.round(INSPECTION_PRICE * 100);
+export const INSPECTION_CURRENCY = (process.env.INSPECTION_CURRENCY || "eur").toLowerCase();
+
 // Pay-per-report price for the paid per-VIN history (VinAudit/NMVTIS).
 // Charged one-time via Stripe Checkout; margin over the provider cost.
 export const VIN_HISTORY_PRICE_CENTS = Number(

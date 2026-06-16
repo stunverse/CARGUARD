@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  Lock,
   RefreshCw,
   Sparkles,
   Video,
@@ -32,6 +33,7 @@ import {
   TRANSMISSION_OPTIONS,
 } from "@/lib/vehicle-catalog";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
+import { INSPECTION_PRICE } from "@/lib/billing";
 import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
 import { useI18n } from "@/components/i18n-provider";
@@ -39,7 +41,7 @@ import { localizedMechPoint, localizedPhotoPoint } from "@/lib/content-i18n";
 import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
-type Phase = "vehicle" | "photos" | "mech" | "review" | "finishing";
+type Phase = "vehicle" | "payment" | "photos" | "mech" | "review" | "finishing";
 
 type VKind = "vin" | "make" | "year" | "model" | "select" | "range";
 interface VStepDef {
@@ -121,6 +123,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     switch (phase) {
       case "vehicle":
         return vIndex;
+      case "payment":
+        // Payment is a gate between the vehicle questions and the photos.
+        return vehicleStepCount - 1;
       case "photos":
         return vehicleStepCount + pIndex;
       case "mech":
@@ -143,8 +148,13 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     if (phase === "vehicle") {
       if (vIndex === 0) router.push("/dashboard");
       else setVIndex((i) => i - 1);
+    } else if (phase === "payment") {
+      setPhase("vehicle");
+      setVIndex(vehicleStepCount - 1);
     } else if (phase === "photos") {
       if (pIndex === 0) {
+        // After payment the inspection is paid; going back lands on payment,
+        // but since it is already paid we return to the last vehicle question.
         setPhase("vehicle");
         setVIndex(vehicleStepCount - 1);
       } else setPIndex((i) => i - 1);
@@ -159,66 +169,49 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     }
   }
 
-  // Create the draft inspection once, as early as the first question, so the
-  // buyer can leave and resume at any time. Concurrent callers share the same
-  // in-flight promise to avoid creating duplicate drafts.
-  const draftPromiseRef = useRef<Promise<string | null> | null>(null);
-
-  function ensureDraft(data: Record<string, string>): Promise<string | null> {
-    if (sessionId) return Promise.resolve(sessionId);
-    if (!draftPromiseRef.current) {
-      draftPromiseRef.current = (async () => {
-        try {
-          const res = await fetch("/api/inspections", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...data, goal: data.goal }),
-          });
-          const d = await res.json();
-          if (!res.ok) throw new Error(d.error ?? "Could not start the inspection.");
-          setSessionId(d.sessionId);
-          return d.sessionId as string;
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : "Something went wrong.";
-          setError(msg);
-          toast.error(msg);
-          draftPromiseRef.current = null; // allow a retry
-          return null;
-        }
-      })();
-    }
-    return draftPromiseRef.current;
-  }
-
-  // Persist the accumulated vehicle answers to the draft (fire-and-forget).
-  function patchDraft(sid: string, data: Record<string, string>) {
-    fetch(`/api/inspections/${sid}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, goal: data.goal }),
-    }).catch(() => {});
-  }
-
-  // Create the draft as soon as the wizard opens (unless resuming one).
-  useEffect(() => {
-    if (!resume && !sessionId) ensureDraft({});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function nextVehicle(override?: Record<string, string>) {
-    const data = override ?? vehicle;
-    setError(null);
-    const last = vIndex >= vehicleStepCount - 1;
+  // CarGuard is pay-per-inspection (€29). The draft inspection is created only
+  // once the buyer pays — right after the vehicle questions and before the 8
+  // photos. So the vehicle phase keeps everything in local state until payment.
+  async function pay() {
     setBusy(true);
-    const sid = sessionId ?? (await ensureDraft(data));
-    setBusy(false);
-    if (!sid) return; // draft creation failed — stay on this step
-    patchDraft(sid, data);
-    if (last) {
+    setError(null);
+    try {
+      const res = await fetch("/api/inspections/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...vehicle, goal: vehicle.goal }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not start the payment.");
+      if (data.url) {
+        // Stripe Checkout — the draft is created and marked paid on return.
+        // Keep the vehicle answers so a cancelled payment doesn't lose them.
+        try {
+          sessionStorage.setItem("cg_wizard_vehicle", JSON.stringify(vehicle));
+        } catch {}
+        window.location.href = data.url;
+        return;
+      }
+      // Demo mode (no Stripe): the draft is created and paid immediately.
+      setSessionId(data.sessionId);
       setPhase("photos");
       setPIndex(0);
-    } else {
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function nextVehicle(override?: Record<string, string>) {
+    if (override) setVehicle((v) => ({ ...v, ...override }));
+    setError(null);
+    if (vIndex < vehicleStepCount - 1) {
       setVIndex((i) => i + 1);
+    } else {
+      setPhase("payment");
     }
   }
 
@@ -313,6 +306,24 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     router.push("/inspections");
   }
 
+  // If the buyer cancelled Stripe checkout, restore their vehicle answers and
+  // drop them back on the payment step instead of an empty form.
+  useEffect(() => {
+    if (resume) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("paid") !== "cancelled") return;
+    try {
+      const saved = sessionStorage.getItem("cg_wizard_vehicle");
+      if (saved) {
+        setVehicle(JSON.parse(saved));
+        setVIndex(VEHICLE_STEPS.length - 1);
+        setPhase("payment");
+        toast.error(t("wiz.pay.cancelled"));
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const passedCount = PHOTO_POINTS.filter((p) => photoState[p.code]?.status === "passed").length;
 
   return (
@@ -356,12 +367,12 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
             vehicle={vehicle}
             setField={setField}
             onAutoFill={(data) => setVehicle((v) => ({ ...v, ...data }))}
-            onPick={(updates) => {
-              const merged = { ...vehicle, ...updates };
-              setVehicle(merged);
-              nextVehicle(merged);
-            }}
+            onPick={(updates) => nextVehicle(updates)}
           />
+        )}
+
+        {phase === "payment" && (
+          <PaymentStep vehicle={vehicle} busy={busy} onPay={pay} />
         )}
 
         {phase === "photos" && (() => {
@@ -939,6 +950,47 @@ function MechStep({
           {t("wiz.skipStep")}
         </button>
       )}
+    </StepShell>
+  );
+}
+
+// Pay-per-inspection gate shown after the vehicle questions, before photos.
+function PaymentStep({
+  vehicle,
+  busy,
+  onPay,
+}: {
+  vehicle: Record<string, string>;
+  busy: boolean;
+  onPay: () => void;
+}) {
+  const { t, formatMoney, currency } = useI18n();
+  const price = formatMoney(INSPECTION_PRICE, currency);
+  const label = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
+  const features = [t("wiz.pay.f1"), t("wiz.pay.f2"), t("wiz.pay.f3"), t("wiz.pay.f4")];
+  return (
+    <StepShell kicker={t("wiz.pay.kicker")} question={t("wiz.pay.title")} helper={t("wiz.pay.subtitle")}>
+      <div className="rounded-2xl border border-[#E5E7EB] p-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium text-[#111827]">
+            {label || t("wiz.pay.yourInspection")}
+          </span>
+          <span className="text-2xl font-extrabold text-[#111827]">{price}</span>
+        </div>
+        <ul className="mt-4 space-y-2 text-sm text-[#374151]">
+          {features.map((f) => (
+            <li key={f} className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-risk-low" aria-hidden /> {f}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <Button className="mt-5 w-full" onClick={onPay} disabled={busy}>
+        {busy ? t("wiz.pay.processing") : `${t("wiz.pay.cta")} ${price}`}
+      </Button>
+      <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#6B7280]">
+        <Lock className="size-3.5" aria-hidden /> {t("wiz.pay.secure")}
+      </p>
     </StepShell>
   );
 }
