@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   AlertTriangle,
   AlignVerticalJustifyCenter,
@@ -92,6 +93,9 @@ export default async function HomePage() {
   } catch {
     // Supabase not configured yet — render the public landing.
   }
+  // Logged-in users (e.g. just after confirming their email) go straight to
+  // their dashboard instead of the marketing page.
+  if (authed) redirect("/dashboard");
   const startHref = authed ? "/dashboard" : "/signup";
   const locale = await getServerLocale();
   const currency = localeCurrency(locale);
