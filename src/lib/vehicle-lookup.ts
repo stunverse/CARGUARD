@@ -10,6 +10,8 @@
 // SERVER ONLY.
 // =====================================================================
 
+import { isVehicleDbConfigured, vdbUkPlate } from "@/lib/providers/vehicle-databases";
+
 export interface VehicleLookupResult {
   make?: string;
   model?: string;
@@ -104,9 +106,23 @@ export async function lookupPlate(
 ): Promise<LookupResponse> {
   const cc = (country || "").trim().toUpperCase();
 
-  // UK — DVLA Vehicle Enquiry Service (real adapter, FREE with DVLA_API_KEY).
+  // UK — DVLA if a key is set; otherwise Vehicle Databases (richer: includes
+  // the model). Both return make/year/fuel; VDB also returns the model.
   if (cc === "GB" || cc === "UK" || cc === "UNITED KINGDOM") {
-    return lookupPlateDvla(plate);
+    if (process.env.DVLA_API_KEY) {
+      const dvla = await lookupPlateDvla(plate);
+      if (dvla.ok) return dvla;
+    }
+    if (isVehicleDbConfigured()) {
+      const r = await vdbUkPlate(plate);
+      if (r) return { ok: true, configured: true, data: r };
+      return { ok: false, configured: true, message: "No vehicle found for that plate." };
+    }
+    return {
+      ok: false,
+      configured: false,
+      message: "UK plate lookup isn't enabled yet. Use the VIN, or fill the fields manually.",
+    };
   }
 
   // Other EU countries — no free pan-EU source exists. A generic provider
