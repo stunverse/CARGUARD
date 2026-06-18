@@ -27,7 +27,13 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
       "Record a 20–30s video with the hood open while the seller starts the engine cold. Keep the phone steady, no music.",
     why_it_matters:
       "A cold start reveals the most: slow cranking, knocking, metallic noises, shaking, smoke or a hunting idle.",
-    ai_targets: ["hard_start", "knocking", "metallic_rattling", "rough_idle"],
+    ai_targets: [
+      "exhaust_smoke_at_startup",
+      "smoke_color_white_blue_black",
+      "dashboard_warning_lights_still_on",
+      "visible_engine_shaking_or_vibration",
+      "fluid_leaks_in_engine_bay",
+    ],
     observations: [
       { key: "long_to_start", label: "Engine took a long time to start", kind: "suspect", weight: 18 },
       { key: "metallic_noise", label: "Metallic / 'tin can' noise at start", kind: "suspect", weight: 22 },
@@ -70,7 +76,12 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
       "Film the exhaust at start, at idle, and during a light rev. Thick smoke that persists is the suspicious part.",
     why_it_matters:
       "White (head gasket/coolant), blue (oil burning/turbo), or black (injectors/EGR/DPF) smoke each point to different risks.",
-    ai_targets: ["exhaust_smoke_color"],
+    ai_targets: [
+      "exhaust_smoke_color",
+      "smoke_density_thick_or_light",
+      "persistent_vs_brief_smoke",
+      "smoke_visible_at_tailpipe",
+    ],
     observations: [
       { key: "white_thick_persistent", label: "Thick white smoke that persists", kind: "suspect", weight: 32 },
       { key: "blue_smoke", label: "Blue smoke", kind: "suspect", weight: 30 },
@@ -162,7 +173,12 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
     instruction: "Film 30s at idle with the hood open. Listen for knocks, rubbing, whistles or squeals.",
     why_it_matters:
       "Noises that grow with revs, loud knocking when hot, or excessive shaking point to mechanical wear.",
-    ai_targets: ["metallic_rattling", "belt_squeal", "rough_idle"],
+    ai_targets: [
+      "visible_engine_vibration_at_idle",
+      "dashboard_warning_lights",
+      "worn_or_loose_belt",
+      "fluid_leaks_or_smoke_in_engine_bay",
+    ],
     observations: [
       { key: "metallic_knock", label: "Metallic knocking", kind: "suspect", weight: 28 },
       { key: "rubbing", label: "Rubbing noise", kind: "suspect", weight: 18 },
@@ -183,7 +199,12 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
       "Have the seller gently rev to ~2,500–3,000 rpm while you film. Watch smoke, noise and how the revs climb.",
     why_it_matters:
       "Blue/black smoke, stumbling, metallic noise or unstable revs under load reveal problems a static idle hides.",
-    ai_targets: ["exhaust_smoke_color", "misfire_like_sound"],
+    ai_targets: [
+      "exhaust_smoke_color_under_rev",
+      "black_or_blue_smoke_when_revving",
+      "smoke_density_increase_under_load",
+      "dashboard_warning_lights",
+    ],
     observations: [
       { key: "blue_black_smoke", label: "Blue or black smoke", kind: "suspect", weight: 28 },
       { key: "engine_stumbles", label: "Engine stumbles / hesitates", kind: "suspect", weight: 22 },
