@@ -346,7 +346,14 @@ export function ReportPreview({ report }: { report: FinalReport }) {
                 {t(`mv.verdict.${report.market_value.verdict}`)}
               </Badge>
             )}
-            <p className="text-xs text-muted-foreground">{t("mv.disclaimer")}</p>
+            {report.market_value.source && (
+              <p className="text-xs text-muted-foreground">
+                {t("rep.source")}: {report.market_value.source}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {report.market_value.source ? t("mv.providerDisclaimer") : t("mv.disclaimer")}
+            </p>
           </CardContent>
         </Card>
       )}

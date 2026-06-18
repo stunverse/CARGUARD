@@ -59,6 +59,7 @@ export function estimateMarketValue(input: {
     expected_mileage: expected,
     actual_mileage: mileage,
     unit,
+    source: null,
     disclaimer: "",
   };
 }

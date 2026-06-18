@@ -337,6 +337,8 @@ export interface MarketValueSection {
   expected_mileage: number | null;
   actual_mileage: number | null;
   unit: "km" | "mi";
+  // When set, the range comes from a real data provider (not the heuristic).
+  source?: string | null;
   disclaimer: string;
 }
 

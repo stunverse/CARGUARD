@@ -15,7 +15,8 @@ import { getSafetyRating } from "@/lib/safety-rating";
 import { deriveTitleFlags } from "@/lib/title-flags";
 import { fetchEuTitleFlags } from "@/lib/providers/eu-history";
 import { estimateMarketValue } from "@/lib/market-value";
-import { buildDocumentsSection, documentsRatio } from "@/lib/documents";
+import { buildDocumentsSection, documentsRatio, isUsCountry } from "@/lib/documents";
+import { isVehicleDbConfigured, vdbMarketValue } from "@/lib/providers/vehicle-databases";
 import { computeOverall } from "@/lib/score";
 import { isAIConfigured } from "@/lib/ai/client";
 import { isStripeConfigured } from "@/lib/billing";
@@ -214,13 +215,22 @@ export async function POST(
     country: veh.country ?? null,
   });
 
-  // Heuristic market-value estimate vs asking price — works worldwide.
-  const marketValue = estimateMarketValue({
-    askingPrice: (vehicle as { asking_price?: number }).asking_price ?? null,
+  // Market value: heuristic everywhere; real provider value for US vehicles.
+  const askingPrice = (vehicle as { asking_price?: number }).asking_price ?? null;
+  let marketValue = estimateMarketValue({
+    askingPrice,
     mileage: veh.mileage ?? null,
     year: veh.year ?? null,
     currency: veh.currency ?? null,
   });
+  if (
+    isVehicleDbConfigured() &&
+    v.vin &&
+    (isUsCountry(veh.country) || (veh.currency ?? "").toUpperCase() === "USD")
+  ) {
+    const real = await vdbMarketValue({ vin: v.vin, mileage: veh.mileage ?? null, askingPrice });
+    if (real) marketValue = real;
+  }
 
   // Supporting documents the buyer photographed (maintenance, registration…).
   const { data: docRows } = await supabase
