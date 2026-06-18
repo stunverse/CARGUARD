@@ -1098,7 +1098,16 @@ function PaymentStep({
       });
   }, []);
 
-  const features = [t("wiz.pay.f1"), t("wiz.pay.f2"), t("wiz.pay.f3"), t("wiz.pay.f4")];
+  const features = [
+    t("wiz.pay.f1"),
+    t("wiz.pay.f2"),
+    t("wiz.pay.f3"),
+    t("wiz.pay.f4"),
+    t("wiz.pay.f5"),
+    t("wiz.pay.f6"),
+    t("wiz.pay.f7"),
+    t("wiz.pay.f8"),
+  ];
 
   // Loading.
   if (credits === null) {
