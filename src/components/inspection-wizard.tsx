@@ -11,10 +11,13 @@ import {
   FileText,
   Lock,
   RefreshCw,
+  ShieldCheck,
   Sparkles,
+  TrendingDown,
   Upload,
   Video,
   X,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1118,6 +1121,39 @@ function PaymentStep({
     </ul>
   );
 
+  // Value/ROI framing — why this is worth paying for before signing.
+  const valueCallout = (
+    <div className="mb-3 flex items-start gap-3 rounded-2xl border border-[#FFD7D7] bg-[rgba(229,9,20,0.04)] p-4">
+      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#E50914]/10 text-[#E50914]">
+        <TrendingDown className="size-5" aria-hidden />
+      </span>
+      <div>
+        <p className="text-sm font-semibold text-[#111827]">{t("wiz.pay.value.title")}</p>
+        <p className="mt-0.5 text-xs leading-snug text-[#6B7280]">{t("wiz.pay.value.body")}</p>
+      </div>
+    </div>
+  );
+
+  // Reassurance strip — speed, privacy, no subscription.
+  const trustStrip = (
+    <div className="mt-4 grid grid-cols-3 gap-2">
+      {[
+        { icon: Zap, t: t("wiz.pay.trust.fast.t"), d: t("wiz.pay.trust.fast.d") },
+        { icon: ShieldCheck, t: t("wiz.pay.trust.privacy.t"), d: t("wiz.pay.trust.privacy.d") },
+        { icon: RefreshCw, t: t("wiz.pay.trust.oneoff.t"), d: t("wiz.pay.trust.oneoff.d") },
+      ].map((item) => (
+        <div
+          key={item.t}
+          className="flex flex-col items-center gap-1 rounded-xl border border-[#EFEFEF] px-2 py-3 text-center"
+        >
+          <item.icon className="size-4 text-risk-low" aria-hidden />
+          <span className="text-[11px] font-semibold leading-tight text-[#111827]">{item.t}</span>
+          <span className="text-[10px] leading-tight text-[#6B7280]">{item.d}</span>
+        </div>
+      ))}
+    </div>
+  );
+
   // Required consent: sales terms + immediate-execution / withdrawal waiver.
   const consent = (
     <label className="mt-4 flex items-start gap-2 text-xs leading-snug text-[#6B7280]">
@@ -1146,7 +1182,9 @@ function PaymentStep({
             {credits} {t("wiz.pay.creditsLeft")}
           </div>
         )}
+        {valueCallout}
         <div className="rounded-2xl border border-[#E5E7EB] p-4">{featuresBlock}</div>
+        {trustStrip}
         {consent}
         <Button className="mt-4 w-full" onClick={() => onPay({ useCredit: stripe })} disabled={busy || !agreed}>
           {busy ? t("wiz.pay.processing") : stripe ? t("wiz.pay.useCredit") : t("wiz.pay.startDemo")}
@@ -1161,8 +1199,11 @@ function PaymentStep({
   // No credit → choose a pack.
   return (
     <StepShell kicker={t("wiz.pay.kicker")} question={t("wiz.pay.choosePack")} helper={t("wiz.pay.packHelper")}>
+      {valueCallout}
+      <div className="rounded-2xl border border-[#E5E7EB] p-4">{featuresBlock}</div>
+      {trustStrip}
       {consent}
-      <div className="mt-3 space-y-3">
+      <div className="mt-4 space-y-3">
         {INSPECTION_PACKS.map((p, i) => {
           const per = p.price / p.credits;
           const best = i === INSPECTION_PACKS.length - 1;
