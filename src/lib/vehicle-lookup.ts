@@ -11,6 +11,7 @@
 // =====================================================================
 
 import { isVehicleDbConfigured, vdbUkPlate } from "@/lib/providers/vehicle-databases";
+import { isRegCheckConfigured, regcheckFrancePlate } from "@/lib/providers/regcheck";
 
 export interface VehicleLookupResult {
   make?: string;
@@ -123,6 +124,18 @@ export async function lookupPlate(
       configured: false,
       message: "UK plate lookup isn't enabled yet. Use the VIN, or fill the fields manually.",
     };
+  }
+
+  // France — RegCheck's CheckFrance endpoint resolves a French SIV plate
+  // (no free source exists; the SIV is regulated). Falls through to the
+  // generic provider if RegCheck isn't configured.
+  if (cc === "FR" || cc === "FRA" || cc === "FRANCE") {
+    if (isRegCheckConfigured()) {
+      const r = await regcheckFrancePlate(plate);
+      if (r) return { ok: true, configured: true, data: r };
+      return { ok: false, configured: true, message: "No vehicle found for that plate." };
+    }
+    return lookupPlateGeneric(plate, cc);
   }
 
   // Other EU countries — no free pan-EU source exists. A generic provider

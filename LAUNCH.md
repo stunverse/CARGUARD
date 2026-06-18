@@ -27,7 +27,9 @@ Pre-launch gating is now enforced in code:
 ### Optional (paid data sources — branch when ready)
 - `VINAUDIT_API_KEY`, `VIN_HISTORY_PRICE_CENTS`, `VIN_HISTORY_CURRENCY` (US NMVTIS)
 - `DVLA_API_KEY` (UK plate, free)
-- `PLATE_LOOKUP_PROVIDER` / `PLATE_LOOKUP_API_URL` / `PLATE_LOOKUP_API_KEY` (EU plate)
+- `REGCHECK_USERNAME` (+ optional `REGCHECK_API_URL`) — France plate (SIV) via regcheck.org.uk `CheckFrance`
+- `VEHICLE_DB_API_KEY` (UK plate, US market value, EU VIN specs)
+- `PLATE_LOOKUP_PROVIDER` / `PLATE_LOOKUP_API_URL` / `PLATE_LOOKUP_API_KEY` (other EU plate)
 - `EU_HISTORY_PROVIDER` / `EU_HISTORY_API_URL` / `EU_HISTORY_API_KEY` (EU history)
 - `EURONCAP_API_URL` / `EURONCAP_API_KEY` (EU safety)
 
