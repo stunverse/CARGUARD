@@ -5,7 +5,13 @@
 // =====================================================================
 
 import type { VehicleLookupResult } from "@/lib/vehicle-lookup";
-import type { MarketValueSection, MarketValueVerdict } from "@/types";
+import type {
+  MarketValueSection,
+  MarketValueVerdict,
+  Vehicle,
+  VehicleSpecGroup,
+  VehicleSpecsSection,
+} from "@/types";
 
 const VDB_BASE = process.env.VEHICLE_DB_API_URL || "https://api.vehicledatabases.com";
 
@@ -134,6 +140,73 @@ export async function vdbMarketValue(input: {
     };
   } catch (err) {
     console.error("Vehicle Databases market value failed:", err);
+    return null;
+  }
+}
+
+// Europe VIN Decode (V2). GET /europe-vin-decode/v2/{vin}  (header x-authkey)
+// Builds a specifications section for EU-market vehicles (where free NHTSA
+// vPIC is weak). Returns null on failure / no data.
+export async function vdbEuropeSpecs(
+  vin: string,
+  vehicle: Partial<Vehicle>,
+): Promise<VehicleSpecsSection | null> {
+  const key = process.env.VEHICLE_DB_API_KEY;
+  if (!key) return null;
+  try {
+    const res = await fetch(
+      `${VDB_BASE}/europe-vin-decode/v2/${encodeURIComponent(vin)}`,
+      { headers: { "x-authkey": key, Accept: "application/json" } },
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as { status?: string; data?: Record<string, Record<string, string>> };
+    if (json?.status !== "success" || !json.data) return null;
+
+    const gi = json.data["General Information"] ?? {};
+    const mf = json.data["Manufacturer"] ?? {};
+    const sp = json.data["Vehicle Specification"] ?? {};
+    const clean = (v?: string) => {
+      const s = (v ?? "").toString().trim();
+      return s && s.toLowerCase() !== "n/a" ? s : undefined;
+    };
+
+    const groups: VehicleSpecGroup[] = [];
+    const push = (group: VehicleSpecGroup["group"], items: [string, string | undefined][]) => {
+      const f = items.filter(([, v]) => Boolean(v)).map(([k, v]) => ({ key: k, value: v as string }));
+      if (f.length) groups.push({ group, items: f });
+    };
+
+    push("identity", [
+      ["make", clean(gi.Make) ?? (vehicle.make ?? undefined)],
+      ["model", clean(gi.Model) ?? (vehicle.model ?? undefined)],
+      ["year", vehicle.year ? String(vehicle.year) : undefined],
+      ["trim", clean(gi["Trim level"]) ?? (vehicle.trim ?? undefined)],
+      ["body_class", clean(sp["Body type"]) ?? clean(gi["Body style"])],
+      ["vehicle_type", clean(gi["Vehicle type"]) ?? clean(gi["Vehicle class"])],
+      ["doors", clean(sp["Number of doors"])],
+    ]);
+    push("engine", [
+      ["displacement_l", clean(sp["Displacement nominal"])],
+      ["cylinders", clean(sp["Engine cylinders"])],
+      ["engine_hp", clean(sp["Engine horsepower"])],
+      ["engine_config", clean(gi["Engine type"])],
+      ["fuel_type", clean(gi["Fuel type"]) ?? (vehicle.fuel_type ?? undefined)],
+    ]);
+    push("drivetrain", [
+      ["drive_type", clean(sp.Driveline)],
+      ["transmission", clean(gi.Transmission) ?? (vehicle.transmission ?? undefined)],
+    ]);
+    push("manufacture", [
+      ["manufacturer", clean(mf.Manufacturer)],
+      ["plant_country", clean(mf.Country) ?? clean(gi["Manufactured in"])],
+      ["plant_city", clean(mf.City)],
+    ]);
+    push("safety", [["abs", clean(sp["Anti-lock braking system"])]]);
+
+    if (groups.length === 0) return null;
+    return { source: "Vehicle Databases (EU)", vin_decoded: true, groups };
+  } catch (err) {
+    console.error("Vehicle Databases EU VIN decode failed:", err);
     return null;
   }
 }

@@ -9,6 +9,8 @@
 // =====================================================================
 
 import { isLikelyVin } from "@/lib/vehicle-lookup";
+import { isUsCountry } from "@/lib/documents";
+import { isVehicleDbConfigured, vdbEuropeSpecs } from "@/lib/providers/vehicle-databases";
 import type { Vehicle, VehicleSpecGroup, VehicleSpecsSection } from "@/types";
 
 // vPIC junk values to ignore.
@@ -40,6 +42,13 @@ export async function buildVehicleSpecs(
   vin?: string | null,
 ): Promise<VehicleSpecsSection | null> {
   const v = (vin || vehicle.vin || "").trim().toUpperCase();
+
+  // EU vehicles: prefer the EU-specific decoder (NHTSA vPIC is weak for them).
+  if (v && isLikelyVin(v) && !isUsCountry(vehicle.country) && isVehicleDbConfigured()) {
+    const eu = await vdbEuropeSpecs(v, vehicle);
+    if (eu) return eu;
+  }
+
   let d: Record<string, string> | null = null;
   let vinDecoded = false;
   if (v && isLikelyVin(v)) {
