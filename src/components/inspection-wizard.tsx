@@ -1163,6 +1163,18 @@ function PaymentStep({
     </div>
   );
 
+  // Let undecided buyers preview a full sample report before paying.
+  const seeExampleLink = (
+    <a
+      href="/report-example"
+      target="_blank"
+      rel="noreferrer"
+      className="mt-3 flex items-center justify-center gap-1.5 text-sm font-medium text-[#E50914] underline-offset-2 hover:underline"
+    >
+      <FileText className="size-4" aria-hidden /> {t("landing.seeExample")}
+    </a>
+  );
+
   // Required consent: sales terms + immediate-execution / withdrawal waiver.
   const consent = (
     <label className="mt-4 flex items-start gap-2 text-xs leading-snug text-[#6B7280]">
@@ -1194,6 +1206,7 @@ function PaymentStep({
         {valueCallout}
         <div className="rounded-2xl border border-[#E5E7EB] p-4">{featuresBlock}</div>
         {trustStrip}
+        {seeExampleLink}
         {consent}
         <Button className="mt-4 w-full" onClick={() => onPay({ useCredit: stripe })} disabled={busy || !agreed}>
           {busy ? t("wiz.pay.processing") : stripe ? t("wiz.pay.useCredit") : t("wiz.pay.startDemo")}
@@ -1211,6 +1224,7 @@ function PaymentStep({
       {valueCallout}
       <div className="rounded-2xl border border-[#E5E7EB] p-4">{featuresBlock}</div>
       {trustStrip}
+      {seeExampleLink}
       {consent}
       <div className="mt-4 space-y-3">
         {INSPECTION_PACKS.map((p, i) => {

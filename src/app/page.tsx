@@ -181,8 +181,14 @@ export default async function HomePage() {
                   {t(locale, "landing.start")}
                 </Link>
                 <Link
-                  href="#how"
+                  href="/report-example"
                   className="flex h-14 items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-8 text-base font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  {t(locale, "landing.seeExample")}
+                </Link>
+                <Link
+                  href="#how"
+                  className="flex h-14 items-center justify-center rounded-2xl px-4 text-base font-semibold text-white/80 transition-colors hover:text-white"
                 >
                   {t(locale, "landing.how")}
                 </Link>
