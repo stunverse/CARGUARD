@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { STORAGE_BUCKETS } from "@/lib/constants";
-import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
+import { compressImage, extractVideoFrames, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { useI18n } from "@/components/i18n-provider";
 import { MECH_RISK_FR, localizedMechPoint, pick } from "@/lib/content-i18n";
 import type {
@@ -120,12 +120,13 @@ function StepCard({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ score: number; severity: Severity; suspicious: string[] } | null>(
+  const [result, setResult] = useState<{ score: number; severity: Severity; suspicious: string[]; summary: string | null } | null>(
     initial?.score != null
       ? {
           score: initial.score,
           severity: (initial.severity ?? "none") as Severity,
           suspicious: initial.ai_analysis?.suspicious_observations ?? [],
+          summary: initial.ai_analysis?.summary ?? null,
         }
       : null,
   );
@@ -134,7 +135,7 @@ function StepCard({
   async function save() {
     setSaving(true);
     setError(null);
-    let data: { analysis: { score: number; severity: Severity; suspicious_observations?: string[] }; error?: string };
+    let data: { analysis: { score: number; severity: Severity; suspicious_observations?: string[]; summary?: string | null }; error?: string };
     try {
       const userId = await getUserId();
       if (!userId) throw new Error(t("ui.signIn"));
@@ -149,7 +150,25 @@ function StepCard({
       };
 
       const payload: Record<string, unknown> = { observations: {} };
-      if (primaryFile) payload.primary_path = await upImg(primaryFile, "");
+      if (primaryFile) {
+        payload.primary_path = await upImg(primaryFile, "");
+        // Video checks: extract a few frames so the AI can actually analyze the
+        // clip (vision models take images, not video). Best-effort.
+        if (point.media_type === "video" && primaryFile.type.startsWith("video/")) {
+          try {
+            const frames = await extractVideoFrames(primaryFile, 3);
+            const framePaths: string[] = [];
+            for (let i = 0; i < frames.length; i++) {
+              const path = `${base}-frame${i}.jpg`;
+              await uploadToStorage(STORAGE_BUCKETS.mechanical, path, frames[i]);
+              framePaths.push(path);
+            }
+            if (framePaths.length) payload.frame_paths = framePaths;
+          } catch {
+            /* frame extraction is best-effort; the video still saves */
+          }
+        }
+      }
       if (secondaryFile) payload.secondary_path = await upImg(secondaryFile, "-2");
       if (point.media_type === "docs") {
         const docs = Array.from(docsRef.current?.files ?? []);
@@ -179,6 +198,7 @@ function StepCard({
       score: data.analysis.score,
       severity: data.analysis.severity,
       suspicious: data.analysis.suspicious_observations ?? [],
+      summary: data.analysis.summary ?? null,
     });
     router.refresh();
   }
@@ -248,9 +268,16 @@ function StepCard({
           />
         )}
 
-        {result && result.suspicious.length > 0 && (
-          <div className="rounded-md border border-risk-moderate/40 bg-risk-moderate/10 p-2 text-xs text-risk-moderate">
-            {result.suspicious.join(" · ")}
+        {result?.summary && (
+          <div
+            className={cn(
+              "rounded-md border p-2 text-xs",
+              ["moderate", "high", "critical"].includes(result.severity)
+                ? "border-risk-moderate/40 bg-risk-moderate/10 text-risk-moderate"
+                : "border-risk-low/40 bg-risk-low/10 text-muted-foreground",
+            )}
+          >
+            {result.summary}
           </div>
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}

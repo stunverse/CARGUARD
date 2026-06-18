@@ -76,9 +76,10 @@ export async function POST(
   const primaryPath = body?.primary_path as string | undefined;
   const secondaryPath = body?.secondary_path as string | undefined;
   const docPaths = (body?.doc_paths ?? []) as string[];
+  const framePaths = (body?.frame_paths ?? []) as string[];
 
   const own = (p?: string) => !p || p.startsWith(`${user.id}/`);
-  if (!own(primaryPath) || !own(secondaryPath) || !docPaths.every(own)) {
+  if (!own(primaryPath) || !own(secondaryPath) || !docPaths.every(own) || !framePaths.every(own)) {
     return NextResponse.json({ error: "Invalid storage path." }, { status: 403 });
   }
 
@@ -109,6 +110,13 @@ export async function POST(
       if (isPhoto && url) imageUrlsForAi.push(url);
     }
   }
+  // Video checks: analyze the frames extracted client-side from the clip.
+  if (isVideo && framePaths.length) {
+    for (const p of framePaths) {
+      const u = await signed(supabase, p);
+      if (u) imageUrlsForAi.push(u);
+    }
+  }
   if (secondaryPath) {
     const url = await signed(supabase, secondaryPath);
     update.image_url_2 = url;
@@ -124,10 +132,14 @@ export async function POST(
     update.doc_urls = urls;
   }
 
+  const locale = await getServerLocale();
   const ai = imageUrlsForAi.length
-    ? await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode, await getServerLocale())
+    ? await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode, locale)
     : null;
-  const analysis = buildMechanicalItemAnalysis(code as MechanicalPointCode, observations, ai);
+  const analysis = buildMechanicalItemAnalysis(code as MechanicalPointCode, observations, ai, {
+    locale,
+    analyzed: imageUrlsForAi.length > 0,
+  });
   update.ai_analysis = analysis;
   update.detected_issues = analysis.detected_issues;
   update.score = analysis.score;

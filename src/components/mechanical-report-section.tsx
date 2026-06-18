@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { MECHANICAL_RECOMMENDATION_COPY, MECHANICAL_RISK_COPY } from "@/lib/mechanical";
 import { useI18n } from "@/components/i18n-provider";
 import { MECH_RECO_FR, MECH_RISK_FR, pick } from "@/lib/content-i18n";
@@ -40,21 +41,24 @@ export function MechanicalReportSection({ section }: { section: Section | null |
             <p>{section.summary}</p>
 
             <div className="space-y-1">
-              {section.items.map((it) => (
-                <div key={it.point_code} className="flex items-start justify-between gap-2 border-b py-1 last:border-0">
-                  <div>
-                    <span className="font-medium">{it.title}</span>
-                    {it.suspicious_observations.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        {it.suspicious_observations.join(" · ")}
-                      </p>
+              {section.items.map((it) => {
+                const flagged = ["moderate", "high", "critical"].includes(it.severity ?? "");
+                return (
+                  <div key={it.point_code} className="flex items-start justify-between gap-3 border-b py-2 last:border-0">
+                    <div className="min-w-0">
+                      <span className="font-medium">{it.title}</span>
+                      {it.summary && (
+                        <p className={cn("text-xs", flagged ? "text-risk-moderate" : "text-muted-foreground")}>
+                          {it.summary}
+                        </p>
+                      )}
+                    </div>
+                    {it.severity && it.score != null && (
+                      <Badge variant={sevBadge[it.severity]}>{it.score}</Badge>
                     )}
                   </div>
-                  {it.severity && it.score != null && (
-                    <Badge variant={sevBadge[it.severity]}>{it.score}</Badge>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <p className="rounded-md bg-muted/50 p-2">

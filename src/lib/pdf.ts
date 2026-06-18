@@ -154,7 +154,7 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
       body(me.summary);
       me.items.forEach((it) =>
         body(
-          `• ${it.title}: ${it.score ?? "—"}/100${it.suspicious_observations.length ? ` — ${it.suspicious_observations.join("; ")}` : ""}`,
+          `• ${it.title}: ${it.score ?? "—"}/100${it.summary ? ` — ${it.summary}` : ""}`,
         ),
       );
       if (me.seller_questions.length) {

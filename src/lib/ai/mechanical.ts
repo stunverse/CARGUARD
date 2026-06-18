@@ -17,13 +17,41 @@ import {
   scoreFromObservations,
   severityFromScore,
 } from "@/lib/mechanical";
+import { localizedMechPoint } from "@/lib/content-i18n";
 import type {
   DetectedIssue,
   MechanicalCheckItem,
   MechanicalItemAnalysis,
+  MechanicalPoint,
   MechanicalPointCode,
   MechanicalReportSection,
 } from "@/types";
+
+// Concrete, localized per-check conclusion when no AI summary is available
+// (questionnaire/docs checks, or a video whose frames couldn't be read).
+function fallbackSummary(
+  point: MechanicalPoint | undefined,
+  code: MechanicalPointCode,
+  suspicious: string[],
+  locale: string,
+  analyzed: boolean,
+): string {
+  const fr = locale === "fr";
+  const title = point ? localizedMechPoint(point, fr ? "fr" : "en").title : code;
+  if (suspicious.length) {
+    return fr
+      ? `Points à vérifier sur « ${title} » : ${suspicious.join(" ; ")}.`
+      : `Points to verify on "${title}": ${suspicious.join("; ")}.`;
+  }
+  if (analyzed) {
+    return fr
+      ? `Aucun élément visiblement préoccupant relevé pour « ${title} ». À confirmer par un professionnel.`
+      : `No visibly concerning element found for "${title}". Have a professional confirm.`;
+  }
+  return fr
+    ? `« ${title} » enregistré. Aucun problème signalé ; conservez le média pour un mécanicien.`
+    : `"${title}" recorded. No issue reported; keep the media for a mechanic to review.`;
+}
 
 interface PhotoAiPart {
   detected_issues: DetectedIssue[];
@@ -53,7 +81,7 @@ export async function analyzeMechanicalPhoto(
     return await runStructuredVision<PhotoAiPart>({
       system: `${AI_RULES}
 
-TASK: Analyze the photo(s) for the mechanical check "${point?.title ?? code}".
+TASK: Analyze the image(s) for the mechanical check "${point?.title ?? code}". The image(s) may be photos or still frames extracted from a short video — focus on what is actually VISIBLE (e.g. exhaust smoke colour, warning lights, leaks, fluid colour) and do not infer sounds.
 Look for: ${(point?.ai_targets ?? []).join(", ") || "relevant mechanical signs"}.
 Be cautious and non-diagnostic. Return JSON exactly:
 {
@@ -81,6 +109,7 @@ export function buildMechanicalItemAnalysis(
   code: MechanicalPointCode,
   observations: Record<string, boolean> | null,
   ai?: PhotoAiPart | null,
+  opts?: { locale?: string; analyzed?: boolean },
 ): MechanicalItemAnalysis {
   const base = scoreFromObservations(code, observations);
 
@@ -99,11 +128,11 @@ export function buildMechanicalItemAnalysis(
   const point = MECHANICAL_POINTS.find((p) => p.code === code);
 
   return {
+    // Every check gets a concrete conclusion: the AI summary when the media was
+    // analyzed, otherwise a specific localized statement (never a bare score).
     summary:
       ai?.summary ||
-      (suspicious.length
-        ? `Some points to verify on "${point?.title ?? code}".`
-        : `No obvious issue reported for "${point?.title ?? code}".`),
+      fallbackSummary(point, code, suspicious, opts?.locale ?? "en", Boolean(opts?.analyzed)),
     score,
     severity: severityFromScore(score),
     detected_issues: ai?.detected_issues ?? [],
