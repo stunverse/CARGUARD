@@ -304,7 +304,13 @@ export function ReportPreview({ report }: { report: FinalReport }) {
                 ))}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">{t("flag.disclaimer")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                report.title_flags.source === "Histovec"
+                  ? "flag.disclaimer.histovec"
+                  : "flag.disclaimer",
+              )}
+            </p>
           </CardContent>
         </Card>
       )}

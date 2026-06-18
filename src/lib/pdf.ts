@@ -254,6 +254,8 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
         fire: "Fire damage",
         hail: "Hail damage",
         theft: "Theft record",
+        pledge: "Pledge / lien (gage)",
+        opposition: "Administrative hold (opposition)",
         junk: "Junk",
         lemon: "Lemon / buyback",
         rebuilt: "Rebuilt",

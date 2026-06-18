@@ -14,6 +14,7 @@ import { assessMileage } from "@/lib/mileage-check";
 import { getSafetyRating } from "@/lib/safety-rating";
 import { deriveTitleFlags } from "@/lib/title-flags";
 import { fetchEuTitleFlags } from "@/lib/providers/eu-history";
+import { analyzeHistovec, histovecToTitleFlags } from "@/lib/providers/histovec";
 import { estimateMarketValue } from "@/lib/market-value";
 import { buildDocumentsSection, documentsRatio, isUsCountry } from "@/lib/documents";
 import { isVehicleDbConfigured, vdbMarketValue } from "@/lib/providers/vehicle-databases";
@@ -26,6 +27,7 @@ import { logActivity } from "@/lib/activity";
 import {
   riskLevelToRecommendation,
   scoreToRiskLevel,
+  STORAGE_BUCKETS,
 } from "@/lib/constants";
 import { MECHANICAL_RISK_COPY } from "@/lib/mechanical";
 import { getServerLocale } from "@/lib/i18n-server";
@@ -235,13 +237,37 @@ export async function POST(
   // Supporting documents the buyer photographed (maintenance, registration…).
   const { data: docRows } = await supabase
     .from("inspection_documents")
-    .select("doc_type")
+    .select("doc_type, storage_path")
     .eq("inspection_session_id", sessionId);
   const documents = buildDocumentsSection(
     (docRows ?? []).map((d) => d.doc_type as string),
     veh.country ?? null,
   );
   const docRatio = documentsRatio(documents);
+
+  // France/EU history: read the buyer-uploaded Histovec report (official, free)
+  // with AI and surface its administrative signals as title flags. Histovec
+  // takes precedence over the generic EU provider when a report was provided.
+  let histovecOwners: number | null = null;
+  if (!isUsCountry(veh.country) && isAIConfigured()) {
+    const histDoc = (docRows ?? []).find(
+      (d) => d.doc_type === "history_report" && d.storage_path,
+    );
+    if (histDoc?.storage_path) {
+      const bucket = process.env.STORAGE_BUCKET_DOCUMENTS || STORAGE_BUCKETS.documents;
+      const { data: signed } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(histDoc.storage_path as string, 600);
+      if (signed?.signedUrl) {
+        const ext = await analyzeHistovec([signed.signedUrl]);
+        const section = histovecToTitleFlags(ext);
+        if (section) {
+          titleFlags = section;
+          histovecOwners = ext?.owners_count ?? null;
+        }
+      }
+    }
+  }
 
   // --- Overall score + confidence across ALL modules ---
   const photoConfidences = results
@@ -284,6 +310,16 @@ export async function POST(
   if (vehicleHistory?.matched) {
     summaryParts.push(
       `Vehicle history (NHTSA, model-level): ${vehicleHistory.recall_count} recall(s) and ${vehicleHistory.complaints_count} consumer complaint(s) reported for this make/model/year.`,
+    );
+  }
+  if (titleFlags?.source === "Histovec") {
+    const ownersTxt = histovecOwners != null ? ` Previous owners: ${histovecOwners}.` : "";
+    summaryParts.push(
+      titleFlags.clean
+        ? `Histovec (official French history) was provided and shows no pledge, opposition, theft or damage declaration.${ownersTxt}`
+        : `Histovec (official French history) flags: ${titleFlags.flags
+            .map((f) => f.detail)
+            .join("; ")}.${ownersTxt} Treat with caution and verify before purchase.`,
     );
   }
   if (documents) {
