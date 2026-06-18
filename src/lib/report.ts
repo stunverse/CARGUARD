@@ -5,6 +5,8 @@
 // =====================================================================
 
 import { PHOTO_POINTS, REPORT_DISCLAIMER } from "@/lib/constants";
+import { buildNegotiationSection } from "@/lib/negotiation";
+import type { Locale } from "@/lib/i18n";
 import type {
   DocumentsSection,
   EngineAudioCheck,
@@ -62,6 +64,8 @@ export function generateFinalReport(params: {
   documents?: DocumentsSection | null;
   /** Overall confidence across all modules (falls back to photo avg). */
   overallConfidence?: number;
+  /** Report language, used for the negotiation toolkit copy. */
+  locale?: Locale;
 }): FinalReport {
   const {
     vehicle,
@@ -78,6 +82,7 @@ export function generateFinalReport(params: {
     marketValue,
     documents,
     overallConfidence,
+    locale = "en",
   } = params;
 
   const titleFor = (code: PhotoPointCode) =>
@@ -113,6 +118,20 @@ export function generateFinalReport(params: {
     (photoConfidences.length
       ? Math.round(photoConfidences.reduce((a, b) => a + b, 0) / photoConfidences.length)
       : undefined);
+
+  // Negotiation toolkit — always present, costed, bounded to [200, 1000].
+  const negotiation = buildNegotiationSection({
+    locale,
+    vehicle,
+    photoAnalysis: photo_analysis,
+    mechanical,
+    engineAudio,
+    vehicleHistory,
+    mileageCheck,
+    marketValue,
+    documents,
+    aiArguments: global.negotiation_arguments,
+  });
 
   return {
     generated_at: new Date().toISOString(),
@@ -152,6 +171,7 @@ export function generateFinalReport(params: {
     title_flags: titleFlags ?? null,
     market_value: marketValue ?? null,
     documents: documents ?? null,
+    negotiation,
   };
 }
 
@@ -223,7 +243,24 @@ ${
   .join("")}
 
 <h2>7. Questions to ask the seller</h2>${list(report.questions_to_ask_seller)}
-<h2>8. Negotiation arguments</h2>${list(report.negotiation_arguments)}
+<h2>8. Negotiation arguments</h2>${
+    report.negotiation
+      ? `<p><strong>Fair reduction to argue for: ${esc(report.negotiation.total_low)}–${esc(report.negotiation.total_high)} ${esc(report.negotiation.currency)}</strong>${
+          report.negotiation.target_price_low != null
+            ? ` — suggested target price ${esc(report.negotiation.target_price_low)}–${esc(report.negotiation.target_price_high)} ${esc(report.negotiation.currency)}`
+            : ""
+        }</p>
+<p>${esc(report.negotiation.summary)}</p>
+<table><tr><th>Argument</th><th>Reduction</th></tr>${report.negotiation.levers
+          .map(
+            (l) =>
+              `<tr><td><strong>${esc(l.title)}</strong><br/><span class="muted">${esc(l.detail)}</span></td><td>−${esc(l.amount_low)}–${esc(l.amount_high)} ${esc(report.negotiation!.currency)}</td></tr>`,
+          )
+          .join("")}</table>
+${report.negotiation.extra_points.length ? `<p class="muted">More points:</p>${list(report.negotiation.extra_points)}` : ""}
+<p><em>"${esc(report.negotiation.script)}"</em></p>`
+      : list(report.negotiation_arguments)
+  }
 <h2>9. Recommended next steps</h2>${list(report.recommended_next_steps)}
 
 <div class="disc"><strong>Disclaimer.</strong> ${esc(report.disclaimer)}</div>

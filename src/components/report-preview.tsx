@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   RiskScoreCircle,
@@ -95,6 +95,9 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         </CardContent>
       </Card>
 
+      {/* 3. Negotiation toolkit — directly after the summary (key conversion section) */}
+      {report.negotiation && <NegotiationCard section={report.negotiation} />}
+
       {/* 4 + 5. Points */}
       <div className="grid gap-4 md:grid-cols-2">
         <Section title={`4. ${t("rep.positive")}`} items={report.positive_points} empty="—" />
@@ -137,7 +140,10 @@ export function ReportPreview({ report }: { report: FinalReport }) {
 
       {/* 7 + 8 + 9 */}
       <Section title={`7. ${t("rep.sellerQuestions")}`} items={report.questions_to_ask_seller} />
-      <Section title={`8. ${t("rep.negotiation")}`} items={report.negotiation_arguments} empty="—" />
+      {/* Legacy negotiation list only for older reports without the rich section. */}
+      {!report.negotiation && (
+        <Section title={`8. ${t("rep.negotiation")}`} items={report.negotiation_arguments} empty="—" />
+      )}
       <Section title={t("rep.s.nextSteps")} items={report.recommended_next_steps} />
 
       {/* 10. Engine start audio (optional module) */}
@@ -402,6 +408,87 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         {report.disclaimer}
       </div>
     </div>
+  );
+}
+
+function NegotiationCard({ section }: { section: NonNullable<FinalReport["negotiation"]> }) {
+  const { t } = useI18n();
+  const cur = section.currency;
+  return (
+    <Card className="border-accent/40 bg-accent/[0.03]">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <TrendingDown className="size-5 text-accent" aria-hidden />
+          {t("rep.s.negotiation")}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        {/* Headline: total saving + target price */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-accent/30 bg-accent/10 p-4">
+            <p className="text-xs font-medium text-muted-foreground">{t("neg.saving")}</p>
+            <p className="mt-0.5 text-2xl font-extrabold text-accent">
+              {formatMoney(section.total_low, cur)} – {formatMoney(section.total_high, cur)}
+            </p>
+          </div>
+          {section.target_price_low != null && section.target_price_high != null && (
+            <div className="rounded-2xl border bg-muted/30 p-4">
+              <p className="text-xs font-medium text-muted-foreground">{t("neg.target")}</p>
+              <p className="mt-0.5 text-2xl font-extrabold text-foreground">
+                {formatMoney(section.target_price_low, cur)} – {formatMoney(section.target_price_high, cur)}
+              </p>
+              {section.asking_price != null && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {t("neg.asking")}: {formatMoney(section.asking_price, cur)}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <p className="text-muted-foreground">{section.summary}</p>
+
+        {/* Levers */}
+        <div className="space-y-2">
+          {section.levers.map((l, i) => (
+            <div key={i} className="flex items-start justify-between gap-3 rounded-xl border p-3">
+              <div className="min-w-0">
+                <p className="font-medium text-foreground">{l.title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{l.detail}</p>
+              </div>
+              <Badge
+                variant={l.severity === "high" ? "high" : l.severity === "moderate" ? "moderate" : "low"}
+                className="shrink-0 whitespace-nowrap"
+              >
+                −{formatMoney(l.amount_low, cur)}–{formatMoney(l.amount_high, cur)}
+              </Badge>
+            </div>
+          ))}
+        </div>
+
+        {/* Extra AI-sourced points */}
+        {section.extra_points.length > 0 && (
+          <div>
+            <p className="font-medium">{t("neg.morePoints")}</p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-muted-foreground">
+              {section.extra_points.map((p, i) => (
+                <li key={i}>{p}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Ready-to-send script */}
+        <div className="rounded-2xl border border-dashed bg-muted/30 p-4">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("neg.script")}
+          </p>
+          <p className="italic text-foreground">“{section.script}”</p>
+        </div>
+
+        <p className="text-xs text-muted-foreground">{section.disclaimer}</p>
+      </CardContent>
+    </Card>
   );
 }
 

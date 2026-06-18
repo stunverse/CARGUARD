@@ -346,6 +346,7 @@ export async function POST(
     marketValue,
     documents,
     overallConfidence: overall.confidence,
+    locale: language,
   });
 
   if (engineAudio) {

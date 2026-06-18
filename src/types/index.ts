@@ -301,6 +301,54 @@ export interface FinalReport {
   market_value?: MarketValueSection | null;
   // Supporting documents the buyer photographed (maintenance, registration…).
   documents?: DocumentsSection | null;
+  // Negotiation toolkit — evidence-based price-reduction levers (always present).
+  negotiation?: NegotiationSection | null;
+}
+
+// ---------------------------------------------------------------------
+// Negotiation toolkit. Derived deterministically from the inspection so the
+// report ALWAYS gives the buyer concrete, costed arguments to push the price
+// down. The total saving is bounded to a realistic [200, 1000] band.
+// ---------------------------------------------------------------------
+export type NegotiationCategory =
+  | "repaint"
+  | "alignment"
+  | "bodywork"
+  | "mechanical"
+  | "engine_sound"
+  | "recall"
+  | "mileage"
+  | "market"
+  | "documents"
+  | "wear"
+  | "service"
+  | "buffer";
+
+export interface NegotiationLever {
+  category: NegotiationCategory;
+  title: string;
+  detail: string;
+  severity: "low" | "moderate" | "high";
+  amount_low: number;
+  amount_high: number;
+}
+
+export interface NegotiationSection {
+  currency: string;
+  asking_price: number | null;
+  // Total fair reduction the buyer can argue for (bounded to [200, 1000]).
+  total_low: number;
+  total_high: number;
+  // Suggested target price band = asking − total. Null when asking is unknown.
+  target_price_low: number | null;
+  target_price_high: number | null;
+  levers: NegotiationLever[];
+  // Extra supporting arguments surfaced by the AI analysis (no € attached).
+  extra_points: string[];
+  // A ready-to-send opening message the buyer can use.
+  script: string;
+  summary: string;
+  disclaimer: string;
 }
 
 // ---------------------------------------------------------------------

@@ -8,6 +8,7 @@
 
 import type { FinalReport, PhotoPointCode } from "@/types";
 import type { Locale } from "@/lib/i18n";
+import { buildNegotiationSection } from "@/lib/negotiation";
 
 interface PhotoSeed {
   code: PhotoPointCode;
@@ -250,7 +251,7 @@ export function getDemoReport(locale: Locale): FinalReport {
       ? "Ce rapport est généré par IA à partir des photos et contrôles fournis. Il constitue un outil de pré-diagnostic et ne remplace pas l'inspection d'un professionnel. Exemple fictif à des fins d'illustration."
       : "This report is AI-generated from the supplied photos and checks. It is a preliminary screening tool and does not replace a professional inspection. Fictional example for illustration.";
 
-  return {
+  const report: FinalReport = {
     generated_at: "2026-06-15T10:30:00.000Z",
     vehicle: {
       make: "BMW",
@@ -448,4 +449,19 @@ export function getDemoReport(locale: Locale): FinalReport {
       disclaimer,
     },
   };
+
+  report.negotiation = buildNegotiationSection({
+    locale,
+    vehicle: report.vehicle,
+    photoAnalysis: report.photo_analysis,
+    mechanical: report.mechanical,
+    engineAudio: report.engine_audio,
+    vehicleHistory: report.vehicle_history,
+    mileageCheck: report.mileage_check,
+    marketValue: report.market_value,
+    documents: report.documents,
+    aiArguments: report.negotiation_arguments,
+  });
+
+  return report;
 }
