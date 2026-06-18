@@ -82,7 +82,23 @@ const FAQ = ["q1", "q2", "q3", "q4", "q5"];
 
 const RED_GRADIENT = "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string; redirect?: string; next?: string }>;
+}) {
+  // Safety net: if an OAuth provider lands back on the Site URL ("/") with a
+  // ?code (e.g. when the provider falls back to the Site URL), forward it to
+  // the auth callback so the session is actually established instead of being
+  // dropped on the marketing page.
+  const sp = await searchParams;
+  if (sp?.code) {
+    const qs = new URLSearchParams({ code: sp.code });
+    const dest = sp.redirect || sp.next;
+    if (dest) qs.set("redirect", dest);
+    redirect(`/auth/callback?${qs.toString()}`);
+  }
+
   let authed = false;
   try {
     const supabase = await createClient();
