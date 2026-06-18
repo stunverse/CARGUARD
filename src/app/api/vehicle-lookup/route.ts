@@ -1,12 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { decodeVin, lookupPlate, isLikelyVin } from "@/lib/vehicle-lookup";
+import { isStripeConfigured } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-// GET /api/vehicle-lookup?vin=...  or  ?plate=...&country=GB
-// Auth + rate-limited. Returns normalized fields to pre-fill the form.
+// GET /api/vehicle-lookup?vin=...&sessionId=...  or  ?plate=...&country=GB&sessionId=...
+// Auth + rate-limited. The plate/VIN lookup is BILLABLE (aggregators charge
+// per call), so it is gated to a PAID inspection: a valid sessionId owned by
+// the user whose payment_status is "paid". Returns normalized fields to
+// pre-fill the form.
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -19,6 +23,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { error: `Too many lookups. Try again in ${rl.retryAfterSeconds}s.` },
       { status: 429 },
+    );
+  }
+
+  // Gate on a paid inspection so unpaid users can't trigger billable lookups.
+  const sessionId = new URL(request.url).searchParams.get("sessionId")?.trim();
+  if (!sessionId) {
+    return NextResponse.json({ error: "A paid inspection is required." }, { status: 402 });
+  }
+  const { data: session } = await supabase
+    .from("inspection_sessions")
+    .select("id, user_id, payment_status")
+    .eq("id", sessionId)
+    .single();
+  if (!session || session.user_id !== user.id) {
+    return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
+  }
+  if (isStripeConfigured() && session.payment_status !== "paid") {
+    return NextResponse.json(
+      { error: "This inspection isn't paid yet.", code: "payment_required" },
+      { status: 402 },
     );
   }
 

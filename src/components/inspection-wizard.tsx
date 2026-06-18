@@ -75,15 +75,19 @@ export interface WizardResume {
   mechDoneCodes: string[];
 }
 
-function resumeStart(r: WizardResume): { phase: Phase; pIndex: number; mIndex: number } {
+function resumeStart(r: WizardResume): { phase: Phase; pIndex: number; mIndex: number; vIndex: number } {
+  const lastV = VEHICLE_STEPS.length - 1;
+  // Paid but the vehicle wasn't entered yet (payment now happens first) →
+  // resume at the vehicle questions.
+  if (!r.vehicle.make) return { phase: "vehicle", pIndex: 0, mIndex: 0, vIndex: 0 };
   const firstPhoto = PHOTO_POINTS.findIndex(
     (p) => !["passed", "skipped"].includes(r.photoStatuses[p.code] ?? ""),
   );
-  if (firstPhoto !== -1) return { phase: "photos", pIndex: firstPhoto, mIndex: 0 };
+  if (firstPhoto !== -1) return { phase: "photos", pIndex: firstPhoto, mIndex: 0, vIndex: lastV };
   const firstMech = MECHANICAL_POINTS.findIndex((p) => !r.mechDoneCodes.includes(p.code));
   if (firstMech !== -1)
-    return { phase: "mech", pIndex: PHOTO_POINTS.length - 1, mIndex: firstMech };
-  return { phase: "review", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1 };
+    return { phase: "mech", pIndex: PHOTO_POINTS.length - 1, mIndex: firstMech, vIndex: lastV };
+  return { phase: "review", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1, vIndex: lastV };
 }
 
 export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
@@ -91,8 +95,10 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   const { t, locale } = useI18n();
   const init = resume ? resumeStart(resume) : null;
 
-  const [phase, setPhase] = useState<Phase>(init ? init.phase : "vehicle");
-  const [vIndex, setVIndex] = useState(resume ? VEHICLE_STEPS.length - 1 : 0);
+  // Payment is the FIRST step (right after "Start an inspection"): the billable
+  // plate/VIN lookup must only run on a paid inspection.
+  const [phase, setPhase] = useState<Phase>(init ? init.phase : "payment");
+  const [vIndex, setVIndex] = useState(init ? init.vIndex : 0);
   const [vehicle, setVehicle] = useState<Record<string, string>>(resume?.vehicle ?? {});
   const [sessionId, setSessionId] = useState<string | null>(resume?.sessionId ?? null);
 
@@ -115,23 +121,23 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   const [capture, setCapture] = useState<CaptureMode | null>(null);
 
   const vehicleStepCount = VEHICLE_STEPS.length;
-  // Engine & mechanical is mandatory; documents + review close the flow.
+  // Step 0 is payment; then vehicle questions, photos, mechanical, documents,
+  // review. Engine & mechanical is mandatory; documents + review close the flow.
   const total =
-    vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length + 2;
+    1 + vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length + 2;
 
   const stepNumber = useMemo(() => {
     switch (phase) {
-      case "vehicle":
-        return vIndex;
       case "payment":
-        // Payment is a gate between the vehicle questions and the photos.
-        return vehicleStepCount - 1;
+        return 0;
+      case "vehicle":
+        return 1 + vIndex;
       case "photos":
-        return vehicleStepCount + pIndex;
+        return 1 + vehicleStepCount + pIndex;
       case "mech":
-        return vehicleStepCount + PHOTO_POINTS.length + mIndex;
+        return 1 + vehicleStepCount + PHOTO_POINTS.length + mIndex;
       case "documents":
-        return vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length;
+        return 1 + vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length;
       case "review":
       case "finishing":
         return total - 1;
@@ -147,16 +153,15 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   // ---- Navigation -------------------------------------------------
   function back() {
     setError(null);
-    if (phase === "vehicle") {
-      if (vIndex === 0) router.push("/dashboard");
+    if (phase === "payment") {
+      router.push("/dashboard");
+    } else if (phase === "vehicle") {
+      // The inspection is already paid; going back from the first question
+      // exits to the saved drafts rather than the (already-paid) payment step.
+      if (vIndex === 0) router.push("/inspections");
       else setVIndex((i) => i - 1);
-    } else if (phase === "payment") {
-      setPhase("vehicle");
-      setVIndex(vehicleStepCount - 1);
     } else if (phase === "photos") {
       if (pIndex === 0) {
-        // After payment the inspection is paid; going back lands on payment,
-        // but since it is already paid we return to the last vehicle question.
         setPhase("vehicle");
         setVIndex(vehicleStepCount - 1);
       } else setPIndex((i) => i - 1);
@@ -173,9 +178,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     }
   }
 
-  // CarGuard is pay-per-inspection (€29). The draft inspection is created only
-  // once the buyer pays — right after the vehicle questions and before the 8
-  // photos. So the vehicle phase keeps everything in local state until payment.
+  // CarGuard is pay-per-inspection. Payment is the FIRST step: the draft is
+  // created on payment, then the buyer answers the vehicle questions (whose
+  // plate/VIN lookup is billable and only runs on a paid inspection).
   async function pay(opts: { useCredit?: boolean; pack?: string } = {}) {
     setBusy(true);
     setError(null);
@@ -183,23 +188,20 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       const res = await fetch("/api/inspections/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...vehicle, goal: vehicle.goal, useCredit: opts.useCredit, pack: opts.pack, waiver: true }),
+        body: JSON.stringify({ useCredit: opts.useCredit, pack: opts.pack, waiver: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not start the payment.");
       if (data.url) {
-        // Stripe Checkout — the draft is created and marked paid on return.
-        // Keep the vehicle answers so a cancelled payment doesn't lose them.
-        try {
-          sessionStorage.setItem("cg_wizard_vehicle", JSON.stringify(vehicle));
-        } catch {}
+        // Stripe Checkout — the draft is created and marked paid on return,
+        // which resumes the wizard at the vehicle questions.
         window.location.href = data.url;
         return;
       }
-      // Demo mode (no Stripe): the draft is created and paid immediately.
+      // Demo mode / credit: the draft is created and paid immediately.
       setSessionId(data.sessionId);
-      setPhase("photos");
-      setPIndex(0);
+      setPhase("vehicle");
+      setVIndex(0);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong.";
       setError(msg);
@@ -210,12 +212,39 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   }
 
   function nextVehicle(override?: Record<string, string>) {
-    if (override) setVehicle((v) => ({ ...v, ...override }));
     setError(null);
+    const merged = override ? { ...vehicle, ...override } : vehicle;
+    if (override) setVehicle(merged);
     if (vIndex < vehicleStepCount - 1) {
       setVIndex((i) => i + 1);
     } else {
-      setPhase("payment");
+      void finishVehicle(merged);
+    }
+  }
+
+  // Persist the vehicle answers onto the (already-paid) draft, then start photos.
+  async function finishVehicle(v: Record<string, string>) {
+    if (!sessionId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/inspections/${sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...v, goal: v.goal }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error ?? "Could not save the vehicle details.");
+      }
+      setPhase("photos");
+      setPIndex(0);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -310,21 +339,12 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     router.push("/inspections");
   }
 
-  // If the buyer cancelled Stripe checkout, restore their vehicle answers and
-  // drop them back on the payment step instead of an empty form.
+  // If the buyer cancelled Stripe checkout, they land back on the payment step
+  // (the default first phase) — just let them know.
   useEffect(() => {
     if (resume) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("paid") !== "cancelled") return;
-    try {
-      const saved = sessionStorage.getItem("cg_wizard_vehicle");
-      if (saved) {
-        setVehicle(JSON.parse(saved));
-        setVIndex(VEHICLE_STEPS.length - 1);
-        setPhase("payment");
-        toast.error(t("wiz.pay.cancelled"));
-      }
-    } catch {}
+    if (params.get("paid") === "cancelled") toast.error(t("wiz.pay.cancelled"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -337,7 +357,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       {/* Top bar: progress + close */}
       <div className="mb-6 flex items-center gap-3">
         <button onClick={back} aria-label="Back" className="text-[#6B7280]">
-          {phase === "vehicle" && vIndex === 0 ? <X className="size-6" /> : <ArrowLeft className="size-6" />}
+          {phase === "payment" ? <X className="size-6" /> : <ArrowLeft className="size-6" />}
         </button>
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#F2F3F5]">
           <div
@@ -369,6 +389,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
           <VehicleStep
             vIndex={vIndex}
             vehicle={vehicle}
+            sessionId={sessionId}
             setField={setField}
             onAutoFill={(data) => setVehicle((v) => ({ ...v, ...data }))}
             onPick={(updates) => nextVehicle(updates)}
@@ -474,12 +495,14 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
 function VehicleStep({
   vIndex,
   vehicle,
+  sessionId,
   setField,
   onAutoFill,
   onPick,
 }: {
   vIndex: number;
   vehicle: Record<string, string>;
+  sessionId: string | null;
   setField: (k: string, v: string) => void;
   onAutoFill: (data: Record<string, string>) => void;
   onPick: (updates: Record<string, string>) => void;
@@ -487,7 +510,8 @@ function VehicleStep({
   const { t, currency, unit } = useI18n();
   const step = VEHICLE_STEPS[vIndex];
 
-  if (step.kind === "vin") return <VinStep vehicle={vehicle} setField={setField} onAutoFill={onAutoFill} />;
+  if (step.kind === "vin")
+    return <VinStep vehicle={vehicle} sessionId={sessionId} setField={setField} onAutoFill={onAutoFill} />;
 
   if (step.kind === "make") {
     return (
@@ -638,10 +662,12 @@ const PLATE_COUNTRIES = ["GB", "FR", "DE", "ES", "IT", "NL", "BE", "PT", "IE", "
 
 function VinStep({
   vehicle,
+  sessionId,
   setField,
   onAutoFill,
 }: {
   vehicle: Record<string, string>;
+  sessionId: string | null;
   setField: (k: string, v: string) => void;
   onAutoFill: (data: Record<string, string>) => void;
 }) {
@@ -676,11 +702,13 @@ function VinStep({
     }
   }
 
+  const sid = sessionId ? `&sessionId=${encodeURIComponent(sessionId)}` : "";
+
   async function autofillVin() {
     if (!vehicle.vin?.trim()) return;
     setLooking(true);
     setMsg(null);
-    const res = await fetch(`/api/vehicle-lookup?q=${encodeURIComponent(vehicle.vin.trim())}`);
+    const res = await fetch(`/api/vehicle-lookup?q=${encodeURIComponent(vehicle.vin.trim())}${sid}`);
     applyResult(await res.json(), false);
     setLooking(false);
   }
@@ -690,7 +718,7 @@ function VinStep({
     setLooking(true);
     setMsg(null);
     const res = await fetch(
-      `/api/vehicle-lookup?plate=${encodeURIComponent(plate.trim())}&country=${encodeURIComponent(country)}`,
+      `/api/vehicle-lookup?plate=${encodeURIComponent(plate.trim())}&country=${encodeURIComponent(country)}${sid}`,
     );
     applyResult(await res.json(), true);
     setLooking(false);

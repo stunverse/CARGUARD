@@ -24,9 +24,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const { goal, useCredit, pack, waiver, ...vehicleInput } = body ?? {};
 
-  if (!vehicleInput.make || !vehicleInput.model) {
-    return NextResponse.json({ error: "Make and model are required." }, { status: 400 });
-  }
+  // NOTE: the vehicle is now entered AFTER payment (the plate/VIN lookup is
+  // billable, so it must run only on a paid inspection). We create the draft
+  // with a placeholder vehicle and fill it in during the vehicle questions.
   // Consumer must accept the sales terms + waive withdrawal (immediate execution).
   if (waiver !== true) {
     return NextResponse.json(
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
       .from("vehicles")
       .insert({
         user_id: user!.id,
-        make: vehicleInput.make,
-        model: vehicleInput.model,
+        make: vehicleInput.make || "",
+        model: vehicleInput.model || "",
         year: num(vehicleInput.year),
         generation: vehicleInput.generation || null,
         trim: vehicleInput.trim || null,
@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
       userId: user!.id,
       sessionId: session.id,
       action: "inspection_created",
-      description: `${vehicle.year ?? ""} ${vehicle.make} ${vehicle.model}`.trim(),
+      description:
+        `${vehicle.year ?? ""} ${vehicle.make} ${vehicle.model}`.trim() || "New inspection",
     });
     return { vehicle, session };
   }
