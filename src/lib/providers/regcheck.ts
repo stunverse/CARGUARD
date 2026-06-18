@@ -46,6 +46,32 @@ function normFuel(v?: string): string | undefined {
   return undefined;
 }
 
+// FR gearbox codes (ExtendedData.boiteDeVitesse): "M 6" / "BVM" → manual,
+// "A 6" / "BVA" / "DCT" → automatic.
+function normTransmission(v?: string): string | undefined {
+  if (!v) return undefined;
+  const s = v.toLowerCase().trim();
+  if (s.startsWith("a") || s.includes("bva") || s.includes("auto") || s.includes("dct") || s.includes("cvt"))
+    return "automatic";
+  if (s.startsWith("m") || s.includes("bvm") || s.includes("manu")) return "manual";
+  return undefined;
+}
+
+// Build a human engine descriptor from FR ExtendedData.
+// Prefer cylindrée (EngineCC → litres) + cylinders; fall back to the
+// commercial version string. NB: top-level EngineSize is the French tax
+// horsepower (puissance fiscale), NOT the displacement — don't use it here.
+function buildEngine(ext: Record<string, string>): string | undefined {
+  const cc = Number(ext.EngineCC);
+  const parts: string[] = [];
+  if (Number.isFinite(cc) && cc > 0) parts.push(`${(cc / 1000).toFixed(1)}L`);
+  const cyl = ext.Cylinders?.trim();
+  if (cyl && cyl !== "0") parts.push(`${cyl}cyl`);
+  if (parts.length) return parts.join(" ");
+  const version = (ext.version || ext.libVersion || "").trim();
+  return version || undefined;
+}
+
 // Extract the embedded JSON blob from the RegCheck XML envelope.
 function extractVehicleJson(xml: string): Record<string, unknown> | null {
   const m = xml.match(/<vehicleJson>([\s\S]*?)<\/vehicleJson>/i);
@@ -78,22 +104,30 @@ export async function regcheckFrancePlate(
     const v = extractVehicleJson(xml);
     if (!v) return null;
 
+    const ext = (v.ExtendedData && typeof v.ExtendedData === "object"
+      ? (v.ExtendedData as Record<string, string>)
+      : {}) as Record<string, string>;
+
     const make = field(v.CarMake) ?? field(v.MakeDescription);
-    const model = field(v.CarModel) ?? field(v.ModelDescription);
+    const model = field(v.CarModel) ?? field(v.ModelDescription) ?? (ext.libelleModele || undefined);
     if (!make && !model) return null;
 
-    const yearStr = field(v.RegistrationYear);
+    const yearStr = field(v.RegistrationYear) ?? (ext.anneeSortie || undefined);
     const year = yearStr ? Number(yearStr.replace(/[^\d]/g, "")) : undefined;
-    const vin = field(v.VehicleIdentificationNumber) ?? field(v.Vin);
+
+    // FR VIN lives in ExtendedData.numSerieMoteur (the SIV serial). Only keep
+    // it if it looks like a 17-char VIN so it can feed the EU specs decode.
+    const vinRaw = (ext.numSerieMoteur || "").trim().toUpperCase();
+    const vin = /^[A-HJ-NPR-Z0-9]{17}$/.test(vinRaw) ? vinRaw : undefined;
 
     return {
       make: make || undefined,
       model: model || undefined,
       year: year && Number.isFinite(year) ? year : undefined,
-      engine: field(v.EngineSize) || undefined,
-      fuel_type: normFuel(field(v.FuelType)),
-      transmission: undefined,
-      vin: vin || undefined,
+      engine: buildEngine(ext),
+      fuel_type: normFuel(field(v.FuelType) ?? ext.carburantVersion),
+      transmission: normTransmission(ext.boiteDeVitesse),
+      vin,
       source: "RegCheck (FR)",
     };
   } catch (err) {
