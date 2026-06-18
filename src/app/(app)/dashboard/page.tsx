@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, ChevronRight, Menu, ScanLine } from "lucide-react";
+import { ChevronRight, ScanLine } from "lucide-react";
 import { LogoMark } from "@/components/mobile/logo-mark";
 import { getServerLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
@@ -12,23 +12,8 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col px-5">
       {/* Header (mobile only — desktop uses the sidebar) */}
-      <header className="flex items-center justify-between pt-4 lg:hidden">
-        <Link
-          href="/settings"
-          aria-label="Menu"
-          className="flex size-11 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#374151] shadow-sm transition-transform active:scale-95"
-        >
-          <Menu className="size-5" aria-hidden />
-        </Link>
+      <header className="flex items-center justify-center pt-4 lg:hidden">
         <LogoMark href={null} />
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex size-11 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-[#374151] shadow-sm transition-transform active:scale-95"
-        >
-          <Bell className="size-5" aria-hidden />
-          <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-[#E50914]" aria-hidden />
-        </button>
       </header>
 
       {/* Centered hero + single action */}
