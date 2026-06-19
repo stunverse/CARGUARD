@@ -10,9 +10,11 @@ import {
   Clock,
   FileText,
   Lock,
+  Mic,
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Square,
   TrendingDown,
   Upload,
   Video,
@@ -45,7 +47,7 @@ import { localizedMechPoint, localizedPhotoPoint } from "@/lib/content-i18n";
 import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
-type Phase = "vehicle" | "payment" | "photos" | "mech" | "documents" | "review" | "finishing";
+type Phase = "vehicle" | "payment" | "photos" | "mech" | "audio" | "documents" | "review" | "finishing";
 
 type VKind = "vin" | "make" | "year" | "model" | "select" | "number";
 interface VStepDef {
@@ -76,6 +78,7 @@ export interface WizardResume {
   photoStatuses: Record<string, string>;
   photoUrls?: Record<string, string | null>;
   mechDoneCodes: string[];
+  audioDone?: boolean;
 }
 
 function resumeStart(r: WizardResume): { phase: Phase; pIndex: number; mIndex: number; vIndex: number } {
@@ -90,6 +93,10 @@ function resumeStart(r: WizardResume): { phase: Phase; pIndex: number; mIndex: n
   const firstMech = MECHANICAL_POINTS.findIndex((p) => !r.mechDoneCodes.includes(p.code));
   if (firstMech !== -1)
     return { phase: "mech", pIndex: PHOTO_POINTS.length - 1, mIndex: firstMech, vIndex: lastV };
+  // Mechanical done — the engine-sound step is mandatory, so resume there
+  // until it's been provided or explicitly marked unavailable.
+  if (!r.audioDone)
+    return { phase: "audio", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1, vIndex: lastV };
   return { phase: "review", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1, vIndex: lastV };
 }
 
@@ -124,12 +131,13 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   const [capture, setCapture] = useState<CaptureMode | null>(null);
 
   const vehicleStepCount = VEHICLE_STEPS.length;
-  // Step 0 is payment; then vehicle questions, photos, mechanical, documents,
-  // review. Engine & mechanical is mandatory; documents + review close the flow.
+  // Step 0 is payment; then vehicle questions, photos, mechanical, engine sound,
+  // documents, review. Engine & mechanical + engine sound are mandatory.
   const total =
-    1 + vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length + 2;
+    1 + vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length + 3;
 
   const stepNumber = useMemo(() => {
+    const afterMech = 1 + vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length;
     switch (phase) {
       case "payment":
         return 0;
@@ -139,8 +147,10 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
         return 1 + vehicleStepCount + pIndex;
       case "mech":
         return 1 + vehicleStepCount + PHOTO_POINTS.length + mIndex;
+      case "audio":
+        return afterMech;
       case "documents":
-        return 1 + vehicleStepCount + PHOTO_POINTS.length + MECHANICAL_POINTS.length;
+        return afterMech + 1;
       case "review":
       case "finishing":
         return total - 1;
@@ -173,9 +183,11 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
         setPhase("photos");
         setPIndex(PHOTO_POINTS.length - 1);
       } else setMIndex((i) => i - 1);
-    } else if (phase === "documents") {
+    } else if (phase === "audio") {
       setPhase("mech");
       setMIndex(MECHANICAL_POINTS.length - 1);
+    } else if (phase === "documents") {
+      setPhase("audio");
     } else if (phase === "review") {
       setPhase("documents");
     }
@@ -261,7 +273,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
 
   function nextMech() {
     if (mIndex < MECHANICAL_POINTS.length - 1) setMIndex((i) => i + 1);
-    else setPhase("documents");
+    else setPhase("audio");
   }
 
   // ---- Uploads ----------------------------------------------------
@@ -428,6 +440,15 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
             onSaved={nextMech}
             sessionId={sessionId!}
             setBusy={setBusy}
+          />
+        )}
+
+        {phase === "audio" && (
+          <AudioStep
+            sessionId={sessionId!}
+            busy={busy}
+            setBusy={setBusy}
+            onDone={() => setPhase("documents")}
           />
         )}
 
@@ -1068,6 +1089,147 @@ function MechStep({
           {t("wiz.skipStep")}
         </button>
       )}
+    </StepShell>
+  );
+}
+
+// Mandatory engine start-up sound step. Record or import an audio/video; the
+// clip is uploaded and analyzed (its score feeds the confidence score and the
+// report). The buyer can declare it unavailable to continue without blocking.
+function AudioStep({
+  sessionId,
+  busy,
+  setBusy,
+  onDone,
+}: {
+  sessionId: string;
+  busy: boolean;
+  setBusy: (b: boolean) => void;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const startedAtRef = useRef(0);
+  const [recording, setRecording] = useState(false);
+  const [stage, setStage] = useState<"idle" | "uploading" | "analyzing">("idle");
+  const [err, setErr] = useState<string | null>(null);
+
+  async function startRecording() {
+    setErr(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
+      mr.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const duration = Math.round((Date.now() - startedAtRef.current) / 1000);
+        const f = new File([blob], `engine-recording-${Date.now()}.webm`, { type: "audio/webm" });
+        void upload(f, duration);
+      };
+      startedAtRef.current = Date.now();
+      mr.start();
+      mediaRef.current = mr;
+      setRecording(true);
+    } catch {
+      setErr(t("eat.micDenied"));
+    }
+  }
+
+  function stopRecording() {
+    mediaRef.current?.stop();
+    setRecording(false);
+  }
+
+  async function upload(file: File, duration = 0) {
+    setBusy(true);
+    setErr(null);
+    setStage("uploading");
+    try {
+      const userId = await getUserId();
+      if (!userId) throw new Error(t("ui.signIn"));
+      const isVideo = file.type.startsWith("video/");
+      const path = `${userId}/${sessionId}/engine.${fileExt(file)}`;
+      await uploadToStorage(STORAGE_BUCKETS.engineAudio, path, file);
+      const res = await fetch(`/api/inspections/${sessionId}/engine-audio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storage_path: path,
+          mime_type: file.type,
+          file_type: isVideo ? "video" : "audio",
+          original_file_name: file.name,
+          duration_seconds: duration,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? t("ui.uploadFailed"));
+      setStage("analyzing");
+      const a = await fetch(`/api/inspections/${sessionId}/engine-audio/${data.check.id}/analyze`, {
+        method: "POST",
+      });
+      const ad = await a.json();
+      if (!a.ok) throw new Error(ad.error ?? t("eat.analysisFailed"));
+      toast.success(t("eat.analyzedToast"));
+      onDone();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : t("ui.uploadFailed"));
+      setStage("idle");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const working = stage !== "idle";
+
+  return (
+    <StepShell kicker={t("wiz.audio.kicker")} question={t("wiz.audio.q")} helper={t("wiz.audio.why")}>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="audio/*,video/mp4,video/quicktime,video/webm"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void upload(f);
+          e.target.value = "";
+        }}
+      />
+      <div className="mt-4 flex flex-col gap-2">
+        {recording ? (
+          <Button variant="destructive" onClick={stopRecording}>
+            <Square className="size-4" /> {t("eat.stopRecording")}
+          </Button>
+        ) : (
+          <Button onClick={startRecording} disabled={busy}>
+            <Mic className="size-4" /> {t("eat.recordAudio")}
+          </Button>
+        )}
+        <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy || recording}>
+          <Upload className="size-4" /> {t("eat.uploadFile")}
+        </Button>
+      </div>
+      <p className="mt-3 text-xs text-[#6B7280]">
+        {t("eat.tipFormatPre")} <strong>{t("eat.tipFormatStrong")}</strong>{t("eat.tipFormatPost")}
+      </p>
+      {working && (
+        <p className="mt-3 flex items-center gap-2 text-sm text-[#6B7280]">
+          <RefreshCw className="size-4 animate-spin" />
+          {stage === "analyzing" ? t("wiz.audio.analyzing") : t("eat.uploadingChecking")}
+        </p>
+      )}
+      {err && <p className="mt-3 text-sm text-destructive">{err}</p>}
+      <button
+        type="button"
+        onClick={onDone}
+        disabled={busy}
+        className="mt-4 w-full py-2 text-sm font-medium text-[#6B7280]"
+      >
+        {t("wiz.audio.cantRecord")}
+      </button>
     </StepShell>
   );
 }

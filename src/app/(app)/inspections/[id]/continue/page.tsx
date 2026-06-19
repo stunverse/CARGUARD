@@ -30,9 +30,15 @@ export default async function ContinueInspectionPage({
     redirect(`/inspections/${id}`);
   }
 
-  const [{ data: photos }, { data: mech }] = await Promise.all([
+  const [{ data: photos }, { data: mech }, { data: audio }] = await Promise.all([
     supabase.from("inspection_photos").select("photo_point_code, quality_status, image_url").eq("inspection_session_id", id),
     supabase.from("mechanical_checks").select("point_code").eq("inspection_session_id", id),
+    supabase
+      .from("engine_audio_checks")
+      .select("id")
+      .eq("inspection_session_id", id)
+      .eq("analysis_status", "completed")
+      .limit(1),
   ]);
 
   const v = (s.vehicles ?? {}) as Partial<Vehicle>;
@@ -69,6 +75,7 @@ export default async function ContinueInspectionPage({
     photoStatuses,
     photoUrls,
     mechDoneCodes,
+    audioDone: (audio ?? []).length > 0,
   };
 
   return <InspectionWizard resume={resume} />;
