@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MediaCapture, type CaptureMode } from "@/components/media-capture";
+import { CaptureGuide, hasCaptureGuide } from "@/components/capture-guide";
 import { AnalyzingOverlay } from "@/components/analyzing-overlay";
 import {
   INSPECTION_GOAL_OPTIONS,
@@ -423,6 +424,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
               title={lp.title}
               instruction={lp.instruction}
               why={lp.why}
+              code={PHOTO_POINTS[pIndex].code}
               previewUrl={photoState[PHOTO_POINTS[pIndex].code]?.url ?? null}
               status={photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending"}
               busy={busy}
@@ -936,6 +938,7 @@ function CaptureStep({
   title,
   instruction,
   why,
+  code,
   previewUrl,
   status,
   busy,
@@ -945,6 +948,7 @@ function CaptureStep({
   title: string;
   instruction: string;
   why: string;
+  code: string;
   previewUrl: string | null;
   status: string;
   busy: boolean;
@@ -970,9 +974,15 @@ function CaptureStep({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={previewUrl} alt={title} className="h-full w-full object-cover" />
         ) : (
-          <span className="flex flex-col items-center gap-2 text-[#9AA3AF]">
-            <Camera className="size-10" aria-hidden />
-            <span className="text-sm font-medium">{t("wiz.tapCamera")}</span>
+          <span className="flex flex-col items-center gap-1 px-4 py-3 text-[#9AA3AF]">
+            {hasCaptureGuide(code) ? (
+              <span className="w-36 sm:w-44"><CaptureGuide code={code} /></span>
+            ) : (
+              <Camera className="size-10" aria-hidden />
+            )}
+            <span className="flex items-center gap-1.5 text-sm font-medium text-[#6B7280]">
+              <Camera className="size-4" aria-hidden /> {t("wiz.tapCamera")}
+            </span>
           </span>
         )}
         {busy && (
@@ -1059,6 +1069,12 @@ function MechStep({
         <strong className="text-[#111827]">{t("wiz.whyItMatters")}</strong>
         {L.why}
       </p>
+
+      {hasCaptureGuide(point.code) && (
+        <div className="mx-auto mt-3 w-40 sm:w-48">
+          <CaptureGuide code={point.code} />
+        </div>
+      )}
 
       <button
         type="button"

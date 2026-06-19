@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { RiskScoreCircle } from "@/components/risk-indicators";
 import { MediaCapture, type CaptureMode } from "@/components/media-capture";
+import { CaptureGuide, hasCaptureGuide } from "@/components/capture-guide";
 import {
   MECHANICAL_POINTS,
   MECHANICAL_RISK_COPY,
@@ -270,6 +271,12 @@ function StepCard({
           <Info className="mt-0.5 size-4 shrink-0 text-accent" />
           <span>{loc.why}</span>
         </div>
+
+        {!locked && hasCaptureGuide(point.code) && (
+          <div className="mx-auto w-40 sm:w-48">
+            <CaptureGuide code={point.code} />
+          </div>
+        )}
 
         {/* Media capture — hidden once the report is generated (read-only). */}
         {!locked && (point.media_type === "docs" ? (
