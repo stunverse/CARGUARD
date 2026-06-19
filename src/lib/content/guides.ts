@@ -1686,6 +1686,628 @@ export const GUIDES: Guide[] = [
       ],
     },
   },
+  // -------------------------------------------------------------------
+  {
+    slug: "import-a-used-car",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "How to import a used car",
+      fr: "Comment importer une voiture d'occasion",
+    },
+    description: {
+      en: "Importing can save money or find a rare model, but customs, taxes and registration add complexity. Here's how to import a used car safely.",
+      fr: "Importer peut faire économiser ou dénicher un modèle rare, mais douane, taxes et immatriculation ajoutent de la complexité. Voici comment importer sereinement.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Why import a car",
+          paragraphs: [
+            "Importing can mean a lower price, a specification not sold locally, or a rare model. But the savings only make sense once you have counted every cost and confirmed the car can be legally registered where you live.",
+          ],
+        },
+        {
+          heading: "1. Check it can be registered",
+          paragraphs: [
+            "Before anything, confirm the model meets your country's standards (emissions, lights, safety) and can obtain a certificate of conformity. A car that cannot be registered is worthless to you.",
+          ],
+        },
+        {
+          heading: "2. Count the true total cost",
+          paragraphs: [
+            "Add the purchase price, transport, import duty, VAT/taxes, conformity and any modifications, inspection and registration fees. Compare that grand total — not just the sticker price — with a local equivalent.",
+          ],
+        },
+        {
+          heading: "3. Verify the car remotely",
+          paragraphs: [
+            "Buying at a distance increases risk. Get many detailed photos, a video, the VIN and a vehicle-history report, and ideally a local inspection before you pay.",
+          ],
+        },
+        {
+          heading: "4. Handle customs and taxes",
+          paragraphs: [
+            "Within trade areas (e.g. the EU) the process is simpler; from outside, expect import duty and local taxes. Keep every document — purchase invoice, transport papers, proof of tax — for registration.",
+          ],
+        },
+        {
+          heading: "5. Conformity and technical checks",
+          paragraphs: [
+            "You may need a certificate of conformity and a technical/roadworthiness inspection in the destination country before plates are issued. Some cars need minor modifications (lights, units) to comply.",
+          ],
+        },
+        {
+          heading: "6. Register and insure",
+          paragraphs: [
+            "Complete the change of ownership, pay any registration tax, get plates and arrange insurance before driving.",
+            "Even when importing, a photo-based pre-screening like CarGuard AI helps catch bodywork or repair red flags before you commit to a car you cannot easily inspect in person.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Pourquoi importer une voiture",
+          paragraphs: [
+            "Importer peut signifier un prix plus bas, une finition non vendue localement, ou un modèle rare. Mais l'économie n'a de sens qu'une fois tous les coûts additionnés et la possibilité d'immatriculer la voiture confirmée chez vous.",
+          ],
+        },
+        {
+          heading: "1. Vérifiez qu'elle est immatriculable",
+          paragraphs: [
+            "Avant tout, confirmez que le modèle respecte les normes de votre pays (émissions, éclairage, sécurité) et peut obtenir un certificat de conformité. Une voiture non immatriculable n'a aucune valeur pour vous.",
+          ],
+        },
+        {
+          heading: "2. Calculez le coût total réel",
+          paragraphs: [
+            "Additionnez le prix d'achat, le transport, les droits de douane, la TVA/taxes, la conformité et d'éventuelles modifications, l'inspection et les frais d'immatriculation. Comparez ce total — pas seulement le prix affiché — avec un équivalent local.",
+          ],
+        },
+        {
+          heading: "3. Vérifiez la voiture à distance",
+          paragraphs: [
+            "Acheter à distance augmente le risque. Obtenez de nombreuses photos détaillées, une vidéo, le VIN et un rapport d'historique, et idéalement une inspection locale avant de payer.",
+          ],
+        },
+        {
+          heading: "4. Gérez douane et taxes",
+          paragraphs: [
+            "À l'intérieur d'une zone d'échange (ex. l'UE), la procédure est plus simple ; depuis l'extérieur, prévoyez droits de douane et taxes locales. Conservez chaque document — facture d'achat, papiers de transport, preuve de taxe — pour l'immatriculation.",
+          ],
+        },
+        {
+          heading: "5. Conformité et contrôles techniques",
+          paragraphs: [
+            "Un certificat de conformité et un contrôle technique peuvent être exigés dans le pays de destination avant l'émission des plaques. Certaines voitures nécessitent de petites modifications (éclairage, unités) pour être conformes.",
+          ],
+        },
+        {
+          heading: "6. Immatriculez et assurez",
+          paragraphs: [
+            "Effectuez le changement de titulaire, payez l'éventuelle taxe d'immatriculation, obtenez les plaques et souscrivez une assurance avant de rouler.",
+            "Même à l'import, un pré-diagnostic par photos comme CarGuard AI aide à repérer les signaux de carrosserie ou de réparation avant de vous engager sur une voiture difficile à inspecter en personne.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "used-car-warranty-explained",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Used car warranties explained",
+      fr: "La garantie d'une voiture d'occasion expliquée",
+    },
+    description: {
+      en: "Legal warranty, dealer warranty, extended cover or none at all — understand what protects you when buying a used car and what each really covers.",
+      fr: "Garantie légale, garantie du vendeur, extension ou rien du tout — comprenez ce qui vous protège à l'achat d'une voiture d'occasion et ce que chacune couvre vraiment.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Why warranty matters",
+          paragraphs: [
+            "A warranty decides who pays if something fails soon after purchase. The level of protection differs hugely between a dealer and a private sale, so know what you actually have.",
+          ],
+        },
+        {
+          heading: "1. Legal / statutory protection",
+          paragraphs: [
+            "In many countries, buying from a professional gives you a legal guarantee against hidden defects or non-conformity for a set period. Private sales usually offer far weaker protection — closer to \"sold as seen\".",
+          ],
+        },
+        {
+          heading: "2. Dealer (commercial) warranty",
+          paragraphs: [
+            "Dealers often add their own warranty of a few months to a year. Read exactly what it covers (parts, labour, which components) and what voids it.",
+          ],
+        },
+        {
+          heading: "3. Manufacturer warranty remaining",
+          paragraphs: [
+            "A newer used car may still have part of the original manufacturer warranty, which usually transfers to you. Confirm the dates and any service conditions to keep it valid.",
+          ],
+        },
+        {
+          heading: "4. Extended warranties",
+          paragraphs: [
+            "Optional extended cover can be worth it on complex or expensive cars, but read the exclusions, claim limits and excess carefully — many cover less than buyers expect.",
+          ],
+        },
+        {
+          heading: "5. What warranties usually exclude",
+          paragraphs: [
+            "Wear items (tyres, brakes, clutch), pre-existing faults, damage from poor maintenance and cosmetic issues are commonly excluded. A warranty is not a substitute for buying a sound car.",
+          ],
+        },
+        {
+          heading: "6. Get it in writing",
+          paragraphs: [
+            "Whatever the cover, keep the warranty terms and the sale documents. The best protection is still buying a car in good condition in the first place.",
+            "A CarGuard AI inspection before purchase reduces the chance you ever need to rely on a warranty at all.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Pourquoi la garantie compte",
+          paragraphs: [
+            "Une garantie détermine qui paie si une panne survient peu après l'achat. Le niveau de protection diffère énormément entre un professionnel et une vente entre particuliers : sachez ce dont vous disposez réellement.",
+          ],
+        },
+        {
+          heading: "1. Protection légale",
+          paragraphs: [
+            "Dans de nombreux pays, l'achat chez un professionnel ouvre une garantie légale contre les vices cachés ou la non-conformité pendant une durée donnée. Les ventes entre particuliers offrent une protection bien plus faible — proche du « vendu en l'état ».",
+          ],
+        },
+        {
+          heading: "2. Garantie commerciale du vendeur",
+          paragraphs: [
+            "Les professionnels ajoutent souvent leur propre garantie de quelques mois à un an. Lisez précisément ce qu'elle couvre (pièces, main-d'œuvre, quels organes) et ce qui l'annule.",
+          ],
+        },
+        {
+          heading: "3. Garantie constructeur restante",
+          paragraphs: [
+            "Une occasion récente peut conserver une partie de la garantie constructeur d'origine, généralement transférable. Vérifiez les dates et les conditions d'entretien pour la maintenir valide.",
+          ],
+        },
+        {
+          heading: "4. Les extensions de garantie",
+          paragraphs: [
+            "Une extension optionnelle peut valoir le coup sur des voitures complexes ou coûteuses, mais lisez attentivement les exclusions, plafonds et franchises — beaucoup couvrent moins que ce que l'acheteur imagine.",
+          ],
+        },
+        {
+          heading: "5. Ce que les garanties excluent souvent",
+          paragraphs: [
+            "Les pièces d'usure (pneus, freins, embrayage), les défauts préexistants, les dommages dus à un mauvais entretien et les soucis esthétiques sont fréquemment exclus. Une garantie ne remplace pas l'achat d'une voiture saine.",
+          ],
+        },
+        {
+          heading: "6. Obtenez tout par écrit",
+          paragraphs: [
+            "Quelle que soit la couverture, conservez les conditions de garantie et les documents de vente. La meilleure protection reste d'acheter d'emblée une voiture en bon état.",
+            "Une inspection CarGuard AI avant l'achat réduit le risque d'avoir un jour à recourir à une garantie.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "car-insurance-before-buying",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Car insurance: what to sort before you buy",
+      fr: "Assurance auto : ce qu'il faut régler avant d'acheter",
+    },
+    description: {
+      en: "Insurance cost can make or break a used car deal. Here's how to estimate premiums, arrange cover for the drive home, and avoid surprises.",
+      fr: "Le coût de l'assurance peut faire ou défaire une affaire. Voici comment estimer les primes, assurer le trajet retour et éviter les surprises.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Insurance is part of the price",
+          paragraphs: [
+            "Two similar cars can cost very different amounts to insure. Always get a quote before you buy — a cheap car with a high premium may cost more overall than a pricier, cheaper-to-insure one.",
+          ],
+        },
+        {
+          heading: "1. Get quotes before committing",
+          paragraphs: [
+            "Run quotes for the exact model, version and engine you are considering. Insurance groups vary by power, repair cost and theft risk, sometimes dramatically within the same model range.",
+          ],
+        },
+        {
+          heading: "2. Understand what drives the premium",
+          paragraphs: [
+            "Your age and history, where you park, annual mileage, the car's value and power, and its security all affect the price. Performance versions and large engines usually cost much more.",
+          ],
+        },
+        {
+          heading: "3. Choose the right level of cover",
+          paragraphs: [
+            "Comprehensive cover protects your own car too; third-party is cheaper but pays only for others' damage. On an older, low-value car, full cover may not be worth it.",
+          ],
+        },
+        {
+          heading: "4. Arrange cover for the drive home",
+          paragraphs: [
+            "You must be insured the moment you drive away. Set up a policy or temporary cover to start on collection day so you are never driving uninsured.",
+          ],
+        },
+        {
+          heading: "5. Watch for cost multipliers",
+          paragraphs: [
+            "Modifications, a salvage/repaired title, or imported status can raise premiums or require specialist insurers. Factor this in before you buy such a car.",
+          ],
+        },
+        {
+          heading: "6. Keep the total cost in view",
+          paragraphs: [
+            "Budget for insurance, fuel/charging, tax, servicing and tyres — not just the purchase. A CarGuard AI inspection helps confirm the car's condition so your running-cost estimate is realistic.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "L'assurance fait partie du prix",
+          paragraphs: [
+            "Deux voitures similaires peuvent coûter très différemment à assurer. Obtenez toujours un devis avant d'acheter — une voiture pas chère mais à prime élevée peut coûter plus cher au total qu'un modèle plus cher mais moins cher à assurer.",
+          ],
+        },
+        {
+          heading: "1. Faites des devis avant de vous engager",
+          paragraphs: [
+            "Demandez des devis pour le modèle, la version et le moteur exacts envisagés. Les groupes d'assurance varient selon la puissance, le coût de réparation et le risque de vol, parfois fortement au sein d'une même gamme.",
+          ],
+        },
+        {
+          heading: "2. Comprenez ce qui fait la prime",
+          paragraphs: [
+            "Votre âge et votre historique, votre lieu de stationnement, le kilométrage annuel, la valeur et la puissance de la voiture, et sa sécurité influencent le prix. Les versions performantes et les gros moteurs coûtent généralement beaucoup plus.",
+          ],
+        },
+        {
+          heading: "3. Choisissez le bon niveau de couverture",
+          paragraphs: [
+            "L'assurance tous risques protège aussi votre voiture ; au tiers, c'est moins cher mais cela ne couvre que les dommages causés à autrui. Sur une voiture ancienne et de faible valeur, le tous risques n'est pas toujours rentable.",
+          ],
+        },
+        {
+          heading: "4. Assurez le trajet retour",
+          paragraphs: [
+            "Vous devez être assuré dès que vous partez. Mettez en place un contrat ou une assurance temporaire débutant le jour de la remise pour ne jamais rouler sans assurance.",
+          ],
+        },
+        {
+          heading: "5. Attention aux facteurs aggravants",
+          paragraphs: [
+            "Des modifications, un titre « réparé/épave » ou un statut importé peuvent augmenter les primes ou nécessiter des assureurs spécialisés. Intégrez-le avant d'acheter une telle voiture.",
+          ],
+        },
+        {
+          heading: "6. Gardez le coût total en tête",
+          paragraphs: [
+            "Budgétez l'assurance, le carburant/la recharge, la taxe, l'entretien et les pneus — pas seulement l'achat. Une inspection CarGuard AI aide à confirmer l'état de la voiture pour une estimation réaliste des coûts d'usage.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "which-car-type-to-choose",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "City car, saloon or SUV: which type to choose",
+      fr: "Citadine, berline ou SUV : quel type de voiture choisir",
+    },
+    description: {
+      en: "The right body type depends on your real needs, not trends. Compare city cars, saloons, estates and SUVs on cost, space and running costs.",
+      fr: "Le bon type de carrosserie dépend de vos besoins réels, pas des tendances. Comparez citadines, berlines, breaks et SUV sur le coût, l'espace et l'usage.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Start from your real needs",
+          paragraphs: [
+            "Choose by how you actually drive — daily distance, passengers, parking, terrain and budget — not by what is fashionable. The cheapest car to own is the one that fits your life.",
+          ],
+        },
+        {
+          heading: "City cars",
+          paragraphs: [
+            "Small, cheap to buy, insure and park, and efficient in town. Less comfortable on long motorway trips and tighter on space, but ideal for urban use and new drivers.",
+          ],
+        },
+        {
+          heading: "Saloons and hatchbacks",
+          paragraphs: [
+            "A balanced all-rounder: comfortable, efficient and practical for most families, usually cheaper to buy and run than an equivalent SUV.",
+          ],
+        },
+        {
+          heading: "Estates (wagons)",
+          paragraphs: [
+            "The space of an SUV with car-like running costs and handling. Excellent for families and big loads if you do not need extra ground clearance.",
+          ],
+        },
+        {
+          heading: "SUVs and crossovers",
+          paragraphs: [
+            "High driving position, space and a feeling of safety, plus all-wheel-drive options. But they usually cost more to buy, fuel and insure, and use more tyres and brakes due to weight.",
+          ],
+        },
+        {
+          heading: "Match running costs to budget",
+          paragraphs: [
+            "Bigger and heavier generally means higher fuel, tyre and insurance costs. Be honest about whether you need the size or just want it.",
+          ],
+        },
+        {
+          heading: "Whatever you pick, inspect it",
+          paragraphs: [
+            "Each type has typical weak points — clutches on city cars, suspension and brakes on heavy SUVs. A CarGuard AI inspection screens the specific car's condition before you buy.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Partez de vos besoins réels",
+          paragraphs: [
+            "Choisissez selon votre usage réel — distance quotidienne, passagers, stationnement, terrain et budget — pas selon la mode. La voiture la moins chère à posséder est celle qui correspond à votre vie.",
+          ],
+        },
+        {
+          heading: "Les citadines",
+          paragraphs: [
+            "Petites, peu chères à l'achat, à l'assurance et au stationnement, et économes en ville. Moins confortables sur longs trajets autoroutiers et plus justes en espace, mais idéales en usage urbain et pour les jeunes conducteurs.",
+          ],
+        },
+        {
+          heading: "Berlines et compactes",
+          paragraphs: [
+            "Le bon compromis polyvalent : confortable, économe et pratique pour la plupart des familles, généralement moins cher à l'achat et à l'usage qu'un SUV équivalent.",
+          ],
+        },
+        {
+          heading: "Les breaks",
+          paragraphs: [
+            "L'espace d'un SUV avec des coûts d'usage et un comportement de voiture. Excellents pour les familles et les gros chargements si vous n'avez pas besoin de garde au sol supplémentaire.",
+          ],
+        },
+        {
+          heading: "SUV et crossovers",
+          paragraphs: [
+            "Position de conduite haute, espace et sentiment de sécurité, plus des options à quatre roues motrices. Mais ils coûtent généralement plus cher à l'achat, en carburant et en assurance, et usent plus pneus et freins du fait du poids.",
+          ],
+        },
+        {
+          heading: "Adaptez les coûts d'usage au budget",
+          paragraphs: [
+            "Plus gros et plus lourd signifie généralement plus de carburant, de pneus et d'assurance. Soyez honnête : avez-vous besoin de la taille ou en avez-vous seulement envie ?",
+          ],
+        },
+        {
+          heading: "Quel que soit le choix, inspectez",
+          paragraphs: [
+            "Chaque type a ses points faibles typiques — embrayage des citadines, suspension et freins des SUV lourds. Une inspection CarGuard AI pré-diagnostique l'état de la voiture précise avant l'achat.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "first-car-budget",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Buying your first car: how to set a budget",
+      fr: "Acheter sa première voiture : comment fixer son budget",
+    },
+    description: {
+      en: "Your first car costs more than its price tag. Learn how to budget for purchase, insurance, fuel, tax and repairs — and avoid first-buyer mistakes.",
+      fr: "Une première voiture coûte plus que son prix affiché. Apprenez à budgéter l'achat, l'assurance, le carburant, la taxe et les réparations — et à éviter les erreurs de débutant.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Think total cost, not sticker price",
+          paragraphs: [
+            "The purchase price is only the start. A realistic first-car budget includes insurance (often high for new drivers), fuel or charging, tax, maintenance, tyres and a buffer for surprises.",
+          ],
+        },
+        {
+          heading: "1. Set a hard purchase limit",
+          paragraphs: [
+            "Decide the maximum you will spend on the car itself and keep some money aside — never spend your entire budget on the purchase and leave nothing for insurance and repairs.",
+          ],
+        },
+        {
+          heading: "2. Get insurance quotes first",
+          paragraphs: [
+            "For a new driver, insurance can rival the car's price. Quote a few candidate models before choosing — a small, low-power car is usually far cheaper to insure.",
+          ],
+        },
+        {
+          heading: "3. Budget for running costs",
+          paragraphs: [
+            "Estimate annual fuel/charging from your mileage, plus tax and routine servicing. Older cars are cheaper to buy but can cost more to keep running.",
+          ],
+        },
+        {
+          heading: "4. Keep a repair buffer",
+          paragraphs: [
+            "Set aside a few hundred for the first wear items — tyres, brakes, battery — which often need attention soon after buying an older car.",
+          ],
+        },
+        {
+          heading: "5. Choose a sensible first car",
+          paragraphs: [
+            "Favour a common, simple, reliable model with cheap parts and a low insurance group. Avoid powerful or complex cars as a first purchase — they cost more to insure, fuel and fix.",
+          ],
+        },
+        {
+          heading: "6. Don't skip the inspection",
+          paragraphs: [
+            "First-time buyers are the most likely to miss hidden problems. A CarGuard AI inspection and a quick history check are cheap insurance against an expensive mistake.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Raisonnez coût total, pas prix affiché",
+          paragraphs: [
+            "Le prix d'achat n'est qu'un début. Un budget réaliste de première voiture inclut l'assurance (souvent élevée pour les jeunes conducteurs), le carburant ou la recharge, la taxe, l'entretien, les pneus et une marge pour les imprévus.",
+          ],
+        },
+        {
+          heading: "1. Fixez une limite d'achat ferme",
+          paragraphs: [
+            "Décidez du maximum à consacrer à la voiture elle-même et gardez de l'argent de côté — ne dépensez jamais tout votre budget à l'achat sans rien laisser pour l'assurance et les réparations.",
+          ],
+        },
+        {
+          heading: "2. Faites d'abord des devis d'assurance",
+          paragraphs: [
+            "Pour un jeune conducteur, l'assurance peut rivaliser avec le prix de la voiture. Demandez des devis pour quelques modèles candidats avant de choisir — une petite voiture peu puissante est généralement bien moins chère à assurer.",
+          ],
+        },
+        {
+          heading: "3. Budgétez les coûts d'usage",
+          paragraphs: [
+            "Estimez le carburant/la recharge annuels selon votre kilométrage, plus la taxe et l'entretien courant. Les voitures anciennes coûtent moins cher à l'achat mais peuvent coûter plus cher à entretenir.",
+          ],
+        },
+        {
+          heading: "4. Prévoyez une réserve réparations",
+          paragraphs: [
+            "Mettez de côté quelques centaines d'euros pour les premières pièces d'usure — pneus, freins, batterie — souvent à prévoir peu après l'achat d'une voiture ancienne.",
+          ],
+        },
+        {
+          heading: "5. Choisissez une première voiture raisonnable",
+          paragraphs: [
+            "Privilégiez un modèle courant, simple et fiable, à pièces peu chères et groupe d'assurance bas. Évitez les voitures puissantes ou complexes pour un premier achat — elles coûtent plus cher à assurer, en carburant et en réparation.",
+          ],
+        },
+        {
+          heading: "6. Ne sautez pas l'inspection",
+          paragraphs: [
+            "Les primo-acheteurs sont les plus susceptibles de manquer des problèmes cachés. Une inspection CarGuard AI et une vérification rapide d'historique sont une assurance bon marché contre une erreur coûteuse.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "petrol-diesel-hybrid-or-electric",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Petrol, diesel, hybrid or electric: which to choose",
+      fr: "Essence, diesel, hybride ou électrique : que choisir",
+    },
+    description: {
+      en: "Each fuel type suits a different driver. Compare petrol, diesel, hybrid and electric on cost, mileage and use to pick the right used car.",
+      fr: "Chaque motorisation convient à un profil différent. Comparez essence, diesel, hybride et électrique sur le coût, le kilométrage et l'usage pour bien choisir.",
+    },
+    body: {
+      en: [
+        {
+          heading: "There is no single best fuel",
+          paragraphs: [
+            "The right choice depends on your mileage, the type of journeys you make and where you can refuel or charge. Match the fuel to your driving, not to the trend of the moment.",
+          ],
+        },
+        {
+          heading: "Petrol",
+          paragraphs: [
+            "Cheaper to buy, simpler and quieter, and well suited to lower mileage and town driving. Slightly higher fuel use on long trips than diesel, but fewer expensive emissions parts to fail.",
+          ],
+        },
+        {
+          heading: "Diesel",
+          paragraphs: [
+            "Efficient and strong for high annual mileage and motorway driving. But on short, urban trips the emissions systems (DPF, EGR) can clog and become costly — avoid a city-only diesel.",
+          ],
+        },
+        {
+          heading: "Hybrid",
+          paragraphs: [
+            "Great for mixed and urban driving, with low fuel use and no range anxiety. Check the condition of the hybrid battery and that both the electric and petrol systems work smoothly.",
+          ],
+        },
+        {
+          heading: "Electric",
+          paragraphs: [
+            "Lowest running costs and ideal if you can charge at home, but purchase price and battery health are key. Confirm real-world range and remaining battery warranty.",
+          ],
+        },
+        {
+          heading: "Match it to your mileage",
+          paragraphs: [
+            "Low mileage / city: petrol or hybrid. High motorway mileage: diesel or hybrid. Home charging and short-to-medium trips: electric. Be honest about your real pattern.",
+          ],
+        },
+        {
+          heading: "Inspect the right things",
+          paragraphs: [
+            "Each type has specific checks — DPF on diesels, battery health on hybrids and EVs, belts and chains on petrols. A CarGuard AI inspection screens bodywork and engine condition whatever the fuel.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Il n'y a pas une seule meilleure motorisation",
+          paragraphs: [
+            "Le bon choix dépend de votre kilométrage, du type de trajets et de l'endroit où vous pouvez faire le plein ou recharger. Adaptez la motorisation à votre conduite, pas à la tendance du moment.",
+          ],
+        },
+        {
+          heading: "Essence",
+          paragraphs: [
+            "Moins chère à l'achat, plus simple et plus silencieuse, bien adaptée aux faibles kilométrages et à la ville. Consommation un peu plus élevée que le diesel sur longs trajets, mais moins de pièces de dépollution coûteuses à tomber en panne.",
+          ],
+        },
+        {
+          heading: "Diesel",
+          paragraphs: [
+            "Économe et performant pour de gros kilométrages annuels et l'autoroute. Mais sur de courts trajets urbains, les systèmes de dépollution (FAP, EGR) peuvent s'encrasser et coûter cher — évitez un diesel uniquement citadin.",
+          ],
+        },
+        {
+          heading: "Hybride",
+          paragraphs: [
+            "Idéal pour un usage mixte et urbain, avec une faible consommation et sans angoisse d'autonomie. Vérifiez l'état de la batterie hybride et le bon fonctionnement des systèmes électrique et essence.",
+          ],
+        },
+        {
+          heading: "Électrique",
+          paragraphs: [
+            "Coûts d'usage les plus bas et idéal si vous pouvez recharger à domicile, mais le prix d'achat et l'état de la batterie sont décisifs. Confirmez l'autonomie réelle et la garantie batterie restante.",
+          ],
+        },
+        {
+          heading: "Adaptez à votre kilométrage",
+          paragraphs: [
+            "Faible kilométrage / ville : essence ou hybride. Gros kilométrage autoroutier : diesel ou hybride. Recharge à domicile et trajets courts à moyens : électrique. Soyez honnête sur votre usage réel.",
+          ],
+        },
+        {
+          heading: "Inspectez les bons points",
+          paragraphs: [
+            "Chaque type a ses vérifications — FAP sur les diesels, état de batterie sur hybrides et VE, courroies et chaînes sur les essences. Une inspection CarGuard AI pré-diagnostique la carrosserie et l'état moteur quelle que soit la motorisation.",
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export function guideBySlug(slug: string): Guide | undefined {
