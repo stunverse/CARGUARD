@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Aperture,
   Camera,
   CircleStop,
   Mic,
@@ -49,6 +50,14 @@ export function MediaCapture({
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const nativeRef = useRef<HTMLInputElement>(null);
+
+  function onPicked(f: File | undefined) {
+    if (!f) return;
+    onCapture(f);
+    stop();
+    onClose();
+  }
 
   const [ready, setReady] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -287,8 +296,24 @@ export function MediaCapture({
         </div>
       )}
 
+      {/* Focus tip — the in-app camera can't tap-to-focus on iOS, so point
+          users to their phone's native camera for a sharp shot. */}
+      {!error && mode !== "audio" && !recording && (
+        <p className="px-6 pt-2 text-center text-xs text-white/70">{t("cap.focusHint")}</p>
+      )}
+
       {/* Controls */}
-      <div className="flex items-center justify-center gap-6 px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] pt-4">
+      <div className="flex items-center justify-center gap-6 px-6 pb-[calc(env(safe-area-inset-bottom)+24px)] pt-3">
+        {/* Native phone camera (reliable autofocus) — photo & video only. */}
+        {!error && !recording && mode !== "audio" && (
+          <button
+            onClick={() => nativeRef.current?.click()}
+            aria-label={t("cap.deviceCamera")}
+            className="flex size-12 flex-col items-center justify-center rounded-full bg-white/15 text-white"
+          >
+            <Aperture className="size-5" aria-hidden />
+          </button>
+        )}
         {!error && mode === "photo" && (
           <button
             onClick={capturePhoto}
@@ -321,18 +346,27 @@ export function MediaCapture({
         )}
       </div>
 
+      {/* Gallery / file picker (no capture → opens the library). */}
       <input
         ref={fileRef}
         type="file"
         accept={mode === "photo" ? "image/*" : mode === "video" ? "video/*" : "audio/*"}
         hidden
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) {
-            onCapture(f);
-            stop();
-            onClose();
-          }
+          onPicked(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+      {/* Native device camera (capture → opens the camera app with autofocus). */}
+      <input
+        ref={nativeRef}
+        type="file"
+        accept={mode === "video" ? "video/*" : "image/*"}
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          onPicked(e.target.files?.[0]);
+          e.target.value = "";
         }}
       />
     </div>

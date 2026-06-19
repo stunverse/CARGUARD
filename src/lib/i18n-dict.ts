@@ -470,7 +470,9 @@ export const dict: Record<Locale, Record<string, string>> = {
     "cap.takePhoto": "Take photo",
     "cap.stopRecording": "Stop recording",
     "cap.startRecording": "Start recording",
-    "cap.useUpload": "Use device camera or upload",
+    "cap.useUpload": "Upload from library",
+    "cap.deviceCamera": "Phone camera",
+    "cap.focusHint": "Can't focus? Tap the lens icon to use your phone's camera for a sharp shot.",
     "cap.cameraError": "Camera/microphone not available or permission denied. You can upload a file instead.",
     // billing
     "bill.title": "Billing",
@@ -1200,7 +1202,9 @@ export const dict: Record<Locale, Record<string, string>> = {
     "cap.takePhoto": "Prendre une photo",
     "cap.stopRecording": "Arrêter l'enregistrement",
     "cap.startRecording": "Démarrer l'enregistrement",
-    "cap.useUpload": "Utiliser l'appareil photo ou importer",
+    "cap.useUpload": "Importer depuis la galerie",
+    "cap.deviceCamera": "Appareil du tél.",
+    "cap.focusHint": "Mise au point impossible ? Touchez l'icône objectif pour utiliser l'appareil photo du téléphone (photo nette).",
     "cap.cameraError": "Caméra/microphone indisponible ou autorisation refusée. Vous pouvez importer un fichier à la place.",
     // billing
     "bill.title": "Facturation",
