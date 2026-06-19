@@ -8,7 +8,7 @@ import {
   buildMechanicalItemAnalysis,
 } from "@/lib/ai/mechanical";
 import { audioModelMime } from "@/lib/ai/engine-audio";
-import { mediaFitsInline } from "@/lib/ai/client";
+import { mediaWithinLimit } from "@/lib/ai/client";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
@@ -143,7 +143,7 @@ export async function POST(
       const { data: blob } = await supabase.storage.from(BUCKET).download(primaryPath);
       if (blob) {
         const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-        if (mediaFitsInline(b64)) {
+        if (mediaWithinLimit(b64)) {
           ai = await analyzeMechanicalVideo(b64, videoMime, code as MechanicalPointCode, locale);
           analyzed = true;
         }

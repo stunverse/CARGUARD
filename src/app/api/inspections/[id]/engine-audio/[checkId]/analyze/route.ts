@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import { analyzeEngineAudio, audioModelMime } from "@/lib/ai/engine-audio";
-import { mediaFitsInline } from "@/lib/ai/client";
+import { mediaWithinLimit } from "@/lib/ai/client";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { getServerLocale } from "@/lib/i18n-server";
@@ -63,7 +63,7 @@ export async function POST(
       .download(check.storage_path);
     if (blob) {
       const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-      if (mediaFitsInline(b64)) audioBase64 = b64;
+      if (mediaWithinLimit(b64)) audioBase64 = b64;
     }
   }
 

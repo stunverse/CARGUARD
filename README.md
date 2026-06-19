@@ -76,7 +76,9 @@ recommendation, and seller/mechanic questions — appended to the final report
 - AI: `src/lib/ai/engine-audio.ts` (`checkEngineAudioQuality`, `analyzeEngineAudio`,
   `generateEngineAudioSummary`). Real analysis is done by **Google Gemini**, which
   natively ingests audio **and** video soundtracks; it accepts the common phone
-  containers (wav/mp3/m4a/aac/ogg/flac, and mp4/mov/webm/3gp video). Other formats
+  containers (wav/mp3/m4a/aac/ogg/flac, and mp4/mov/webm/3gp video). Small media
+  is sent inline (≤18 MB); larger media (up to 100 MB) is uploaded via the Gemini
+  **Files API** and referenced by URI, then deleted after analysis. Other formats
   are stored and handled in a limited/demo mode.
 - Env: `STORAGE_BUCKET_ENGINE_AUDIO`, `GEMINI_API_KEY`, `GEMINI_MODEL`.
 

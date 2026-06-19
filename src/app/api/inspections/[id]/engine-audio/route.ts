@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import { checkEngineAudioQuality, audioModelMime } from "@/lib/ai/engine-audio";
-import { mediaFitsInline } from "@/lib/ai/client";
+import { mediaWithinLimit } from "@/lib/ai/client";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { STORAGE_BUCKETS } from "@/lib/constants";
@@ -58,8 +58,9 @@ export async function POST(
     const { data: blob } = await supabase.storage.from(BUCKET).download(storagePath);
     if (blob) {
       const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-      // Only send to the model if it fits the inline ceiling.
-      if (mediaFitsInline(b64)) audioBase64 = b64;
+      // Within our analysis ceiling: small media is sent inline, larger media
+      // is uploaded via the Gemini Files API (handled in runStructuredMedia).
+      if (mediaWithinLimit(b64)) audioBase64 = b64;
     }
   }
   const quality = await checkEngineAudioQuality({
