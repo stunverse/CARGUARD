@@ -69,6 +69,9 @@ export function VinHistoryCard({ sessionId, vin }: { sessionId: string; vin: str
       : "";
 
   if (s.loading) return null;
+  // Hide the whole section when no paid history provider is enabled (and the
+  // user doesn't already own a report) — don't surface "not available" copy.
+  if (!s.available && !s.owned) return null;
 
   return (
     <Card>
@@ -83,10 +86,6 @@ export function VinHistoryCard({ sessionId, vin }: { sessionId: string; vin: str
         ) : s.owned && !s.report ? (
           <p className="text-muted-foreground">
             {s.error ?? t("vin.preparing")}
-          </p>
-        ) : !s.available ? (
-          <p className="text-muted-foreground">
-            {t("vin.notEnabled")}
           </p>
         ) : (
           <>
