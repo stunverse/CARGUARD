@@ -4,6 +4,10 @@ const nextConfig = {
   // pdfkit reads bundled .afm font-metric files at runtime; keep it out of
   // the webpack bundle so those data files resolve from node_modules.
   serverExternalPackages: ["pdfkit"],
+  // Ensure the brand logo ships with the PDF route's serverless function.
+  outputFileTracingIncludes: {
+    "/api/inspections/[id]/report/pdf": ["./public/logo.png"],
+  },
   images: {
     // Supabase Storage signed URLs + placeholders.
     remotePatterns: [
