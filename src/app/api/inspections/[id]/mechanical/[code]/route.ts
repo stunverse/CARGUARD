@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import {
   analyzeMechanicalPhoto,
   aggregateMechanical,
@@ -70,6 +71,7 @@ export async function POST(
     .eq("id", sessionId)
     .single();
   if (!session) return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   const body = await request.json().catch(() => ({}));
   const observations = (body?.observations ?? {}) as Record<string, boolean>;
@@ -180,6 +182,8 @@ export async function PUT(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   await supabase
     .from("mechanical_checks")

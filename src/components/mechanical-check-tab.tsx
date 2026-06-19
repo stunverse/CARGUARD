@@ -46,11 +46,13 @@ export function MechanicalCheckTab({
   initialItems,
   mechanicalScore,
   mechanicalRisk,
+  locked = false,
 }: {
   sessionId: string;
   initialItems: MechanicalCheckItem[];
   mechanicalScore: number | null;
   mechanicalRisk: string | null;
+  locked?: boolean;
 }) {
   const { locale, t } = useI18n();
   const byCode = useMemo(() => {
@@ -91,6 +93,7 @@ export function MechanicalCheckTab({
           sessionId={sessionId}
           point={point}
           initial={byCode.get(point.code) ?? null}
+          locked={locked}
         />
       ))}
 
@@ -103,10 +106,12 @@ function StepCard({
   sessionId,
   point,
   initial,
+  locked = false,
 }: {
   sessionId: string;
   point: MechanicalPoint;
   initial: MechanicalCheckItem | null;
+  locked?: boolean;
 }) {
   const { locale, t } = useI18n();
   const router = useRouter();
@@ -237,8 +242,8 @@ function StepCard({
           <span>{loc.why}</span>
         </div>
 
-        {/* Media capture (in-app camera / mic) */}
-        {point.media_type === "docs" ? (
+        {/* Media capture — hidden once the report is generated (read-only). */}
+        {!locked && (point.media_type === "docs" ? (
           <div>
             <p className="mb-1 text-xs font-medium">{t("mct.uploadDocs")}</p>
             <input ref={docsRef} type="file" accept="image/*,application/pdf" multiple className="text-xs" />
@@ -266,7 +271,7 @@ function StepCard({
             onClick={() => setCapture({ slot: "primary", mode: captureMode })}
             full
           />
-        )}
+        ))}
 
         {result?.summary && (
           <div
@@ -282,15 +287,17 @@ function StepCard({
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <div className="flex gap-2">
-          <Button size="sm" onClick={save} disabled={saving}>
-            {result ? <CheckCircle2 className="size-4" /> : <Upload className="size-4" />}
-            {saving ? t("ui.saving") : result ? t("mct.update") : t("mct.saveCheck")}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={skip} disabled={saving}>
-            {point.required ? t("mct.cantDo") : t("ui.skip")}
-          </Button>
-        </div>
+        {!locked && (
+          <div className="flex gap-2">
+            <Button size="sm" onClick={save} disabled={saving}>
+              {result ? <CheckCircle2 className="size-4" /> : <Upload className="size-4" />}
+              {saving ? t("ui.saving") : result ? t("mct.update") : t("mct.saveCheck")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={skip} disabled={saving}>
+              {point.required ? t("mct.cantDo") : t("ui.skip")}
+            </Button>
+          </div>
+        )}
       </CardContent>
 
       {capture && (

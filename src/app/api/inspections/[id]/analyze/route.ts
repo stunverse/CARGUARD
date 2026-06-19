@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import {
   analyzeFullInspection,
   analyzeInspectionPhoto,
@@ -42,6 +43,8 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   // Rate limit: full-inspection analysis is the most expensive AI action.
   const rl = rateLimit(`analyze:${user.id}`, { limit: 10, windowMs: 60_000 });

@@ -24,9 +24,11 @@ interface FollowUp {
 export function FollowUpPhotoRequestCard({
   sessionId,
   request,
+  locked = false,
 }: {
   sessionId: string;
   request: FollowUp;
+  locked?: boolean;
 }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -107,7 +109,7 @@ export function FollowUpPhotoRequestCard({
         {summary && <p className="text-sm">{summary}</p>}
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        {status !== "analyzed" && (
+        {status !== "analyzed" && !locked && (
           <div className="flex gap-2">
             <input
               ref={fileRef}

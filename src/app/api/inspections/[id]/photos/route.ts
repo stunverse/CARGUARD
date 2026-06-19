@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import { checkPhotoQuality } from "@/lib/ai/functions";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
@@ -23,6 +24,8 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   const rl = rateLimit(`photo:${user.id}`, { limit: 60, windowMs: 60_000 });
   if (!rl.allowed) {
@@ -120,6 +123,8 @@ export async function PUT(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   const { photo_point_code: code } = await request.json();
   if (!PHOTO_POINTS.some((p) => p.code === code)) {

@@ -102,6 +102,7 @@ export default async function InspectionDetailPage({
         report={report}
         engineAudio={(audioRow ?? null) as EngineAudioCheck | null}
         mechanicalItems={(mechanicalRows ?? []) as MechanicalCheckItem[]}
+        locked={isComplete}
       />
     </div>
   );

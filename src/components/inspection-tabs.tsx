@@ -53,10 +53,12 @@ export function InspectionTabs({
   report,
   engineAudio,
   mechanicalItems,
+  locked = false,
 }: {
   session: InspectionSession;
   vehicle: Vehicle | null;
   photos: InspectionPhoto[];
+  locked?: boolean;
   engineAudio: EngineAudioCheck | null;
   mechanicalItems: MechanicalCheckItem[];
   followUps: {
@@ -189,13 +191,15 @@ export function InspectionTabs({
 
       {/* Photos */}
       <TabsContent value="photos">
-        <div className="mb-4 flex justify-end">
-          <Button asChild variant="outline">
-            <Link href={`/inspections/${session.id}/photos`}>
-              <Camera className="size-4" /> {t("tab.openScanner")}
-            </Link>
-          </Button>
-        </div>
+        {!locked && (
+          <div className="mb-4 flex justify-end">
+            <Button asChild variant="outline">
+              <Link href={`/inspections/${session.id}/photos`}>
+                <Camera className="size-4" /> {t("tab.openScanner")}
+              </Link>
+            </Button>
+          </div>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
           {PHOTO_POINTS.map((p) => {
             const ph = photos.find((x) => x.photo_point_code === p.code);
@@ -290,7 +294,7 @@ export function InspectionTabs({
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {followUps.map((f) => (
-              <FollowUpPhotoRequestCard key={f.id} sessionId={session.id} request={f} />
+              <FollowUpPhotoRequestCard key={f.id} sessionId={session.id} request={f} locked={locked} />
             ))}
           </div>
         )}
@@ -304,11 +308,12 @@ export function InspectionTabs({
             initialItems={mechanicalItems}
             mechanicalScore={session.mechanical_score}
             mechanicalRisk={session.mechanical_risk_level}
+            locked={locked}
           />
           <div>
             <h3 className="mb-1 text-lg font-semibold">{t("tab.deepAudio")}</h3>
             <p className="mb-3 text-sm text-muted-foreground">{t("tab.deepAudioDesc")}</p>
-            <EngineAudioTab sessionId={session.id} initialCheck={engineAudio} />
+            <EngineAudioTab sessionId={session.id} initialCheck={engineAudio} locked={locked} />
           </div>
         </div>
       </TabsContent>

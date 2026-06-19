@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import { DOCUMENT_TYPES } from "@/lib/documents";
 import { STORAGE_BUCKETS } from "@/lib/constants";
 import { rateLimit } from "@/lib/rate-limit";
@@ -40,6 +41,8 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   const rl = rateLimit(`documents:${user.id}`, { limit: 60, windowMs: 60_000 });
   if (!rl.allowed) {
@@ -110,6 +113,8 @@ export async function DELETE(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   const docType = new URL(request.url).searchParams.get("doc_type");
   if (!docType) return NextResponse.json({ error: "doc_type required" }, { status: 400 });

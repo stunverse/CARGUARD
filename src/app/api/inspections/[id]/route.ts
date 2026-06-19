@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { purgeSessionStorage } from "@/lib/storage-cleanup";
 
@@ -26,6 +27,7 @@ export async function PATCH(
   if (session.user_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  if (await isInspectionLocked(supabase, id)) return lockedResponse();
 
   const body = await request.json().catch(() => ({}));
   const { goal, ...vehicleInput } = body ?? {};

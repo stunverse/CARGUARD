@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import { checkEngineAudioQuality, audioModelFormat } from "@/lib/ai/engine-audio";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
@@ -22,6 +23,8 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (await isInspectionLocked(supabase, sessionId)) return lockedResponse();
 
   const rl = rateLimit(`engine-audio:${user.id}`, { limit: 15, windowMs: 60_000 });
   if (!rl.allowed) {

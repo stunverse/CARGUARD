@@ -56,9 +56,11 @@ const riskVariant: Record<EngineAudioRiskLevel, "low" | "moderate" | "high" | "c
 export function EngineAudioTab({
   sessionId,
   initialCheck,
+  locked = false,
 }: {
   sessionId: string;
   initialCheck: EngineAudioCheck | null;
+  locked?: boolean;
 }) {
   const { locale, t } = useI18n();
   const router = useRouter();
@@ -184,20 +186,22 @@ export function EngineAudioTab({
               e.target.value = "";
             }}
           />
-          <div className="flex flex-wrap gap-2">
-            {recording ? (
-              <Button variant="destructive" onClick={stopRecording}>
-                <Square className="size-4" /> {t("eat.stopRecording")}
+          {!locked && (
+            <div className="flex flex-wrap gap-2">
+              {recording ? (
+                <Button variant="destructive" onClick={stopRecording}>
+                  <Square className="size-4" /> {t("eat.stopRecording")}
+                </Button>
+              ) : (
+                <Button onClick={startRecording} disabled={busy}>
+                  <Mic className="size-4" /> {t("eat.recordAudio")}
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy || recording}>
+                <Upload className="size-4" /> {t("eat.uploadFile")}
               </Button>
-            ) : (
-              <Button onClick={startRecording} disabled={busy}>
-                <Mic className="size-4" /> {t("eat.recordAudio")}
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy || recording}>
-              <Upload className="size-4" /> {t("eat.uploadFile")}
-            </Button>
-          </div>
+            </div>
+          )}
           {busy && <p className="text-sm text-muted-foreground">{t("eat.uploadingChecking")}</p>}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <p className="text-xs text-muted-foreground">
@@ -252,7 +256,7 @@ export function EngineAudioTab({
                 {quality.retake_instructions}
               </div>
             )}
-            {!analyzed && (
+            {!analyzed && !locked && (
               <Button onClick={analyze} disabled={analyzing}>
                 {analyzing ? t("eat.analyzing") : t("eat.analyzeBtn")}
               </Button>

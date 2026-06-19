@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +22,8 @@ export default async function PhotosPage({
     .eq("id", id)
     .single();
   if (!session) notFound();
+  // Once the report is generated the inspection is read-only — no edits here.
+  if (session.status === "report_generated") redirect(`/inspections/${id}`);
 
   const { data: photos } = await supabase
     .from("inspection_photos")
