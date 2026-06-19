@@ -7,9 +7,11 @@ import { LogoMark } from "@/components/mobile/logo-mark";
 export function MobileShell({
   children,
   backHref = "/",
+  homeHref = "/",
 }: {
   children: React.ReactNode;
   backHref?: string;
+  homeHref?: string;
 }) {
   return (
     <div className="min-h-screen w-full bg-[#EEF0F3]">
@@ -30,7 +32,7 @@ export function MobileShell({
           >
             <ChevronLeft className="size-5" aria-hidden />
           </Link>
-          <LogoMark href="/" size={22} />
+          <LogoMark href={homeHref} size={22} />
           <span className="w-9" aria-hidden />
         </header>
         <main className="relative px-5 py-6">{children}</main>

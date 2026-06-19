@@ -2,22 +2,45 @@ import type { Metadata } from "next";
 import { ChevronRight } from "lucide-react";
 import { MobileShell } from "@/components/mobile/mobile-shell";
 import { FAQ_ITEMS } from "@/lib/content/faq";
-import { getServerLocale } from "@/lib/i18n-server";
+import { isLocale, type Locale } from "@/lib/i18n";
+import { lp, localizedAlternates, LOCALES } from "@/lib/i18n-routing";
 import { JsonLd, faqSchema } from "@/components/seo/json-ld";
 
-export const metadata: Metadata = {
-  title: "Frequently asked questions — CarGuard AI",
-  description:
-    "Answers about CarGuard AI: what it checks, pricing, accuracy, privacy, refunds and supported countries.",
-  alternates: { canonical: "/faq" },
-};
+export function generateStaticParams() {
+  return LOCALES.map((lang) => ({ lang }));
+}
 
-export default async function FaqPage() {
-  const locale = await getServerLocale();
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : "en";
+  return {
+    title:
+      locale === "fr"
+        ? "Questions fréquentes — CarGuard AI"
+        : "Frequently asked questions — CarGuard AI",
+    description:
+      locale === "fr"
+        ? "Réponses sur CarGuard AI : ce qu'il vérifie, les prix, la fiabilité, la confidentialité, les remboursements et les pays couverts."
+        : "Answers about CarGuard AI: what it checks, pricing, accuracy, privacy, refunds and supported countries.",
+    alternates: localizedAlternates(locale, "/faq"),
+  };
+}
+
+export default async function FaqPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : "en";
   const title = locale === "fr" ? "Questions fréquentes" : "Frequently asked questions";
 
   return (
-    <MobileShell backHref="/">
+    <MobileShell backHref={lp(locale, "/")} homeHref={lp(locale, "/")}>
       <JsonLd
         data={faqSchema(
           FAQ_ITEMS.map((it) => ({

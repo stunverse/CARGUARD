@@ -4,6 +4,7 @@ import type { Guide } from "@/lib/content/guides";
 import { GUIDES } from "@/lib/content/guides";
 import type { Locale } from "@/lib/i18n";
 import { SITE_URL } from "@/lib/constants";
+import { lp } from "@/lib/i18n-routing";
 import {
   JsonLd,
   articleSchema,
@@ -27,7 +28,7 @@ export function ArticleDoc({ guide, locale }: { guide: Guide; locale: Locale }) 
       : "Let AI flag suspicious signs from your photos.";
   const ctaBtn = locale === "fr" ? "Démarrer une inspection" : "Start an inspection";
 
-  const url = `${SITE_URL}/guides/${guide.slug}`;
+  const url = `${SITE_URL}${lp(locale, `/guides/${guide.slug}`)}`;
   const others = GUIDES.filter((g) => g.slug !== guide.slug);
 
   return (
@@ -41,15 +42,15 @@ export function ArticleDoc({ guide, locale }: { guide: Guide; locale: Locale }) 
             inLanguage: locale,
           }),
           breadcrumbSchema([
-            { name: homeLabel, url: SITE_URL },
-            { name: guidesLabel, url: `${SITE_URL}/guides` },
+            { name: homeLabel, url: `${SITE_URL}${lp(locale, "/")}` },
+            { name: guidesLabel, url: `${SITE_URL}${lp(locale, "/guides")}` },
             { name: guide.title[locale], url },
           ]),
         ]}
       />
 
       <nav className="flex items-center gap-1.5 text-xs text-[#9AA3AF]">
-        <Link href="/guides" className="hover:text-[#111827]">
+        <Link href={lp(locale, "/guides")} className="hover:text-[#111827]">
           {guidesLabel}
         </Link>
       </nav>
@@ -97,7 +98,7 @@ export function ArticleDoc({ guide, locale }: { guide: Guide; locale: Locale }) 
           {others.map((g) => (
             <li key={g.slug}>
               <Link
-                href={`/guides/${g.slug}`}
+                href={lp(locale, `/guides/${g.slug}`)}
                 className="text-sm text-[#E50914] hover:underline"
               >
                 {g.title[locale]}

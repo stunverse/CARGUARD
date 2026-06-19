@@ -1,20 +1,45 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { MobileShell } from "@/components/mobile/mobile-shell";
 import { INSPECTION_PACKS } from "@/lib/billing";
-import { getServerLocale } from "@/lib/i18n-server";
-import { t, formatMoney, localeCurrency } from "@/lib/i18n";
+import { t, formatMoney, localeCurrency, isLocale, type Locale } from "@/lib/i18n";
+import { lp, localizedAlternates, LOCALES } from "@/lib/i18n-routing";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Pricing — CarGuard AI" };
+export function generateStaticParams() {
+  return LOCALES.map((lang) => ({ lang }));
+}
 
-export default async function PricingPage() {
-  const locale = await getServerLocale();
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : "en";
+  return {
+    title: locale === "fr" ? "Tarifs — CarGuard AI" : "Pricing — CarGuard AI",
+    description:
+      locale === "fr"
+        ? "Payez une fois par inspection, sans abonnement. Découvrez les tarifs des inspections CarGuard AI."
+        : "Pay once per inspection, no subscription. See CarGuard AI inspection pricing.",
+    alternates: localizedAlternates(locale, "/pricing"),
+  };
+}
+
+export default async function PricingPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : "en";
   const currency = localeCurrency(locale);
   const features = [t(locale, "wiz.pay.f1"), t(locale, "wiz.pay.f2"), t(locale, "wiz.pay.f3"), t(locale, "wiz.pay.f4")];
 
   return (
-    <MobileShell>
+    <MobileShell backHref={lp(locale, "/")} homeHref={lp(locale, "/")}>
       <div className="text-center">
         <h1 className="text-2xl font-extrabold text-[#111827]">{t(locale, "price.title")}</h1>
         <p className="mt-2 text-sm text-[#6B7280]">{t(locale, "price.subtitle")}</p>

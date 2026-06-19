@@ -3,30 +3,31 @@ import { notFound } from "next/navigation";
 import { MobileShell } from "@/components/mobile/mobile-shell";
 import { ArticleDoc } from "@/components/article-doc";
 import { GUIDES, guideBySlug } from "@/lib/content/guides";
-import { getServerLocale } from "@/lib/i18n-server";
+import { isLocale, type Locale } from "@/lib/i18n";
+import { lp, localizedAlternates, LOCALES } from "@/lib/i18n-routing";
 
 export function generateStaticParams() {
-  return GUIDES.map((g) => ({ slug: g.slug }));
+  return LOCALES.flatMap((lang) => GUIDES.map((g) => ({ lang, slug: g.slug })));
 }
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ lang: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { lang, slug } = await params;
   const guide = guideBySlug(slug);
   if (!guide) return {};
-  const locale = await getServerLocale();
+  const locale: Locale = isLocale(lang) ? lang : "en";
   return {
     title: `${guide.title[locale]} — CarGuard AI`,
     description: guide.description[locale],
-    alternates: { canonical: `/guides/${guide.slug}` },
+    alternates: localizedAlternates(locale, `/guides/${guide.slug}`),
     openGraph: {
       type: "article",
       title: guide.title[locale],
       description: guide.description[locale],
-      url: `/guides/${guide.slug}`,
+      url: lp(locale, `/guides/${guide.slug}`),
     },
   };
 }
@@ -34,14 +35,14 @@ export async function generateMetadata({
 export default async function GuidePage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ lang: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { lang, slug } = await params;
   const guide = guideBySlug(slug);
   if (!guide) notFound();
-  const locale = await getServerLocale();
+  const locale: Locale = isLocale(lang) ? lang : "en";
   return (
-    <MobileShell backHref="/guides">
+    <MobileShell backHref={lp(locale, "/guides")} homeHref={lp(locale, "/")}>
       <ArticleDoc guide={guide} locale={locale} />
     </MobileShell>
   );

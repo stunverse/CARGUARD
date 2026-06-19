@@ -34,8 +34,8 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { Reveal } from "@/components/landing/reveal";
 import { CountUp } from "@/components/landing/count-up";
 import { createClient } from "@/lib/supabase/server";
-import { getServerLocale } from "@/lib/i18n-server";
-import { t, formatMoney, localeCurrency } from "@/lib/i18n";
+import { t, formatMoney, localeCurrency, isLocale, type Locale } from "@/lib/i18n";
+import { lp, localizedAlternates } from "@/lib/i18n-routing";
 import { cn } from "@/lib/utils";
 import { INSPECTION_PRICE, INSPECTION_PACKS } from "@/lib/billing";
 import {
@@ -48,9 +48,15 @@ import {
 
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : "en";
+  return { alternates: localizedAlternates(locale, "/") };
+}
 
 const HOW = [
   { icon: Car, k: "s1" },
@@ -95,9 +101,14 @@ const FAQ = ["q1", "q2", "q3", "q4", "q5"];
 
 const RED_GRADIENT = "linear-gradient(135deg,#FF2A2A 0%,#E50914 45%,#B00008 100%)";
 
+// Dynamic: reads auth (redirect logged-in users) and handles the OAuth ?code.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ lang: string }>;
   searchParams: Promise<{ code?: string; redirect?: string; next?: string }>;
 }) {
   // Safety net: if an OAuth provider lands back on the Site URL ("/") with a
@@ -126,7 +137,8 @@ export default async function HomePage({
   // their dashboard instead of the marketing page.
   if (authed) redirect("/dashboard");
   const startHref = authed ? "/dashboard" : "/signup";
-  const locale = await getServerLocale();
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : "en";
   const currency = localeCurrency(locale);
   const priceLabel = formatMoney(INSPECTION_PRICE, currency);
   const marquee = t(locale, "landing.marquee.line");
@@ -149,7 +161,7 @@ export default async function HomePage({
       {/* Sticky dark header */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0B12]/85 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-3 lg:px-8">
-          <Link href="/" className="flex items-center gap-2 text-lg font-extrabold text-white">
+          <Link href={lp(locale, "/")} className="flex items-center gap-2 text-lg font-extrabold text-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="" aria-hidden className="size-9" />
             CarGuard <span className="text-[#FF4D4D]">AI</span>
@@ -544,9 +556,9 @@ export default async function HomePage({
             <img src="/logo.png" alt="" aria-hidden className="size-7" /> CarGuard <span className="text-[#FF4D4D]">AI</span>
           </div>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
-            <Link href="/guides" className="hover:text-white">{locale === "fr" ? "Guides" : "Guides"}</Link>
-            <Link href="/faq" className="hover:text-white">{locale === "fr" ? "FAQ" : "FAQ"}</Link>
-            <Link href="/pricing" className="hover:text-white">{t(locale, "landing.pricing")}</Link>
+            <Link href={lp(locale, "/guides")} className="hover:text-white">{locale === "fr" ? "Guides" : "Guides"}</Link>
+            <Link href={lp(locale, "/faq")} className="hover:text-white">FAQ</Link>
+            <Link href={lp(locale, "/pricing")} className="hover:text-white">{t(locale, "landing.pricing")}</Link>
             <Link href="/terms" className="hover:text-white">{locale === "fr" ? "CGU" : "Terms"}</Link>
             <Link href="/cgv" className="hover:text-white">{locale === "fr" ? "CGV" : "Sales terms"}</Link>
             <Link href="/privacy" className="hover:text-white">{locale === "fr" ? "Confidentialité" : "Privacy"}</Link>
