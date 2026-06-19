@@ -6,10 +6,13 @@ import {
   Camera,
   CheckCircle2,
   CheckCircle,
+  FileText,
   Info,
+  Plus,
   Upload,
   Video,
   Wrench,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,6 +140,32 @@ function StepCard({
   );
   const [skipped, setSkipped] = useState(initial?.quality_status === "skipped");
 
+  // Maintenance "docs" check: accumulate several photos/files incrementally
+  // (the native multi-file input can't add more after the first selection,
+  // especially when capturing one photo at a time on mobile).
+  const [docFiles, setDocFiles] = useState<{ file: File; url: string | null }[]>([]);
+  function addDocs(list: FileList | null) {
+    if (!list || !list.length) return;
+    const next = Array.from(list).map((f) => ({
+      file: f,
+      url: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+    }));
+    setDocFiles((prev) => [...prev, ...next]);
+  }
+  function removeDoc(i: number) {
+    setDocFiles((prev) => {
+      const u = prev[i]?.url;
+      if (u) URL.revokeObjectURL(u);
+      return prev.filter((_, idx) => idx !== i);
+    });
+  }
+  function clearDocs() {
+    setDocFiles((prev) => {
+      prev.forEach((d) => d.url && URL.revokeObjectURL(d.url));
+      return [];
+    });
+  }
+
   async function save() {
     setSaving(true);
     setError(null);
@@ -176,9 +205,8 @@ function StepCard({
       }
       if (secondaryFile) payload.secondary_path = await upImg(secondaryFile, "-2");
       if (point.media_type === "docs") {
-        const docs = Array.from(docsRef.current?.files ?? []);
         const docPaths: string[] = [];
-        for (let i = 0; i < docs.length; i++) docPaths.push(await upImg(docs[i], `-doc${i}`));
+        for (let i = 0; i < docFiles.length; i++) docPaths.push(await upImg(docFiles[i].file, `-doc${i}`));
         payload.doc_paths = docPaths;
       }
 
@@ -205,6 +233,7 @@ function StepCard({
       suspicious: data.analysis.suspicious_observations ?? [],
       summary: data.analysis.summary ?? null,
     });
+    clearDocs();
     router.refresh();
   }
 
@@ -245,8 +274,53 @@ function StepCard({
         {/* Media capture — hidden once the report is generated (read-only). */}
         {!locked && (point.media_type === "docs" ? (
           <div>
-            <p className="mb-1 text-xs font-medium">{t("mct.uploadDocs")}</p>
-            <input ref={docsRef} type="file" accept="image/*,application/pdf" multiple className="text-xs" />
+            <p className="mb-2 text-xs font-medium">{t("mct.uploadDocs")}</p>
+            <input
+              ref={docsRef}
+              type="file"
+              accept="image/*,application/pdf"
+              multiple
+              hidden
+              onChange={(e) => {
+                addDocs(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            <div className="flex flex-wrap gap-2">
+              {docFiles.map((d, i) => (
+                <div key={i} className="relative size-16 overflow-hidden rounded-lg border border-[#E5E7EB] bg-secondary">
+                  {d.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={d.url} alt="" className="size-full object-cover" />
+                  ) : (
+                    <span className="flex size-full items-center justify-center text-[#6B7280]">
+                      <FileText className="size-6" />
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeDoc(i)}
+                    aria-label={t("ui.skip")}
+                    className="absolute right-0.5 top-0.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-white"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => docsRef.current?.click()}
+                className="flex size-16 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#E5E7EB] text-[#6B7280] transition-colors hover:bg-secondary"
+              >
+                <Plus className="size-5" />
+                <span className="text-[10px] font-medium">{t("mct.addDocs")}</span>
+              </button>
+            </div>
+            {docFiles.length > 0 && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {docFiles.length} {t("mct.docsSelected")}
+              </p>
+            )}
           </div>
         ) : point.media_type === "photo_pair" ? (
           <div className="grid grid-cols-2 gap-2">
