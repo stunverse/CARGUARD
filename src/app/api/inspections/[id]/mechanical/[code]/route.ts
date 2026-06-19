@@ -3,9 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import {
   analyzeMechanicalPhoto,
+  analyzeMechanicalVideo,
   aggregateMechanical,
   buildMechanicalItemAnalysis,
 } from "@/lib/ai/mechanical";
+import { audioModelMime } from "@/lib/ai/engine-audio";
+import { mediaFitsInline } from "@/lib/ai/client";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
@@ -79,6 +82,7 @@ export async function POST(
   const secondaryPath = body?.secondary_path as string | undefined;
   const docPaths = (body?.doc_paths ?? []) as string[];
   const framePaths = (body?.frame_paths ?? []) as string[];
+  const primaryMime = (body?.primary_mime as string) ?? "";
 
   const own = (p?: string) => !p || p.startsWith(`${user.id}/`);
   if (!own(primaryPath) || !own(secondaryPath) || !docPaths.every(own) || !framePaths.every(own)) {
@@ -112,13 +116,6 @@ export async function POST(
       if (isPhoto && url) imageUrlsForAi.push(url);
     }
   }
-  // Video checks: analyze the frames extracted client-side from the clip.
-  if (isVideo && framePaths.length) {
-    for (const p of framePaths) {
-      const u = await signed(supabase, p);
-      if (u) imageUrlsForAi.push(u);
-    }
-  }
   if (secondaryPath) {
     const url = await signed(supabase, secondaryPath);
     update.image_url_2 = url;
@@ -135,12 +132,31 @@ export async function POST(
   }
 
   const locale = await getServerLocale();
-  const ai = imageUrlsForAi.length
-    ? await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode, locale)
-    : null;
+
+  // AI pass: full video (images + soundtrack) → Gemini; photos → Claude vision.
+  let ai = null;
+  let analyzed = false;
+  if (isVideo && primaryPath) {
+    const ext = primaryPath.split(".").pop()?.toLowerCase() ?? null;
+    const videoMime = audioModelMime(primaryMime, ext);
+    if (videoMime) {
+      const { data: blob } = await supabase.storage.from(BUCKET).download(primaryPath);
+      if (blob) {
+        const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+        if (mediaFitsInline(b64)) {
+          ai = await analyzeMechanicalVideo(b64, videoMime, code as MechanicalPointCode, locale);
+          analyzed = true;
+        }
+      }
+    }
+  } else if (imageUrlsForAi.length) {
+    ai = await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode, locale);
+    analyzed = true;
+  }
+
   const analysis = buildMechanicalItemAnalysis(code as MechanicalPointCode, observations, ai, {
     locale,
-    analyzed: imageUrlsForAi.length > 0,
+    analyzed,
   });
   update.ai_analysis = analysis;
   update.detected_issues = analysis.detected_issues;

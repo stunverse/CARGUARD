@@ -1,105 +1,173 @@
-import OpenAI from "openai";
+// =====================================================================
+// CarGuard AI — AI provider layer (hybrid)
+//   • Vision (photos, document images) → Anthropic Claude
+//   • Media (full video + audio)       → Google Gemini (native A/V)
+// Uses plain fetch (no SDK dependency). SERVER ONLY.
+// Callers wrap these in try/catch and provide cautious mock fallbacks,
+// so a missing key or a failed call degrades gracefully.
+// =====================================================================
 
-// Vision-capable model used for quality checks + damage analysis.
-export const VISION_MODEL = process.env.OPENAI_VISION_MODEL || "gpt-4o";
+// ---- Provider keys & models ----------------------------------------
+const anthropicKey = () => process.env.ANTHROPIC_API_KEY;
+const geminiKey = () => process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
+// Claude vision model. Override with ANTHROPIC_VISION_MODEL (e.g. a cheaper
+// Sonnet for high-volume image analysis).
+export const VISION_MODEL = process.env.ANTHROPIC_VISION_MODEL || "claude-opus-4-8";
+// Gemini model for video + audio. Override with GEMINI_MODEL.
+export const MEDIA_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+
+// Inline-data ceiling for Gemini (the request must stay well under ~20 MB).
+const INLINE_MEDIA_LIMIT = 18 * 1024 * 1024;
+
+export function isVisionConfigured(): boolean {
+  return Boolean(anthropicKey());
+}
+export function isMediaConfigured(): boolean {
+  return Boolean(geminiKey());
+}
+// Broad gate kept for existing callers: true if any provider is configured.
 export function isAIConfigured(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY);
+  return isVisionConfigured() || isMediaConfigured();
 }
 
-let _client: OpenAI | null = null;
-export function getOpenAI(): OpenAI {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not configured.");
+// Robustly extract a JSON object from a model response (strips code fences /
+// stray prose the model may add around the JSON).
+function parseJson<T>(text: string): T {
+  const t = (text ?? "").trim();
+  if (!t) throw new Error("Empty AI response.");
+  try {
+    return JSON.parse(t) as T;
+  } catch {
+    const fenced = t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    try {
+      return JSON.parse(fenced) as T;
+    } catch {
+      const start = t.indexOf("{");
+      const end = t.lastIndexOf("}");
+      if (start !== -1 && end > start) {
+        return JSON.parse(t.slice(start, end + 1)) as T;
+      }
+      throw new Error("AI response was not valid JSON.");
+    }
   }
-  if (!_client) {
-    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
-  return _client;
 }
 
+// ---- Vision (Anthropic Claude) -------------------------------------
 interface VisionCallOptions {
   system: string;
   userText: string;
   imageUrls?: string[];
-  /** Lower = more deterministic. */
   temperature?: number;
 }
 
-/**
- * Run a vision + text chat completion that MUST return a JSON object.
- * Throws if AI is not configured (callers provide mock fallbacks).
- */
-export async function runStructuredVision<T>(
-  opts: VisionCallOptions,
-): Promise<T> {
-  const client = getOpenAI();
+export async function runStructuredVision<T>(opts: VisionCallOptions): Promise<T> {
+  const key = anthropicKey();
+  if (!key) throw new Error("ANTHROPIC_API_KEY is not configured.");
 
-  const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-    { type: "text", text: opts.userText },
-  ];
+  const content: unknown[] = [];
   for (const url of opts.imageUrls ?? []) {
-    content.push({ type: "image_url", image_url: { url, detail: "high" } });
+    content.push({ type: "image", source: { type: "url", url } });
   }
-
-  const completion = await client.chat.completions.create({
-    model: VISION_MODEL,
-    temperature: opts.temperature ?? 0.2,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: opts.system },
-      { role: "user", content },
-    ],
+  content.push({
+    type: "text",
+    text: `${opts.userText}\n\nRespond with ONLY the JSON object described above — no prose, no markdown, no code fences.`,
   });
 
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error("Empty AI response.");
-  return JSON.parse(raw) as T;
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: VISION_MODEL,
+      max_tokens: 4096,
+      system: opts.system,
+      messages: [{ role: "user", content }],
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Anthropic vision error ${res.status}: ${await res.text()}`);
+  }
+  const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+  const text = (data.content ?? [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text ?? "")
+    .join("");
+  return parseJson<T>(text);
 }
 
-// Audio-capable model for engine-start sound analysis.
-export const AUDIO_MODEL = process.env.OPENAI_AUDIO_MODEL || "gpt-4o-audio-preview";
-
-interface AudioCallOptions {
+// ---- Media: full video + audio (Google Gemini) ---------------------
+interface MediaCallOptions {
   system: string;
   userText: string;
-  /** Base64-encoded audio payload. */
-  audioBase64: string;
-  /** Container format understood by the model: "wav" | "mp3". */
-  format: "wav" | "mp3";
+  /** Base64-encoded media payload (audio or video). */
+  base64: string;
+  /** MIME type, e.g. "video/mp4", "audio/mpeg", "audio/wav". */
+  mimeType: string;
   temperature?: number;
 }
 
-/**
- * Run an audio + text chat completion that MUST return a JSON object.
- * Only WAV/MP3 are accepted by the model; other formats should fall back
- * to a demo result at the call site.
- */
-export async function runStructuredAudio<T>(opts: AudioCallOptions): Promise<T> {
-  const client = getOpenAI();
+export function mediaFitsInline(base64: string): boolean {
+  // base64 is ~4/3 the byte size; compare decoded size to the inline ceiling.
+  return Math.floor((base64.length * 3) / 4) <= INLINE_MEDIA_LIMIT;
+}
 
-  const completion = await client.chat.completions.create({
-    model: AUDIO_MODEL,
-    temperature: opts.temperature ?? 0.2,
-    modalities: ["text"],
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: opts.system },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: opts.userText },
-          {
-            type: "input_audio",
-            input_audio: { data: opts.audioBase64, format: opts.format },
-          },
-        ],
+export async function runStructuredMedia<T>(opts: MediaCallOptions): Promise<T> {
+  const key = geminiKey();
+  if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+  if (!mediaFitsInline(opts.base64)) {
+    throw new Error("Media too large for inline analysis.");
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MEDIA_MODEL}:generateContent?key=${key}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: opts.system }] },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inline_data: { mime_type: opts.mimeType, data: opts.base64 } },
+            { text: `${opts.userText}\n\nRespond with ONLY a JSON object.` },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: opts.temperature ?? 0.2,
       },
-    ],
-  } as never);
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Gemini media error ${res.status}: ${await res.text()}`);
+  }
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  const text = (data.candidates?.[0]?.content?.parts ?? [])
+    .map((p) => p.text ?? "")
+    .join("");
+  return parseJson<T>(text);
+}
 
-  const raw = (completion as { choices: { message: { content: string | null } }[] })
-    .choices[0]?.message?.content;
-  if (!raw) throw new Error("Empty AI response.");
-  return JSON.parse(raw) as T;
+// Back-compat wrapper for audio-only callers.
+export async function runStructuredAudio<T>(opts: {
+  system: string;
+  userText: string;
+  audioBase64: string;
+  mimeType: string;
+  temperature?: number;
+}): Promise<T> {
+  return runStructuredMedia<T>({
+    system: opts.system,
+    userText: opts.userText,
+    base64: opts.audioBase64,
+    mimeType: opts.mimeType,
+    temperature: opts.temperature,
+  });
 }

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
-import { analyzeEngineAudio, audioModelFormat } from "@/lib/ai/engine-audio";
+import { analyzeEngineAudio, audioModelMime } from "@/lib/ai/engine-audio";
+import { mediaFitsInline } from "@/lib/ai/client";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { getServerLocale } from "@/lib/i18n-server";
@@ -54,20 +55,21 @@ export async function POST(
 
   // Download the file bytes only when the format is model-compatible.
   const ext = check.storage_path.split(".").pop()?.toLowerCase() ?? null;
-  const fmt = audioModelFormat(check.mime_type, ext);
+  const mediaMime = audioModelMime(check.mime_type, ext);
   let audioBase64: string | null = null;
-  if (fmt) {
+  if (mediaMime) {
     const { data: blob } = await supabase.storage
       .from(BUCKET)
       .download(check.storage_path);
     if (blob) {
-      audioBase64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+      const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+      if (mediaFitsInline(b64)) audioBase64 = b64;
     }
   }
 
   const analysis = await analyzeEngineAudio({
     audioBase64,
-    format: fmt,
+    mimeType: audioBase64 ? mediaMime : null,
     durationSeconds: check.duration_seconds ?? 0,
     language: await getServerLocale(),
   });

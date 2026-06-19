@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
-import { checkEngineAudioQuality, audioModelFormat } from "@/lib/ai/engine-audio";
+import { checkEngineAudioQuality, audioModelMime } from "@/lib/ai/engine-audio";
+import { mediaFitsInline } from "@/lib/ai/client";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { STORAGE_BUCKETS } from "@/lib/constants";
@@ -51,15 +52,19 @@ export async function POST(
 
   // Quality check: only for model-compatible formats (download bytes server-side).
   const ext = storagePath.split(".").pop()?.toLowerCase() ?? null;
-  const fmt = audioModelFormat(mimeType, ext);
+  const mediaMime = audioModelMime(mimeType, ext);
   let audioBase64: string | null = null;
-  if (fmt) {
+  if (mediaMime) {
     const { data: blob } = await supabase.storage.from(BUCKET).download(storagePath);
-    if (blob) audioBase64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+    if (blob) {
+      const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+      // Only send to the model if it fits the inline ceiling.
+      if (mediaFitsInline(b64)) audioBase64 = b64;
+    }
   }
   const quality = await checkEngineAudioQuality({
     audioBase64,
-    format: fmt,
+    mimeType: audioBase64 ? mediaMime : null,
     durationSeconds,
     language: await getServerLocale(),
   });

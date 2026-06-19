@@ -5,7 +5,7 @@
 // All scores: higher = safer. SERVER ONLY.
 // =====================================================================
 
-import { isAIConfigured, runStructuredVision } from "./client";
+import { isMediaConfigured, isVisionConfigured, runStructuredMedia, runStructuredVision } from "./client";
 import { AI_RULES, languageDirective } from "./prompts";
 import {
   DEFAULT_MECHANICAL_MECHANIC_QUESTIONS,
@@ -67,7 +67,7 @@ export async function analyzeMechanicalPhoto(
   language?: string,
 ): Promise<PhotoAiPart> {
   const point = MECHANICAL_POINTS.find((p) => p.code === code);
-  if (!isAIConfigured() || imageUrls.length === 0) {
+  if (!isVisionConfigured() || imageUrls.length === 0) {
     return {
       detected_issues: [],
       suspicious_observations: [],
@@ -81,7 +81,7 @@ export async function analyzeMechanicalPhoto(
     return await runStructuredVision<PhotoAiPart>({
       system: `${AI_RULES}
 
-TASK: Analyze the image(s) for the mechanical check "${point?.title ?? code}". The image(s) may be photos or still frames extracted from a short video — focus on what is actually VISIBLE (e.g. exhaust smoke colour, warning lights, leaks, fluid colour) and do not infer sounds.
+TASK: Analyze the image(s) for the mechanical check "${point?.title ?? code}". Focus on what is actually VISIBLE (e.g. exhaust smoke colour, warning lights, leaks, fluid colour) and do not infer sounds.
 Look for: ${(point?.ai_targets ?? []).join(", ") || "relevant mechanical signs"}.
 Be cautious and non-diagnostic. Return JSON exactly:
 {
@@ -99,6 +99,53 @@ Be cautious and non-diagnostic. Return JSON exactly:
       detected_issues: [],
       suspicious_observations: [],
       summary: "Automated photo analysis was unavailable for this step.",
+      confidence: 20,
+    };
+  }
+}
+
+// AI pass for VIDEO-based mechanical points — the full clip (with its
+// soundtrack) is sent to Gemini, which can see motion AND hear the engine.
+export async function analyzeMechanicalVideo(
+  videoBase64: string,
+  mimeType: string,
+  code: MechanicalPointCode,
+  language?: string,
+): Promise<PhotoAiPart> {
+  const point = MECHANICAL_POINTS.find((p) => p.code === code);
+  if (!isMediaConfigured() || !videoBase64) {
+    return {
+      detected_issues: [],
+      suspicious_observations: [],
+      summary: point
+        ? `Recorded "${point.title}". Detailed AI video analysis not available (demo mode); the guided observations drive the score.`
+        : "",
+      confidence: 35,
+    };
+  }
+  try {
+    return await runStructuredMedia<PhotoAiPart>({
+      system: `${AI_RULES}
+
+TASK: Analyze the VIDEO (its images AND its soundtrack) for the mechanical check "${point?.title ?? code}". Consider what is visible (e.g. exhaust smoke colour, warning lights, leaks, fluid colour, vibrations) AND any audible cues (engine note, knocking, rattles, whistles).
+Look for: ${(point?.ai_targets ?? []).join(", ") || "relevant mechanical signs"}.
+Be cautious and non-diagnostic. Return JSON exactly:
+{
+ "detected_issues": [{ "issue_type": "other", "location": string, "severity": "low|moderate|high|critical", "confidence": number, "explanation": string, "recommended_follow_up_photo": null }],
+ "suspicious_observations": string[],
+ "summary": string,
+ "confidence": number
+}${languageDirective(language)}`,
+      userText: `Mechanical point: ${code}. Analyze the full video and return the JSON.`,
+      base64: videoBase64,
+      mimeType,
+    });
+  } catch (err) {
+    console.error("analyzeMechanicalVideo failed, falling back:", err);
+    return {
+      detected_issues: [],
+      suspicious_observations: [],
+      summary: "Automated video analysis was unavailable for this step.",
       confidence: 20,
     };
   }

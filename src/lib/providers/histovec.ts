@@ -17,7 +17,7 @@
 // SERVER ONLY.
 // =====================================================================
 
-import { isAIConfigured, runStructuredVision } from "@/lib/ai/client";
+import { isVisionConfigured as isAIConfigured, runStructuredVision } from "@/lib/ai/client";
 import type { TitleFlag, TitleFlagsSection } from "@/types";
 
 export interface HistovecExtraction {

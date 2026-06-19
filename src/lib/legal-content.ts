@@ -63,14 +63,14 @@ export const PRIVACY: Record<Locale, LegalDocContent> = {
       {
         heading: "3. AI processing and sub-processors",
         paragraphs: [
-          "Your media and inspection inputs are sent to AI providers solely to produce your analysis. We use, among others: Supabase (hosting, database, storage, authentication), OpenAI (AI vision/audio analysis), Stripe (payments), and vehicle-data sources (e.g. NHTSA, and paid providers such as VinAudit/NMVTIS where you request a history report).",
+          "Your media and inspection inputs are sent to AI providers solely to produce your analysis. We use, among others: Supabase (hosting, database, storage, authentication), Anthropic (Claude — AI vision analysis of photos and documents), Google (Gemini — AI analysis of videos and audio), Stripe (payments), and vehicle-data sources (e.g. NHTSA, and paid providers such as VinAudit/NMVTIS where you request a history report).",
           "These providers act as our processors and only process data on our instructions.",
         ],
       },
       {
         heading: "4. International transfers",
         paragraphs: [
-          "Some processors (e.g. OpenAI, Stripe) are located in the United States. Transfers are framed by appropriate safeguards such as the EU Standard Contractual Clauses.",
+          "Some processors (e.g. Anthropic, Google, Stripe) are located in the United States. Transfers are framed by appropriate safeguards such as the EU Standard Contractual Clauses.",
         ],
       },
       {
@@ -132,14 +132,14 @@ export const PRIVACY: Record<Locale, LegalDocContent> = {
       {
         heading: "3. Traitements IA et sous-traitants",
         paragraphs: [
-          "Vos médias et informations d'inspection sont transmis à des prestataires d'IA uniquement pour produire votre analyse. Nous utilisons notamment : Supabase (hébergement, base de données, stockage, authentification), OpenAI (analyse IA vision/audio), Stripe (paiements) et des sources de données véhicule (ex. NHTSA, et des fournisseurs payants comme VinAudit/NMVTIS lorsque vous demandez un rapport d'historique).",
+          "Vos médias et informations d'inspection sont transmis à des prestataires d'IA uniquement pour produire votre analyse. Nous utilisons notamment : Supabase (hébergement, base de données, stockage, authentification), Anthropic (Claude — analyse IA des photos et documents), Google (Gemini — analyse IA des vidéos et de l'audio), Stripe (paiements) et des sources de données véhicule (ex. NHTSA, et des fournisseurs payants comme VinAudit/NMVTIS lorsque vous demandez un rapport d'historique).",
           "Ces prestataires agissent comme sous-traitants et ne traitent les données que sur nos instructions.",
         ],
       },
       {
         heading: "4. Transferts internationaux",
         paragraphs: [
-          "Certains sous-traitants (ex. OpenAI, Stripe) sont situés aux États-Unis. Les transferts sont encadrés par des garanties appropriées telles que les Clauses Contractuelles Types de l'UE.",
+          "Certains sous-traitants (ex. Anthropic, Google, Stripe) sont situés aux États-Unis. Les transferts sont encadrés par des garanties appropriées telles que les Clauses Contractuelles Types de l'UE.",
         ],
       },
       {

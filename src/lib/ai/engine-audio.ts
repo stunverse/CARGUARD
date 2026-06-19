@@ -1,13 +1,15 @@
 // =====================================================================
 // CarGuard AI — Engine Start Audio Analysis (AI functions)
 //
-// Optional module. Real analysis uses an audio-capable model and only
-// accepts WAV/MP3 payloads; for other formats or when OpenAI is not
-// configured, a cautious, deterministic DEMO result is returned so the
-// flow stays usable. SERVER ONLY.
+// Real analysis is done by Google Gemini, which natively ingests full
+// audio AND video (with its soundtrack). We accept the common phone
+// recording containers (audio: wav/mp3/m4a/aac/ogg/flac; video: mp4/mov/
+// webm/3gp) and let Gemini listen to the engine. When Gemini is not
+// configured or the format is unknown, a cautious, deterministic DEMO
+// result keeps the flow usable. SERVER ONLY.
 // =====================================================================
 
-import { isAIConfigured, runStructuredAudio } from "./client";
+import { isMediaConfigured, runStructuredAudio } from "./client";
 import { languageDirective } from "./prompts";
 import {
   DEFAULT_MECHANIC_QUESTIONS,
@@ -21,14 +23,16 @@ import type {
   EngineAudioQualityCheck,
 } from "@/types";
 
-const AUDIO_RULES = `You are CarGuard AI, a cautious assistant that listens to a short recording of
+const AUDIO_RULES = `You are CarGuard AI, a cautious assistant that listens to a recording of
 a car ENGINE STARTING and IDLING to flag POSSIBLE suspicious noises for a used-car buyer.
+The recording may be an audio file or a video — in either case, base your analysis on the
+ENGINE SOUND (the soundtrack), not on what is visible.
 
 ALWAYS:
 - Be prudent. Use "possible", "may suggest", "could be compatible with".
 - State that the analysis depends entirely on the audio quality.
 - Recommend a professional mechanic whenever there is any doubt.
-- Base every statement ONLY on the provided audio.
+- Base every statement ONLY on the provided recording.
 - Give a confidence level (0-100).
 
 NEVER:
@@ -39,16 +43,30 @@ NEVER:
 
 Output STRICT JSON only, matching the requested schema.`;
 
-// Map a known container mime/extension to a model-accepted format.
-export function audioModelFormat(
+// Map a known container mime/extension to a Gemini-accepted media MIME type.
+// Returns null for unknown formats (→ cautious demo fallback).
+export function audioModelMime(
   mime: string | null,
   ext: string | null,
-): "wav" | "mp3" | null {
+): string | null {
   const m = (mime ?? "").toLowerCase();
   const e = (ext ?? "").toLowerCase();
-  if (m.includes("wav") || e === "wav") return "wav";
-  if (m.includes("mpeg") || m.includes("mp3") || e === "mp3") return "mp3";
-  return null; // m4a/aac/ogg/webm/video → not directly supported.
+
+  // Audio containers.
+  if (m.includes("wav") || e === "wav") return "audio/wav";
+  if (m.includes("mpeg") || m.includes("mp3") || e === "mp3") return "audio/mp3";
+  if (m.includes("m4a") || m.includes("aac") || e === "m4a" || e === "aac") return "audio/aac";
+  if (m.includes("ogg") || e === "ogg" || e === "oga") return "audio/ogg";
+  if (m.includes("flac") || e === "flac") return "audio/flac";
+  if (m.includes("aiff") || e === "aiff" || e === "aif") return "audio/aiff";
+
+  // Video containers (Gemini listens to the soundtrack).
+  if (m.includes("mp4") || e === "mp4" || e === "m4v") return "video/mp4";
+  if (m.includes("quicktime") || m.includes("mov") || e === "mov") return "video/mov";
+  if (m.includes("webm") || e === "webm") return "video/webm";
+  if (m.includes("3gpp") || m.includes("3gp") || e === "3gp" || e === "3gpp") return "video/3gpp";
+
+  return null;
 }
 
 // ---------------------------------------------------------------------
@@ -56,16 +74,16 @@ export function audioModelFormat(
 // ---------------------------------------------------------------------
 export async function checkEngineAudioQuality(params: {
   audioBase64: string | null;
-  format: "wav" | "mp3" | null;
+  mimeType: string | null;
   durationSeconds: number;
   language?: string;
 }): Promise<EngineAudioQualityCheck> {
-  const { audioBase64, format, durationSeconds, language } = params;
+  const { audioBase64, mimeType, durationSeconds, language } = params;
 
   const tooShort = durationSeconds > 0 && durationSeconds < 8;
 
   // Demo / unsupported-format fallback.
-  if (!isAIConfigured() || !audioBase64 || !format) {
+  if (!isMediaConfigured() || !audioBase64 || !mimeType) {
     return {
       is_usable: !tooShort,
       audio_quality_score: tooShort ? 35 : 70,
@@ -105,9 +123,9 @@ wind noise, volume too low. Return JSON exactly:
  "retake_instructions": string,
  "confidence": number
 }${languageDirective(language)}`,
-      userText: `Approximate duration: ${durationSeconds}s. Quality-check this engine-start audio.`,
+      userText: `Approximate duration: ${durationSeconds}s. Quality-check this engine-start recording.`,
       audioBase64,
-      format,
+      mimeType,
     });
   } catch (err) {
     console.error("checkEngineAudioQuality failed, falling back:", err);
@@ -132,19 +150,19 @@ wind noise, volume too low. Return JSON exactly:
 // ---------------------------------------------------------------------
 export async function analyzeEngineAudio(params: {
   audioBase64: string | null;
-  format: "wav" | "mp3" | null;
+  mimeType: string | null;
   durationSeconds: number;
   language?: string;
 }): Promise<EngineAudioAnalysis> {
-  const { audioBase64, format, language } = params;
+  const { audioBase64, mimeType, language } = params;
 
-  if (!isAIConfigured() || !audioBase64 || !format) {
+  if (!isMediaConfigured() || !audioBase64 || !mimeType) {
     // Cautious neutral placeholder (demo mode or unsupported format).
     const score = 80;
     const risk = engineAudioScoreToRisk(score);
     return generateEngineAudioSummary({
       summary:
-        "[Demo mode] No audio-model analysis was performed (OpenAI audio not configured or unsupported format). This is a neutral placeholder, not a real engine-sound analysis. A professional mechanic should confirm the engine condition.",
+        "[Demo mode] No engine-sound analysis was performed (Gemini media model not configured or unsupported format). This is a neutral placeholder, not a real engine-sound analysis. A professional mechanic should confirm the engine condition.",
       engine_audio_score: score,
       startup_quality_score: score,
       idle_stability_score: score,
@@ -170,7 +188,7 @@ export async function analyzeEngineAudio(params: {
     const result = await runStructuredAudio<EngineAudioAnalysis>({
       system: `${AUDIO_RULES}
 
-TASK: Analyze the engine-start audio for suspicious sounds: hard_start, knocking,
+TASK: Analyze the engine-start recording for suspicious sounds: hard_start, knocking,
 metallic_rattling, timing_chain_rattle, belt_squeal, rough_idle, misfire_like_sound,
 starter_issue, exhaust_leak_suspicion, air_leak_suspicion, turbo_whistle_abnormal,
 normal_startup, other.
@@ -200,9 +218,9 @@ Return JSON exactly:
  "confidence_score": number
 }${languageDirective(language)}`,
       userText:
-        "Analyze this engine-start recording and return the JSON schema. Be cautious and non-diagnostic.",
+        "Listen to this engine-start recording and return the JSON schema. Be cautious and non-diagnostic.",
       audioBase64,
-      format,
+      mimeType,
       temperature: 0.3,
     });
     return generateEngineAudioSummary(result);

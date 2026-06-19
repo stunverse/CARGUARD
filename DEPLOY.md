@@ -42,7 +42,9 @@ final **redeploy**.
    | `NEXT_PUBLIC_APP_URL` | leave blank for now (set in step 4) |
 
    Optional now or later:
-   - `OPENAI_API_KEY`, `OPENAI_VISION_MODEL=gpt-4o`, `OPENAI_AUDIO_MODEL=gpt-4o-audio-preview`
+   - `ANTHROPIC_API_KEY` (Claude vision for photos/documents) and
+     `GEMINI_API_KEY` (Gemini for full video + audio). Optionally override the
+     models with `ANTHROPIC_VISION_MODEL` / `GEMINI_MODEL`.
      (without these the AI runs in cautious **demo mode**).
    - Stripe keys (see README → Billing).
 4. Click **Deploy**. When it finishes, copy the production URL,

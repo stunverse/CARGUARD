@@ -16,10 +16,11 @@ never certainties, and never accuses a seller.
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS** with a custom shadcn-style UI kit (`src/components/ui`)
 - **Supabase** — Postgres + Auth + Storage + Row Level Security
-- **OpenAI** vision (`gpt-4o`) for photo quality checks and damage analysis
+- **Anthropic Claude** vision for photo quality checks and damage analysis
+- **Google Gemini** for full video + audio analysis (engine sound, video checks)
 - **Stripe** Billing (scaffolded; optional)
 
-The app runs end-to-end **without** OpenAI or Stripe keys: AI functions fall
+The app runs end-to-end **without** AI or Stripe keys: AI functions fall
 back to cautious, deterministic placeholders ("demo mode") so the full flow is
 demonstrable.
 
@@ -33,7 +34,7 @@ demonstrable.
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in Supabase (+ optional OpenAI / Stripe)
+cp .env.example .env.local   # fill in Supabase (+ optional Anthropic / Gemini / Stripe)
 npm run dev
 ```
 
@@ -73,10 +74,11 @@ recommendation, and seller/mechanic questions — appended to the final report
 
 - Table: `engine_audio_checks` (migration `0005`); private bucket `engine-audio`.
 - AI: `src/lib/ai/engine-audio.ts` (`checkEngineAudioQuality`, `analyzeEngineAudio`,
-  `generateEngineAudioSummary`). Real analysis uses `OPENAI_AUDIO_MODEL`
-  (`gpt-4o-audio-preview`) and accepts **MP3/WAV**; other formats are stored and
-  handled in a limited/demo mode.
-- Env: `STORAGE_BUCKET_ENGINE_AUDIO`, `OPENAI_AUDIO_MODEL`.
+  `generateEngineAudioSummary`). Real analysis is done by **Google Gemini**, which
+  natively ingests audio **and** video soundtracks; it accepts the common phone
+  containers (wav/mp3/m4a/aac/ogg/flac, and mp4/mov/webm/3gp video). Other formats
+  are stored and handled in a limited/demo mode.
+- Env: `STORAGE_BUCKET_ENGINE_AUDIO`, `GEMINI_API_KEY`, `GEMINI_MODEL`.
 
 ## AI functions (`src/lib/ai/functions.ts`)
 

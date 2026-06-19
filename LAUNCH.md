@@ -4,8 +4,9 @@ Pre-launch gating is now enforced in code:
 - **Payment**: when Stripe is configured, `/analyze` and `/report` refuse to run
   unless `inspection_sessions.payment_status = 'paid'` (402). In demo mode (no
   Stripe key) this is a no-op so local/dev keeps working.
-- **AI**: when Stripe is configured but `OPENAI_API_KEY` is missing, paid
-  analysis/report are refused (503) — we never sell a deterministic demo report.
+- **AI**: when Stripe is configured but no AI provider key is present
+  (`ANTHROPIC_API_KEY` / `GEMINI_API_KEY`), paid analysis/report are refused
+  (503) — we never sell a deterministic demo report.
 
 ---
 
@@ -15,7 +16,7 @@ Pre-launch gating is now enforced in code:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` — webhook + account deletion
-- `OPENAI_API_KEY` — **required**, otherwise paid analysis is blocked
+- `ANTHROPIC_API_KEY` + `GEMINI_API_KEY` — **required**, otherwise paid analysis is blocked
 - `NEXT_PUBLIC_APP_URL` — e.g. `https://carguard.ai` (Stripe success/cancel URLs)
 
 ### Required for revenue (Stripe)
@@ -60,10 +61,12 @@ Pre-launch gating is now enforced in code:
 - [ ] End-to-end test: pay → draft becomes `paid` → analyze + report succeed.
 - [ ] Test cancel → returns to the wizard with vehicle data preserved.
 
-## 4. OpenAI
+## 4. AI providers (Anthropic + Gemini)
 
-- [ ] `OPENAI_API_KEY` set; verify a real inspection produces a non-demo report.
-- [ ] Watch cost per inspection (vision + audio) vs the €29 margin.
+- [ ] `ANTHROPIC_API_KEY` set (Claude vision for photos/documents).
+- [ ] `GEMINI_API_KEY` set (Gemini for full video + audio).
+- [ ] Verify a real inspection produces a non-demo report.
+- [ ] Watch cost per inspection (vision + video/audio) vs the €29 margin.
 
 ---
 

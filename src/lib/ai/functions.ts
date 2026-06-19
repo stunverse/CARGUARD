@@ -9,7 +9,7 @@
 // =====================================================================
 
 import {
-  isAIConfigured,
+  isVisionConfigured as isAIConfigured,
   runStructuredVision,
 } from "./client";
 import {

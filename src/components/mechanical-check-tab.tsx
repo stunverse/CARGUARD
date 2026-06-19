@@ -27,7 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { STORAGE_BUCKETS } from "@/lib/constants";
-import { compressImage, extractVideoFrames, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
+import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { useI18n } from "@/components/i18n-provider";
 import { MECH_RISK_FR, localizedMechPoint, pick } from "@/lib/content-i18n";
 import type {
@@ -197,22 +197,9 @@ function StepCard({
       const payload: Record<string, unknown> = { observations: {} };
       if (primaryFile) {
         payload.primary_path = await upImg(primaryFile, "");
-        // Video checks: extract a few frames so the AI can actually analyze the
-        // clip (vision models take images, not video). Best-effort.
-        if (point.media_type === "video" && primaryFile.type.startsWith("video/")) {
-          try {
-            const frames = await extractVideoFrames(primaryFile, 3);
-            const framePaths: string[] = [];
-            for (let i = 0; i < frames.length; i++) {
-              const path = `${base}-frame${i}.jpg`;
-              await uploadToStorage(STORAGE_BUCKETS.mechanical, path, frames[i]);
-              framePaths.push(path);
-            }
-            if (framePaths.length) payload.frame_paths = framePaths;
-          } catch {
-            /* frame extraction is best-effort; the video still saves */
-          }
-        }
+        // Video checks: the full clip (with its soundtrack) is sent to the
+        // media model server-side, so just pass along the MIME type.
+        payload.primary_mime = primaryFile.type;
       }
       if (secondaryFile) payload.secondary_path = await upImg(secondaryFile, "-2");
       if (point.media_type === "docs") {
