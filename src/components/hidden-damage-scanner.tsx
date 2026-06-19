@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PhotoQualityStatus } from "@/components/photo-quality-status";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
+import { CaptureGuide, hasCaptureGuide } from "@/components/capture-guide";
 import { PHOTO_POINTS, REQUIRED_PHOTO_COUNT, STORAGE_BUCKETS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -220,8 +221,14 @@ export function HiddenDamageScanner({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Camera className="size-10" />
+                <div className="flex flex-col items-center gap-2 p-3 text-muted-foreground">
+                  {hasCaptureGuide(activeCode) ? (
+                    <div className="w-40 sm:w-48">
+                      <CaptureGuide code={activeCode} />
+                    </div>
+                  ) : (
+                    <Camera className="size-10" />
+                  )}
                   <span className="text-sm">{activeLoc.title} {t("scan.examplePlaceholder")}</span>
                 </div>
               )}
