@@ -288,6 +288,8 @@ export async function POST(
     photoConfidence,
     mechanicalScore: mechanical?.mechanical_score ?? null,
     mechanicalConfidence: mechConfidence,
+    engineAudioScore: audioCheck?.engine_audio_score ?? null,
+    engineAudioConfidence: audioCheck?.confidence_score ?? null,
     history: vehicleHistory,
     salvageTitle,
     documentsRatio: docRatio,
