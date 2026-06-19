@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { RiskScoreCircle } from "@/components/risk-indicators";
-import { MediaCapture, type CaptureMode } from "@/components/media-capture";
 import { CaptureGuide, hasCaptureGuide } from "@/components/capture-guide";
 import {
   MECHANICAL_POINTS,
@@ -125,7 +124,18 @@ function StepCard({
   // Captured media (in-app camera/mic).
   const [primaryFile, setPrimaryFile] = useState<File | null>(null);
   const [secondaryFile, setSecondaryFile] = useState<File | null>(null);
-  const [capture, setCapture] = useState<null | { slot: "primary" | "secondary"; mode: CaptureMode }>(null);
+  const camRef = useRef<HTMLInputElement>(null);
+  const libRef = useRef<HTMLInputElement>(null);
+  const slotRef = useRef<"primary" | "secondary">("primary");
+  function openCapture(slot: "primary" | "secondary", source: "cam" | "lib") {
+    slotRef.current = slot;
+    (source === "cam" ? camRef : libRef).current?.click();
+  }
+  function onCaptured(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) (slotRef.current === "primary" ? setPrimaryFile : setSecondaryFile)(f);
+    e.target.value = "";
+  }
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -247,7 +257,7 @@ function StepCard({
     router.refresh();
   }
 
-  const captureMode: CaptureMode =
+  const captureMode =
     point.media_type === "video" || point.media_type === "questionnaire" ? "video" : "photo";
 
   return (
@@ -335,13 +345,13 @@ function StepCard({
               label={t("mct.ignitionOn")}
               file={primaryFile}
               icon={Camera}
-              onClick={() => setCapture({ slot: "primary", mode: "photo" })}
+              onClick={() => openCapture("primary", "cam")}
             />
             <CaptureTile
               label={t("mct.engineRunning")}
               file={secondaryFile}
               icon={Camera}
-              onClick={() => setCapture({ slot: "secondary", mode: "photo" })}
+              onClick={() => openCapture("secondary", "cam")}
             />
           </div>
         ) : (
@@ -349,10 +359,37 @@ function StepCard({
             label={captureMode === "video" ? t("mct.film") : t("mct.takePhoto")}
             file={primaryFile}
             icon={captureMode === "video" ? Video : Camera}
-            onClick={() => setCapture({ slot: "primary", mode: captureMode })}
+            onClick={() => openCapture("primary", "cam")}
             full
           />
         ))}
+
+        {!locked && point.media_type !== "docs" && (
+          <>
+            <input
+              ref={camRef}
+              type="file"
+              accept={captureMode === "video" ? "video/*" : "image/*"}
+              capture="environment"
+              hidden
+              onChange={onCaptured}
+            />
+            <input
+              ref={libRef}
+              type="file"
+              accept={captureMode === "video" ? "video/*" : "image/*"}
+              hidden
+              onChange={onCaptured}
+            />
+            <button
+              type="button"
+              onClick={() => openCapture("primary", "lib")}
+              className="flex w-full items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground"
+            >
+              <Upload className="size-3.5" aria-hidden /> {t("cap.useUpload")}
+            </button>
+          </>
+        )}
 
         {result?.summary && (
           <div
@@ -380,18 +417,6 @@ function StepCard({
           </div>
         )}
       </CardContent>
-
-      {capture && (
-        <MediaCapture
-          mode={capture.mode}
-          title={`${point.order_index}. ${loc.title}`}
-          onClose={() => setCapture(null)}
-          onCapture={(file) => {
-            if (capture.slot === "primary") setPrimaryFile(file);
-            else setSecondaryFile(file);
-          }}
-        />
-      )}
     </Card>
   );
 }

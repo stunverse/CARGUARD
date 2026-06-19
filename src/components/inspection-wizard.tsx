@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MediaCapture, type CaptureMode } from "@/components/media-capture";
 import { CaptureGuide, hasCaptureGuide } from "@/components/capture-guide";
 import { AnalyzingOverlay } from "@/components/analyzing-overlay";
 import {
@@ -49,6 +48,7 @@ import { cn } from "@/lib/utils";
 import type { MechanicalPoint, PhotoPointCode } from "@/types";
 
 type Phase = "vehicle" | "payment" | "photos" | "mech" | "audio" | "documents" | "review" | "finishing";
+type CaptureMode = "photo" | "video";
 
 type VKind = "vin" | "make" | "year" | "model" | "select" | "number";
 interface VStepDef {
@@ -129,7 +129,6 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [capture, setCapture] = useState<CaptureMode | null>(null);
 
   const vehicleStepCount = VEHICLE_STEPS.length;
   // Step 0 is payment; then vehicle questions, photos, mechanical, engine sound,
@@ -428,8 +427,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
               previewUrl={photoState[PHOTO_POINTS[pIndex].code]?.url ?? null}
               status={photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending"}
               busy={busy}
-              mode="photo"
-              onOpenCapture={() => setCapture("photo")}
+              onFile={(f) => uploadPhoto(PHOTO_POINTS[pIndex].code, f)}
             />
           );
         })()}
@@ -438,7 +436,6 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
           <MechStep
             point={MECHANICAL_POINTS[mIndex]}
             busy={busy}
-            onOpenCapture={(m) => setCapture(m)}
             onSaved={nextMech}
             sessionId={sessionId!}
             setBusy={setBusy}
@@ -493,26 +490,6 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
           onFinish={finish}
         />
       </div>
-
-      {/* Capture modal */}
-      {capture && (
-        <MediaCapture
-          mode={capture}
-          title={
-            phase === "photos"
-              ? localizedPhotoPoint(PHOTO_POINTS[pIndex], locale).title
-              : MECHANICAL_POINTS[mIndex]
-                ? localizedMechPoint(MECHANICAL_POINTS[mIndex], locale).title
-                : "Capture"
-          }
-          onClose={() => setCapture(null)}
-          onCapture={(file) => {
-            if (phase === "photos") uploadPhoto(PHOTO_POINTS[pIndex].code, file);
-            // mech capture handled inside MechStep via window event
-            else window.dispatchEvent(new CustomEvent("mech-capture", { detail: file }));
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -942,7 +919,7 @@ function CaptureStep({
   previewUrl,
   status,
   busy,
-  onOpenCapture,
+  onFile,
 }: {
   kicker: string;
   title: string;
@@ -952,10 +929,16 @@ function CaptureStep({
   previewUrl: string | null;
   status: string;
   busy: boolean;
-  mode: CaptureMode;
-  onOpenCapture: () => void;
+  onFile: (f: File) => void;
 }) {
   const { t } = useI18n();
+  const camRef = useRef<HTMLInputElement>(null);
+  const libRef = useRef<HTMLInputElement>(null);
+  const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) onFile(f);
+    e.target.value = "";
+  };
   return (
     <StepShell kicker={kicker} question={title}>
       <p className="text-sm text-[#374151]">{instruction}</p>
@@ -964,9 +947,12 @@ function CaptureStep({
         {why}
       </p>
 
+      <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={pick} />
+      <input ref={libRef} type="file" accept="image/*" hidden onChange={pick} />
+
       <button
         type="button"
-        onClick={onOpenCapture}
+        onClick={() => camRef.current?.click()}
         disabled={busy}
         className="relative mt-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[#E5E7EB] bg-[#F7F8FA]"
       >
@@ -992,6 +978,15 @@ function CaptureStep({
         )}
       </button>
 
+      <button
+        type="button"
+        onClick={() => libRef.current?.click()}
+        disabled={busy}
+        className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium text-[#6B7280]"
+      >
+        <Upload className="size-4" aria-hidden /> {t("cap.useUpload")}
+      </button>
+
       {status === "passed" && (
         <p className="mt-2 flex items-center gap-1 text-sm text-risk-low">
           <CheckCircle2 className="size-4" /> {t("wiz.looksGood")}
@@ -1007,14 +1002,12 @@ function CaptureStep({
 function MechStep({
   point,
   busy,
-  onOpenCapture,
   onSaved,
   sessionId,
   setBusy,
 }: {
   point: MechanicalPoint;
   busy: boolean;
-  onOpenCapture: (mode: CaptureMode) => void;
   onSaved: () => void;
   sessionId: string;
   setBusy: (b: boolean) => void;
@@ -1022,15 +1015,13 @@ function MechStep({
   const { t, locale } = useI18n();
   const L = localizedMechPoint(point, locale);
   const [file, setFile] = useState<File | null>(null);
-
-  // Receive the captured file from the parent's MediaCapture.
-  useEffect(() => {
-    function onCap(e: Event) {
-      setFile((e as CustomEvent).detail as File);
-    }
-    window.addEventListener("mech-capture", onCap);
-    return () => window.removeEventListener("mech-capture", onCap);
-  }, []);
+  const camRef = useRef<HTMLInputElement>(null);
+  const libRef = useRef<HTMLInputElement>(null);
+  const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) setFile(f);
+    e.target.value = "";
+  };
 
   async function save() {
     setBusy(true);
@@ -1076,9 +1067,25 @@ function MechStep({
         </div>
       )}
 
+      <input
+        ref={camRef}
+        type="file"
+        accept={captureMode === "video" ? "video/*" : "image/*"}
+        capture="environment"
+        hidden
+        onChange={pick}
+      />
+      <input
+        ref={libRef}
+        type="file"
+        accept={captureMode === "video" ? "video/*" : "image/*"}
+        hidden
+        onChange={pick}
+      />
+
       <button
         type="button"
-        onClick={() => onOpenCapture(captureMode)}
+        onClick={() => camRef.current?.click()}
         className={cn(
           "mt-4 flex w-full items-center gap-2 rounded-xl border border-dashed p-3 text-left text-sm",
           file ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB]",
@@ -1090,6 +1097,14 @@ function MechStep({
         <span className="font-medium text-[#111827]">
           {file ? t("wiz.captured") : captureMode === "video" ? t("wiz.film") : t("wiz.openCamera")}
         </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => libRef.current?.click()}
+        className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium text-[#6B7280]"
+      >
+        <Upload className="size-4" aria-hidden /> {t("cap.useUpload")}
       </button>
 
       <Button className="mt-5 w-full" onClick={save} disabled={busy}>
