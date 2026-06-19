@@ -191,7 +191,7 @@ export const TERMS: Record<Locale, LegalDocContent> = {
       { heading: "5. Intellectual property", paragraphs: ["The service, software and content are protected. You keep ownership of your uploaded media; you grant us the right to process it to provide the service."] },
       { heading: "6. Liability", paragraphs: ["To the extent permitted by law, our liability is limited to the amount you paid for the relevant inspection. We are not liable for indirect or consequential damages. Nothing limits liability that cannot be excluded by law."] },
       { heading: "7. Suspension & termination", paragraphs: ["We may suspend or close accounts that breach these terms. You may close your account at any time."] },
-      { heading: "8. Changes & law", paragraphs: [`We may update these terms; material changes will be notified. These terms are governed by French law, without prejudice to mandatory consumer protections. Contact: ${CO.email}.`] },
+      { heading: "8. Changes & law", paragraphs: [`We may update these terms; material changes will be notified. These terms are governed by the laws of the State of Wyoming, United States, without prejudice to mandatory consumer protections in your country of residence. Contact: ${CO.email}.`] },
     ],
   },
   fr: {
@@ -206,7 +206,7 @@ export const TERMS: Record<Locale, LegalDocContent> = {
       { heading: "5. Propriété intellectuelle", paragraphs: ["Le service, le logiciel et les contenus sont protégés. Vous conservez la propriété de vos médias ; vous nous accordez le droit de les traiter pour fournir le service."] },
       { heading: "6. Responsabilité", paragraphs: ["Dans la limite autorisée par la loi, notre responsabilité est limitée au montant payé pour l'inspection concernée. Nous ne sommes pas responsables des dommages indirects. Rien ne limite la responsabilité qui ne peut être exclue par la loi."] },
       { heading: "7. Suspension & résiliation", paragraphs: ["Nous pouvons suspendre ou clôturer les comptes en violation des présentes. Vous pouvez clôturer votre compte à tout moment."] },
-      { heading: "8. Modifications & droit applicable", paragraphs: [`Nous pouvons mettre à jour ces CGU ; les changements importants seront notifiés. Les présentes sont régies par le droit français, sans préjudice des protections impératives du consommateur. Contact : ${CO.email}.`] },
+      { heading: "8. Modifications & droit applicable", paragraphs: [`Nous pouvons mettre à jour ces CGU ; les changements importants seront notifiés. Les présentes sont régies par le droit de l'État du Wyoming (États-Unis), sans préjudice des protections impératives du consommateur dans votre pays de résidence. Contact : ${CO.email}.`] },
     ],
   },
 };
@@ -228,7 +228,7 @@ export const CGV: Record<Locale, LegalDocContent> = {
       ] },
       { heading: "4. Refunds & claims", paragraphs: [`Refund requests and complaints: ${CO.email}. EU consumers may also use the EU ODR platform (ec.europa.eu/consumers/odr).`] },
       { heading: "5. Service limits", paragraphs: ["CarGuard AI provides a preliminary AI screening, not a guarantee. See the Terms of Service for disclaimers and liability limits."] },
-      { heading: "6. Governing law", paragraphs: ["These sales terms are governed by French law, without prejudice to mandatory consumer protections in your country of residence."] },
+      { heading: "6. Governing law", paragraphs: ["These sales terms are governed by the laws of the State of Wyoming, United States, without prejudice to mandatory consumer protections in your country of residence."] },
     ],
   },
   fr: {
@@ -244,7 +244,7 @@ export const CGV: Record<Locale, LegalDocContent> = {
       ] },
       { heading: "4. Remboursements & réclamations", paragraphs: [`Demandes de remboursement et réclamations : ${CO.email}. Les consommateurs de l'UE peuvent également recourir à la plateforme RLL de l'UE (ec.europa.eu/consumers/odr).`] },
       { heading: "5. Limites du service", paragraphs: ["CarGuard AI fournit un pré-diagnostic IA préliminaire, et non une garantie. Voir les CGU pour les avertissements et limites de responsabilité."] },
-      { heading: "6. Droit applicable", paragraphs: ["Les présentes CGV sont régies par le droit français, sans préjudice des protections impératives du consommateur dans votre pays de résidence."] },
+      { heading: "6. Droit applicable", paragraphs: ["Les présentes CGV sont régies par le droit de l'État du Wyoming (États-Unis), sans préjudice des protections impératives du consommateur dans votre pays de résidence."] },
     ],
   },
 };

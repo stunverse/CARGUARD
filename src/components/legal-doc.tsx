@@ -26,12 +26,6 @@ export function LegalDoc({ doc, locale }: { doc: LegalDocContent; locale: Locale
       <p className="mt-1 text-xs text-[#9AA3AF]">
         {updatedLabel}: {doc.updated}
       </p>
-      <div className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-xs text-amber-800">
-        {locale === "fr"
-          ? "Modèle fourni à titre indicatif — à faire valider par un juriste et à compléter avec les informations de la société avant le lancement."
-          : "Template provided for guidance — have it reviewed by a lawyer and complete the company details before launch."}
-      </div>
-
       <p className="mt-4 text-sm leading-relaxed text-[#6B7280]">{doc.intro}</p>
 
       {doc.sections.map((s) => (
