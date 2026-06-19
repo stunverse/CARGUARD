@@ -947,7 +947,7 @@ function CaptureStep({
         {why}
       </p>
 
-      <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={pick} />
+      <input ref={camRef} type="file" accept="image/*" hidden onChange={pick} />
       <input ref={libRef} type="file" accept="image/*" hidden onChange={pick} />
 
       <button
@@ -1071,7 +1071,6 @@ function MechStep({
         ref={camRef}
         type="file"
         accept={captureMode === "video" ? "video/*" : "image/*"}
-        capture="environment"
         hidden
         onChange={pick}
       />

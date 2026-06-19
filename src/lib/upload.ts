@@ -13,12 +13,13 @@ export async function getUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
-// Resize/compress an image to keep uploads small (and AI cheaper/faster).
+// Resize/compress an image to keep uploads small (and AI cheaper/faster)
+// while staying SHARP enough to read VINs, fine scratches and warning lights.
 // Non-images and undecodable formats are returned unchanged.
 export async function compressImage(
   file: File,
-  maxDim = 1600,
-  quality = 0.82,
+  maxDim = 2400,
+  quality = 0.92,
 ): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
   try {
@@ -31,11 +32,18 @@ export async function compressImage(
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
+    // High-quality resampling — the default ("low") makes downscaled phone
+    // photos look soft/blurry.
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(bitmap, 0, 0, w, h);
     const blob: Blob | null = await new Promise((res) =>
       canvas.toBlob((b) => res(b), "image/jpeg", quality),
     );
     if (!blob) return file;
+    // If the "compressed" result is somehow larger than the original, keep the
+    // original (e.g. an already-optimized small JPEG).
+    if (blob.size >= file.size && scale === 1) return file;
     return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
   } catch {
     return file; // e.g. HEIC the browser can't decode — upload as-is.

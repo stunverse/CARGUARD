@@ -357,7 +357,6 @@ function StepCard({
               ref={camRef}
               type="file"
               accept={captureMode === "video" ? "video/*" : "image/*"}
-              capture="environment"
               hidden
               onChange={onCaptured}
             />
