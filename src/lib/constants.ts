@@ -16,6 +16,15 @@ export const BRAND = {
     "Take 8 guided exterior photos. CarGuard AI helps you detect signs of previous accidents, repainting, body repairs, or hidden damage before buying a used car.",
 };
 
+// Canonical public base URL (no trailing slash). Used for SEO metadata,
+// sitemap, robots and structured data. Override per environment if needed.
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.carguard-ai.com"
+).replace(/\/+$/, "");
+
+// Public contact email surfaced in legal pages and structured data.
+export const CONTACT_EMAIL = "contact@carguard-ai.com";
+
 // ---------------------------------------------------------------------
 // Disclaimers (shown at signup, and before every report)
 // ---------------------------------------------------------------------

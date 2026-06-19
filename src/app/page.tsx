@@ -38,6 +38,19 @@ import { getServerLocale } from "@/lib/i18n-server";
 import { t, formatMoney, localeCurrency } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { INSPECTION_PRICE, INSPECTION_PACKS } from "@/lib/billing";
+import {
+  JsonLd,
+  organizationSchema,
+  websiteSchema,
+  softwareAppSchema,
+  faqSchema,
+} from "@/components/seo/json-ld";
+
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const HOW = [
   { icon: Car, k: "s1" },
@@ -118,8 +131,21 @@ export default async function HomePage({
   const priceLabel = formatMoney(INSPECTION_PRICE, currency);
   const marquee = t(locale, "landing.marquee.line");
 
+  const faqItems = FAQ.map((q) => ({
+    question: t(locale, `landing.faq.${q}`),
+    answer: t(locale, `landing.faq.a${q.slice(1)}`),
+  }));
+
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-white text-[#111827]">
+      <JsonLd
+        data={[
+          organizationSchema(),
+          websiteSchema(),
+          softwareAppSchema(INSPECTION_PRICE, currency),
+          faqSchema(faqItems),
+        ]}
+      />
       {/* Sticky dark header */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0B12]/85 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-3 lg:px-8">
