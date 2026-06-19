@@ -1044,6 +1044,648 @@ export const GUIDES: Guide[] = [
       ],
     },
   },
+  // -------------------------------------------------------------------
+  {
+    slug: "dealer-vs-private-seller",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Buying from a dealer vs a private seller",
+      fr: "Acheter chez un professionnel ou à un particulier",
+    },
+    description: {
+      en: "Dealers offer warranties and protection but cost more; private sellers are cheaper but riskier. Here's how to choose and protect yourself either way.",
+      fr: "Les professionnels offrent garanties et protections mais coûtent plus cher ; les particuliers sont moins chers mais plus risqués. Voici comment choisir et vous protéger dans les deux cas.",
+    },
+    body: {
+      en: [
+        {
+          heading: "The core trade-off",
+          paragraphs: [
+            "Buying from a dealer usually costs more but comes with legal protections, a warranty and recourse if something is wrong. Buying privately is cheaper but the principle is closer to \"sold as seen\" — the risk shifts to you.",
+          ],
+        },
+        {
+          heading: "Advantages of a dealer",
+          paragraphs: [
+            "Consumer law protections, a statutory or commercial warranty, prepared and inspected cars, part-exchange options and financing.",
+            "A reputable dealer also has a reputation to protect, which can mean more honest disclosure.",
+          ],
+        },
+        {
+          heading: "Drawbacks of a dealer",
+          paragraphs: [
+            "Higher prices to cover overheads and margin, sales pressure, and add-ons (warranties, paint protection) that are not always worth it.",
+          ],
+        },
+        {
+          heading: "Advantages of a private seller",
+          paragraphs: [
+            "Lower prices, direct contact with the person who actually used the car, and often a richer, more honest account of its quirks and history.",
+          ],
+        },
+        {
+          heading: "Drawbacks of a private seller",
+          paragraphs: [
+            "Far fewer legal protections, no warranty, and a small risk of fraud (outstanding finance, cloned cars, undisclosed damage). Due diligence is entirely on you.",
+          ],
+        },
+        {
+          heading: "How to protect yourself either way",
+          paragraphs: [
+            "Always verify the VIN and ownership, check for outstanding finance, inspect the car cold and in daylight, and get a vehicle-history report.",
+            "With a private sale especially, an independent or AI pre-inspection is worth far more than its cost. A CarGuard AI report gives you documented findings regardless of who you buy from.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Le compromis essentiel",
+          paragraphs: [
+            "Acheter chez un professionnel coûte généralement plus cher mais s'accompagne de protections légales, d'une garantie et d'un recours en cas de problème. L'achat à un particulier est moins cher, mais se rapproche du « vendu en l'état » — le risque bascule vers vous.",
+          ],
+        },
+        {
+          heading: "Avantages du professionnel",
+          paragraphs: [
+            "Protections du droit de la consommation, garantie légale ou commerciale, voitures préparées et contrôlées, reprise possible et financement.",
+            "Un professionnel sérieux a aussi une réputation à protéger, ce qui peut favoriser une information plus honnête.",
+          ],
+        },
+        {
+          heading: "Inconvénients du professionnel",
+          paragraphs: [
+            "Des prix plus élevés pour couvrir frais et marge, une pression commerciale, et des options (garanties, traitements de peinture) pas toujours rentables.",
+          ],
+        },
+        {
+          heading: "Avantages du particulier",
+          paragraphs: [
+            "Des prix plus bas, un contact direct avec la personne qui a réellement utilisé la voiture, et souvent un récit plus riche et honnête de ses particularités et de son histoire.",
+          ],
+        },
+        {
+          heading: "Inconvénients du particulier",
+          paragraphs: [
+            "Bien moins de protections légales, pas de garantie, et un petit risque de fraude (crédit en cours, voiture clonée, dommages non déclarés). La vérification repose entièrement sur vous.",
+          ],
+        },
+        {
+          heading: "Comment vous protéger dans les deux cas",
+          paragraphs: [
+            "Vérifiez toujours le VIN et la propriété, contrôlez l'absence de crédit en cours, inspectez la voiture à froid et de jour, et obtenez un rapport d'historique.",
+            "Pour une vente entre particuliers surtout, une pré-inspection indépendante ou par IA vaut bien plus que son coût. Un rapport CarGuard AI vous donne des constats documentés quel que soit le vendeur.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "used-electric-car-battery-health",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Buying a used electric car: how to check battery health",
+      fr: "Acheter une voiture électrique d'occasion : vérifier l'état de la batterie",
+    },
+    description: {
+      en: "The battery is the most valuable part of a used EV. Learn how to assess its health, range and warranty before you buy.",
+      fr: "La batterie est l'élément le plus précieux d'un véhicule électrique d'occasion. Apprenez à évaluer son état, son autonomie et sa garantie avant d'acheter.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Why the battery is everything",
+          paragraphs: [
+            "On an electric car, the battery represents a large share of the value and the cost of any future repair. A healthy battery makes a used EV a great buy; a degraded one can be a money pit.",
+          ],
+        },
+        {
+          heading: "1. Check the state of health (SoH)",
+          paragraphs: [
+            "Many EVs display a battery state of health or you can read it via the car's menus or a diagnostic app. Above ~90% is excellent; gradual decline is normal, but a sharp drop for the age and mileage is a concern.",
+          ],
+        },
+        {
+          heading: "2. Compare real range to the original",
+          paragraphs: [
+            "Fully charge the car (or check a recent full charge) and compare the indicated range to the model's original figure. A large gap suggests meaningful degradation.",
+          ],
+        },
+        {
+          heading: "3. Verify the battery warranty",
+          paragraphs: [
+            "Most makers warrant the battery for around 8 years or 160,000 km, often guaranteeing a minimum capacity. Confirm what remains and whether it transfers to you.",
+          ],
+        },
+        {
+          heading: "4. Ask about charging habits",
+          paragraphs: [
+            "Frequent rapid (DC) charging and routinely charging to 100% can accelerate wear. A car mostly home-charged to 80% is generally gentler on the battery.",
+          ],
+        },
+        {
+          heading: "5. Don't forget the rest of the car",
+          paragraphs: [
+            "EVs still have tyres, brakes, suspension, 12V battery and bodywork. Inspect them as you would any used car — and EVs can be heavy, so check tyre and brake wear carefully.",
+          ],
+        },
+        {
+          heading: "6. Get the numbers in writing",
+          paragraphs: [
+            "Ask for a battery health report or a diagnostic readout, and keep it with the sale. Document the car's condition with photos; a CarGuard AI inspection can screen the bodywork and overall condition before you commit.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Pourquoi la batterie est primordiale",
+          paragraphs: [
+            "Sur une voiture électrique, la batterie représente une grande part de la valeur et du coût d'une future réparation. Une batterie en bon état fait d'un VE d'occasion une excellente affaire ; une batterie dégradée peut devenir un gouffre.",
+          ],
+        },
+        {
+          heading: "1. Vérifiez l'état de santé (SoH)",
+          paragraphs: [
+            "Beaucoup de VE affichent un état de santé de la batterie, lisible dans les menus ou via une application de diagnostic. Au-dessus d'environ 90 %, c'est excellent ; un déclin progressif est normal, mais une chute marquée au regard de l'âge et du kilométrage doit alerter.",
+          ],
+        },
+        {
+          heading: "2. Comparez l'autonomie réelle à l'origine",
+          paragraphs: [
+            "Chargez la voiture à fond (ou vérifiez une charge complète récente) et comparez l'autonomie indiquée au chiffre d'origine du modèle. Un écart important suggère une dégradation notable.",
+          ],
+        },
+        {
+          heading: "3. Vérifiez la garantie batterie",
+          paragraphs: [
+            "La plupart des constructeurs garantissent la batterie environ 8 ans ou 160 000 km, souvent avec une capacité minimale garantie. Confirmez ce qu'il reste et si elle vous est transférée.",
+          ],
+        },
+        {
+          heading: "4. Renseignez-vous sur les habitudes de charge",
+          paragraphs: [
+            "Une charge rapide (DC) fréquente et une charge systématique à 100 % accélèrent l'usure. Une voiture surtout rechargée à domicile à 80 % ménage généralement mieux la batterie.",
+          ],
+        },
+        {
+          heading: "5. N'oubliez pas le reste de la voiture",
+          paragraphs: [
+            "Un VE a aussi des pneus, des freins, une suspension, une batterie 12V et une carrosserie. Inspectez-les comme pour toute occasion — et comme les VE sont lourds, vérifiez soigneusement l'usure des pneus et des freins.",
+          ],
+        },
+        {
+          heading: "6. Obtenez les chiffres par écrit",
+          paragraphs: [
+            "Demandez un rapport d'état de la batterie ou un relevé de diagnostic, et conservez-le avec la vente. Documentez l'état de la voiture en photos ; une inspection CarGuard AI peut pré-diagnostiquer la carrosserie et l'état général avant de vous engager.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "used-car-test-drive-checklist",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "The used car test drive checklist",
+      fr: "La check-list de l'essai routier d'une voiture d'occasion",
+    },
+    description: {
+      en: "A good test drive reveals what a parked car hides. Follow this checklist for the engine, gearbox, brakes, steering and more.",
+      fr: "Un bon essai révèle ce qu'une voiture à l'arrêt cache. Suivez cette check-list pour le moteur, la boîte, les freins, la direction et plus encore.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Set up the drive properly",
+          paragraphs: [
+            "Insist on starting the car cold. Plan a route with low-speed streets, a faster road and a few bumps. Drive for at least 15–20 minutes and turn off the radio so you can hear the car.",
+          ],
+        },
+        {
+          heading: "1. Cold start and idle",
+          paragraphs: [
+            "Listen at start-up for knocking or rattling, watch for warning lights that stay on, and check the exhaust for blue or white smoke.",
+          ],
+        },
+        {
+          heading: "2. Engine under load",
+          paragraphs: [
+            "Accelerate firmly: power should build smoothly with no hesitation, flat spots, excessive smoke or unusual noise.",
+          ],
+        },
+        {
+          heading: "3. Gearbox and clutch",
+          paragraphs: [
+            "Manual: the clutch should bite cleanly and gears should engage without grinding. Automatic: shifts should be smooth, with no jolts, slipping or delay.",
+          ],
+        },
+        {
+          heading: "4. Brakes",
+          paragraphs: [
+            "On a clear road, brake firmly: the car should stop straight without pulling, vibration, squealing or a soft/spongy pedal.",
+          ],
+        },
+        {
+          heading: "5. Steering and suspension",
+          paragraphs: [
+            "Hands lightly on the wheel, the car should track straight. Listen for clunks over bumps and feel for vibration through the wheel, which can mean worn suspension or alignment issues.",
+          ],
+        },
+        {
+          heading: "6. Electronics and comfort",
+          paragraphs: [
+            "Test air conditioning, heating, windows, cruise control and driver aids during the drive. Faults are often easier to trigger when the car is running.",
+          ],
+        },
+        {
+          heading: "7. After the drive",
+          paragraphs: [
+            "Let it idle and look underneath for fresh leaks, check the temperature gauge is stable, and restart it warm. Then document anything you noticed.",
+            "A CarGuard AI inspection complements the drive by screening bodywork and engine sound — useful evidence for your decision and negotiation.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Préparez bien l'essai",
+          paragraphs: [
+            "Exigez de démarrer la voiture à froid. Prévoyez un parcours avec des rues lentes, une route plus rapide et quelques bosses. Roulez au moins 15 à 20 minutes et coupez la radio pour entendre la voiture.",
+          ],
+        },
+        {
+          heading: "1. Démarrage à froid et ralenti",
+          paragraphs: [
+            "Écoutez au démarrage les cognements ou cliquetis, surveillez les voyants qui restent allumés, et vérifiez l'échappement (fumée bleue ou blanche).",
+          ],
+        },
+        {
+          heading: "2. Moteur en charge",
+          paragraphs: [
+            "Accélérez franchement : la puissance doit monter régulièrement, sans à-coup, trou, fumée excessive ni bruit inhabituel.",
+          ],
+        },
+        {
+          heading: "3. Boîte et embrayage",
+          paragraphs: [
+            "Manuelle : l'embrayage doit mordre nettement et les rapports passer sans craquement. Automatique : les passages doivent être doux, sans à-coups, patinage ni latence.",
+          ],
+        },
+        {
+          heading: "4. Freins",
+          paragraphs: [
+            "Sur une route dégagée, freinez fermement : la voiture doit s'arrêter droit, sans tirage, vibration, sifflement ni pédale molle.",
+          ],
+        },
+        {
+          heading: "5. Direction et suspension",
+          paragraphs: [
+            "Mains légères sur le volant, la voiture doit tenir le cap. Écoutez les bruits sur les bosses et sentez les vibrations dans le volant, signes d'une suspension usée ou d'un défaut de parallélisme.",
+          ],
+        },
+        {
+          heading: "6. Électronique et confort",
+          paragraphs: [
+            "Testez la climatisation, le chauffage, les vitres, le régulateur et les aides à la conduite pendant l'essai. Les pannes sont souvent plus faciles à déclencher moteur tournant.",
+          ],
+        },
+        {
+          heading: "7. Après l'essai",
+          paragraphs: [
+            "Laissez tourner au ralenti et regardez dessous d'éventuelles fuites fraîches, vérifiez que la température est stable, et redémarrez à chaud. Notez ensuite tout ce que vous avez remarqué.",
+            "Une inspection CarGuard AI complète l'essai en pré-diagnostiquant la carrosserie et le son moteur — des preuves utiles pour votre décision et votre négociation.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "common-used-car-scams",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Common used car scams and how to avoid them",
+      fr: "Les arnaques fréquentes à l'achat d'une voiture d'occasion",
+    },
+    description: {
+      en: "From mileage rollback to cloned cars and fake escrow, here are the most common used car scams and the simple steps that defeat them.",
+      fr: "Du trafic de compteur aux voitures clonées en passant par les faux séquestres, voici les arnaques les plus courantes et les gestes simples qui les déjouent.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Scams thrive on urgency",
+          paragraphs: [
+            "Almost every scam relies on pressure: a price \"too good to miss\", a buyer who must decide today, or a payment that must happen now. Slowing down is your best defence.",
+          ],
+        },
+        {
+          heading: "1. Mileage rollback",
+          paragraphs: [
+            "A wound-back odometer makes a worn car look fresh. Cross-check service records and a history report, and compare wear with the claimed mileage.",
+          ],
+        },
+        {
+          heading: "2. Cloned or stolen cars",
+          paragraphs: [
+            "A stolen car wears another car's identity (plates and VIN). Verify the VIN in every location matches the documents, and be wary of cheap prices with thin paperwork.",
+          ],
+        },
+        {
+          heading: "3. Hidden write-offs and repairs",
+          paragraphs: [
+            "A car repaired after a serious accident may be unsafe. A history report reveals insurance write-offs; a careful inspection reveals body and structural repairs.",
+          ],
+        },
+        {
+          heading: "4. Outstanding finance",
+          paragraphs: [
+            "If the seller still owes money on the car, the lender can reclaim it after you buy. Run a finance check before paying.",
+          ],
+        },
+        {
+          heading: "5. Fake escrow and shipping scams",
+          paragraphs: [
+            "Online, beware sellers who refuse to meet, ask for deposits via gift cards or wire transfer, or push a \"secure escrow\" link. Never pay for a car you have not seen in person.",
+          ],
+        },
+        {
+          heading: "6. Curbstoning (unlicensed dealers)",
+          paragraphs: [
+            "Someone posing as a private seller but flipping many cars (\"selling for a friend\", won't meet at home) dodges consumer protections. Ask to see the registration in their name.",
+          ],
+        },
+        {
+          heading: "Your simple defence kit",
+          paragraphs: [
+            "See the car in person and cold, verify VIN and ownership, run history and finance checks, never overpay a deposit, and get an inspection.",
+            "A CarGuard AI report plus a history check turns most of these scams into obvious red flags before you lose any money.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Les arnaques se nourrissent de l'urgence",
+          paragraphs: [
+            "Presque toutes les arnaques reposent sur la pression : un prix « à ne pas manquer », un acheteur qui doit décider aujourd'hui, ou un paiement à effectuer tout de suite. Ralentir est votre meilleure défense.",
+          ],
+        },
+        {
+          heading: "1. Trafic du compteur",
+          paragraphs: [
+            "Un compteur trafiqué fait passer une voiture usée pour récente. Recoupez le carnet d'entretien et un rapport d'historique, et comparez l'usure au kilométrage annoncé.",
+          ],
+        },
+        {
+          heading: "2. Voitures clonées ou volées",
+          paragraphs: [
+            "Une voiture volée porte l'identité d'une autre (plaques et VIN). Vérifiez que le VIN correspond aux documents à tous les emplacements, et méfiez-vous des prix bas avec des papiers légers.",
+          ],
+        },
+        {
+          heading: "3. Épaves et réparations cachées",
+          paragraphs: [
+            "Une voiture réparée après un accident grave peut être dangereuse. Un rapport d'historique révèle les véhicules irréparables ; une inspection soignée révèle les réparations de carrosserie et structurelles.",
+          ],
+        },
+        {
+          heading: "4. Crédit en cours",
+          paragraphs: [
+            "Si le vendeur doit encore de l'argent sur la voiture, l'organisme prêteur peut la récupérer après l'achat. Faites une vérification de gage avant de payer.",
+          ],
+        },
+        {
+          heading: "5. Faux séquestre et arnaques à l'expédition",
+          paragraphs: [
+            "En ligne, méfiez-vous des vendeurs qui refusent de se rencontrer, demandent des acomptes par cartes cadeaux ou virement, ou poussent un lien de « séquestre sécurisé ». Ne payez jamais une voiture que vous n'avez pas vue en personne.",
+          ],
+        },
+        {
+          heading: "6. Faux particuliers (marchands déguisés)",
+          paragraphs: [
+            "Quelqu'un se faisant passer pour un particulier mais revendant de nombreuses voitures (« je vends pour un ami », refuse de recevoir chez lui) contourne les protections du consommateur. Demandez à voir la carte grise à son nom.",
+          ],
+        },
+        {
+          heading: "Votre kit de défense simple",
+          paragraphs: [
+            "Voyez la voiture en personne et à froid, vérifiez le VIN et la propriété, faites les contrôles d'historique et de gage, ne versez jamais un acompte trop élevé, et faites une inspection.",
+            "Un rapport CarGuard AI et une vérification d'historique transforment la plupart de ces arnaques en signaux d'alerte évidents avant toute perte d'argent.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "how-much-mileage-is-too-much",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "How much mileage is too much on a used car?",
+      fr: "Quel kilométrage est trop élevé pour une voiture d'occasion ?",
+    },
+    description: {
+      en: "Mileage matters, but how the car was used and maintained matters more. Here's how to judge whether a car's mileage is a problem.",
+      fr: "Le kilométrage compte, mais l'usage et l'entretien comptent davantage. Voici comment juger si le kilométrage d'une voiture pose problème.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Mileage is only part of the story",
+          paragraphs: [
+            "A well-maintained, high-mileage car can be a better buy than a neglected low-mileage one. Cars are designed to run; how they were used and serviced matters more than a single number.",
+          ],
+        },
+        {
+          heading: "The rough yardstick",
+          paragraphs: [
+            "Cars average around 10,000–15,000 km (about 6,000–9,000 miles) a year. Compare the odometer with the age to see whether the car has done more or less than average.",
+          ],
+        },
+        {
+          heading: "Why low mileage isn't always good",
+          paragraphs: [
+            "A car that sat unused can suffer from perished seals, flat-spotted tyres, corroded brakes and a tired battery. Lots of short, cold trips are also harder on an engine than steady motorway miles.",
+          ],
+        },
+        {
+          heading: "Why high mileage isn't always bad",
+          paragraphs: [
+            "Mostly-motorway miles with a full service history and the major jobs (timing belt, clutch) already done can mean a reliable, well-understood car at a lower price.",
+          ],
+        },
+        {
+          heading: "What to check beyond the number",
+          paragraphs: [
+            "Service history, the condition of wear items (tyres, brakes, clutch), evidence the timing belt/chain was serviced on schedule, and whether wear inside the car matches the mileage.",
+          ],
+        },
+        {
+          heading: "Match mileage to your needs",
+          paragraphs: [
+            "For long daily commutes, a slightly higher-mileage car with great history can be smart. For occasional use, you may prefer lower mileage — just confirm it was driven and maintained, not left to rot.",
+            "Whatever the mileage, a CarGuard AI inspection and a history check confirm the car's real condition matches the figure on the dash.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Le kilométrage n'est qu'une partie de l'histoire",
+          paragraphs: [
+            "Une voiture bien entretenue à fort kilométrage peut être un meilleur achat qu'une voiture peu kilométrée mais négligée. Les voitures sont faites pour rouler ; l'usage et l'entretien comptent plus qu'un simple chiffre.",
+          ],
+        },
+        {
+          heading: "Le repère approximatif",
+          paragraphs: [
+            "Une voiture parcourt en moyenne 10 000 à 15 000 km par an. Comparez le compteur à l'âge pour voir si la voiture a roulé plus ou moins que la moyenne.",
+          ],
+        },
+        {
+          heading: "Pourquoi un faible kilométrage n'est pas toujours bon",
+          paragraphs: [
+            "Une voiture restée immobile peut souffrir de joints durcis, de pneus déformés, de freins corrodés et d'une batterie fatiguée. De nombreux petits trajets à froid usent aussi plus le moteur que des kilomètres réguliers sur autoroute.",
+          ],
+        },
+        {
+          heading: "Pourquoi un fort kilométrage n'est pas toujours mauvais",
+          paragraphs: [
+            "Des kilomètres surtout autoroutiers, avec un carnet d'entretien complet et les gros travaux (distribution, embrayage) déjà faits, peuvent signifier une voiture fiable et bien connue à un prix plus bas.",
+          ],
+        },
+        {
+          heading: "Ce qu'il faut vérifier au-delà du chiffre",
+          paragraphs: [
+            "Le carnet d'entretien, l'état des pièces d'usure (pneus, freins, embrayage), la preuve d'un entretien de la distribution dans les temps, et la cohérence entre l'usure intérieure et le kilométrage.",
+          ],
+        },
+        {
+          heading: "Adaptez le kilométrage à vos besoins",
+          paragraphs: [
+            "Pour de longs trajets quotidiens, une voiture un peu plus kilométrée avec un excellent historique peut être judicieuse. Pour un usage occasionnel, vous préférerez peut-être un faible kilométrage — en confirmant qu'elle a roulé et été entretenue, pas laissée à l'abandon.",
+            "Quel que soit le kilométrage, une inspection CarGuard AI et une vérification d'historique confirment que l'état réel de la voiture correspond au chiffre affiché.",
+          ],
+        },
+      ],
+    },
+  },
+  // -------------------------------------------------------------------
+  {
+    slug: "paperwork-when-buying-used-car",
+    updated: GUIDES_UPDATED,
+    title: {
+      en: "Paperwork and documents when buying a used car",
+      fr: "Les papiers et documents pour acheter une voiture d'occasion",
+    },
+    description: {
+      en: "The right documents protect you and prove the car is legally and mechanically sound. Here's the paperwork checklist before you pay.",
+      fr: "Les bons documents vous protègent et prouvent que la voiture est saine légalement et mécaniquement. Voici la check-list des papiers avant de payer.",
+    },
+    body: {
+      en: [
+        {
+          heading: "Why paperwork protects you",
+          paragraphs: [
+            "Documents prove ownership, history and legality. Missing or inconsistent paperwork is one of the strongest reasons to walk away from an otherwise tempting car.",
+          ],
+        },
+        {
+          heading: "1. Registration / title",
+          paragraphs: [
+            "Confirm the seller's name matches the registration document and an ID. Check the VIN and details on the document against the car itself.",
+          ],
+        },
+        {
+          heading: "2. Service history and invoices",
+          paragraphs: [
+            "A stamped service book and receipts prove maintenance and record mileage over time. They are gold for trust and for resale value later.",
+          ],
+        },
+        {
+          heading: "3. Roadworthiness / inspection certificate",
+          paragraphs: [
+            "Where required (e.g. MOT in the UK, contrôle technique in France, state inspection in the US), check the latest certificate and any advisories listed on it.",
+          ],
+        },
+        {
+          heading: "4. Vehicle-history report",
+          paragraphs: [
+            "Confirms accidents, write-offs, mileage timeline and number of owners. Treat it as essential, especially in a private sale.",
+          ],
+        },
+        {
+          heading: "5. Finance and lien check",
+          paragraphs: [
+            "Make sure there is no outstanding loan secured against the car, which could let a lender reclaim it after you buy.",
+          ],
+        },
+        {
+          heading: "6. The sale receipt / bill of sale",
+          paragraphs: [
+            "Get a written receipt with both parties' details, the car's VIN, the price, the date and a condition statement. Keep a copy.",
+          ],
+        },
+        {
+          heading: "7. Hand-over checklist",
+          paragraphs: [
+            "Collect all keys, the owner's manual, locking wheel-nut key, service records and any accessories, and complete the change of ownership promptly.",
+            "Pairing this paperwork with a CarGuard AI inspection report gives you a complete, documented picture of the car before money changes hands.",
+          ],
+        },
+      ],
+      fr: [
+        {
+          heading: "Pourquoi les papiers vous protègent",
+          paragraphs: [
+            "Les documents prouvent la propriété, l'historique et la légalité. Des papiers manquants ou incohérents sont l'une des meilleures raisons de renoncer à une voiture pourtant tentante.",
+          ],
+        },
+        {
+          heading: "1. Carte grise / certificat d'immatriculation",
+          paragraphs: [
+            "Vérifiez que le nom du vendeur correspond à la carte grise et à une pièce d'identité. Contrôlez le VIN et les informations du document avec la voiture elle-même.",
+          ],
+        },
+        {
+          heading: "2. Carnet d'entretien et factures",
+          paragraphs: [
+            "Un carnet tamponné et des factures prouvent l'entretien et enregistrent le kilométrage dans le temps. C'est précieux pour la confiance et pour la revente future.",
+          ],
+        },
+        {
+          heading: "3. Contrôle technique",
+          paragraphs: [
+            "Là où il est exigé (contrôle technique en France, MOT au Royaume-Uni, inspection selon l'État aux États-Unis), vérifiez le dernier procès-verbal et les défauts qui y sont signalés.",
+          ],
+        },
+        {
+          heading: "4. Rapport d'historique",
+          paragraphs: [
+            "Il confirme accidents, irréparables, courbe de kilométrage et nombre de propriétaires. À considérer comme indispensable, surtout entre particuliers.",
+          ],
+        },
+        {
+          heading: "5. Vérification de gage et de crédit",
+          paragraphs: [
+            "Assurez-vous qu'aucun crédit n'est en cours garanti par la voiture, ce qui pourrait permettre à un organisme de la récupérer après l'achat.",
+          ],
+        },
+        {
+          heading: "6. Le certificat de cession",
+          paragraphs: [
+            "Établissez un document écrit avec les coordonnées des deux parties, le VIN, le prix, la date et une mention sur l'état. Conservez-en une copie.",
+          ],
+        },
+        {
+          heading: "7. Check-list de remise des clés",
+          paragraphs: [
+            "Récupérez toutes les clés, le manuel, la clé d'antivol de roues, les justificatifs d'entretien et les accessoires, et effectuez rapidement le changement de titulaire.",
+            "Associer ces papiers à un rapport d'inspection CarGuard AI vous donne une vision complète et documentée de la voiture avant tout échange d'argent.",
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export function guideBySlug(slug: string): Guide | undefined {
