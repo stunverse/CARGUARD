@@ -1382,7 +1382,6 @@ function DocTile({
         ref={ref}
         type="file"
         accept="image/*,application/pdf"
-        capture="environment"
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];

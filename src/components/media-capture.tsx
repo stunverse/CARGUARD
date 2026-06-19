@@ -325,7 +325,6 @@ export function MediaCapture({
         ref={fileRef}
         type="file"
         accept={mode === "photo" ? "image/*" : mode === "video" ? "video/*" : "audio/*"}
-        capture={mode !== "audio" ? "environment" : undefined}
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];

@@ -65,6 +65,7 @@ export function HiddenDamageScanner({
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const active = PHOTO_POINTS.find((p) => p.code === activeCode)!;
   const activeLoc = localizedPhotoPoint(active, locale);
@@ -253,6 +254,17 @@ export function HiddenDamageScanner({
                 e.target.value = "";
               }}
             />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/heic,image/webp"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) upload(f);
+                e.target.value = "";
+              }}
+            />
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => fileInputRef.current?.click()} disabled={activeState.uploading}>
                 <Camera className="size-4" />
@@ -260,7 +272,7 @@ export function HiddenDamageScanner({
               </Button>
               <Button
                 variant="outline"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => galleryInputRef.current?.click()}
                 disabled={activeState.uploading}
               >
                 <ImageUp className="size-4" /> {t("scan.uploadGallery")}

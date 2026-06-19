@@ -113,7 +113,6 @@ export function FollowUpPhotoRequestCard({
               ref={fileRef}
               type="file"
               accept="image/jpeg,image/png,image/heic,image/webp"
-              capture="environment"
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0];
