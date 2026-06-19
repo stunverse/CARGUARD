@@ -19,17 +19,16 @@ export interface LegalDocContent {
   sections: LegalSection[];
 }
 
-export const LEGAL_UPDATED = { en: "16 June 2026", fr: "16 juin 2026" };
+export const LEGAL_UPDATED = { en: "19 June 2026", fr: "19 juin 2026" };
 
 // Company identity — fill these in before launch.
 const CO = {
-  name: "[COMPANY NAME]",
-  form: "[LEGAL FORM]",
-  address: "[REGISTERED ADDRESS]",
-  siret: "[SIRET / COMPANY NUMBER]",
-  email: "[CONTACT EMAIL]",
-  dpo: "[DPO / PRIVACY EMAIL]",
-  mediator: "[CONSUMER MEDIATOR — name & URL]",
+  name: "Stunverse&Co L.L.C.",
+  form: "Limited Liability Company (LLC), Wyoming, USA",
+  address: "30 N Gould St, Ste N, Sheridan, WY 82801, USA",
+  email: "contact@carguard-ai.com",
+  dpo: "contact@carguard-ai.com",
+  director: "Mamadou Doucoure",
 };
 
 // ---------------------------------------------------------------------
@@ -101,7 +100,7 @@ export const PRIVACY: Record<Locale, LegalDocContent> = {
       },
       {
         heading: "9. Contact",
-        paragraphs: [`Questions about this policy: ${CO.dpo} (${CO.name}, ${CO.address}).`],
+        paragraphs: [`Questions about this policy: ${CO.dpo} (${CO.name}, ${CO.address}). Publication director: ${CO.director}.`],
       },
     ],
   },
@@ -170,7 +169,7 @@ export const PRIVACY: Record<Locale, LegalDocContent> = {
       },
       {
         heading: "9. Contact",
-        paragraphs: [`Questions sur cette politique : ${CO.dpo} (${CO.name}, ${CO.address}).`],
+        paragraphs: [`Questions sur cette politique : ${CO.dpo} (${CO.name}, ${CO.address}). Directeur de la publication : ${CO.director}.`],
       },
     ],
   },
@@ -219,7 +218,7 @@ export const CGV: Record<Locale, LegalDocContent> = {
   en: {
     title: "Sales Terms",
     updated: LEGAL_UPDATED.en,
-    intro: `These sales terms apply to purchases of inspection credits on CarGuard AI, sold by ${CO.name} (${CO.form}), ${CO.address}, ${CO.siret} — ${CO.email}.`,
+    intro: `These sales terms apply to purchases of inspection credits on CarGuard AI, sold by ${CO.name} (${CO.form}), ${CO.address} — ${CO.email}.`,
     sections: [
       { heading: "1. Products & prices", paragraphs: ["We sell packs of inspection credits: 1 inspection (€29), 2 inspections (€49), 3 inspections (€69). Prices are in the currency shown at checkout, taxes included where applicable. One inspection consumes one credit. Credits do not expire and are non-transferable."] },
       { heading: "2. Order & payment", paragraphs: ["Payment is processed securely by Stripe at the time of order. Access to the credits/inspection is granted once payment is confirmed."] },
@@ -227,7 +226,7 @@ export const CGV: Record<Locale, LegalDocContent> = {
         "For digital services, the law grants a 14-day right of withdrawal. However, by starting an inspection (capturing photos/sound/documents and running the AI analysis) you expressly request immediate performance and acknowledge that you LOSE your right of withdrawal for any inspection once its analysis has begun (EU Directive 2011/83/EU; in France, art. L221-28 of the Consumer Code).",
         "Unused credits: you may request a refund of credits that have not been used (no inspection started) within 14 days of purchase.",
       ] },
-      { heading: "4. Refunds & claims", paragraphs: [`Refund requests and complaints: ${CO.email}. For consumer disputes (France), you may also use the consumer mediator: ${CO.mediator}, and the EU ODR platform (ec.europa.eu/consumers/odr).`] },
+      { heading: "4. Refunds & claims", paragraphs: [`Refund requests and complaints: ${CO.email}. EU consumers may also use the EU ODR platform (ec.europa.eu/consumers/odr).`] },
       { heading: "5. Service limits", paragraphs: ["CarGuard AI provides a preliminary AI screening, not a guarantee. See the Terms of Service for disclaimers and liability limits."] },
       { heading: "6. Governing law", paragraphs: ["These sales terms are governed by French law, without prejudice to mandatory consumer protections in your country of residence."] },
     ],
@@ -235,7 +234,7 @@ export const CGV: Record<Locale, LegalDocContent> = {
   fr: {
     title: "Conditions Générales de Vente",
     updated: LEGAL_UPDATED.fr,
-    intro: `Les présentes CGV s'appliquent à l'achat de crédits d'inspection sur CarGuard AI, vendus par ${CO.name} (${CO.form}), ${CO.address}, ${CO.siret} — ${CO.email}.`,
+    intro: `Les présentes CGV s'appliquent à l'achat de crédits d'inspection sur CarGuard AI, vendus par ${CO.name} (${CO.form}), ${CO.address} — ${CO.email}.`,
     sections: [
       { heading: "1. Produits & prix", paragraphs: ["Nous vendons des formules de crédits d'inspection : 1 inspection (29 €), 2 inspections (49 €), 3 inspections (69 €). Les prix sont indiqués dans la devise affichée au paiement, toutes taxes comprises le cas échéant. Une inspection consomme un crédit. Les crédits n'expirent pas et sont non cessibles."] },
       { heading: "2. Commande & paiement", paragraphs: ["Le paiement est traité de manière sécurisée par Stripe au moment de la commande. L'accès aux crédits/à l'inspection est accordé dès confirmation du paiement."] },
@@ -243,7 +242,7 @@ export const CGV: Record<Locale, LegalDocContent> = {
         "Pour les services numériques, la loi prévoit un droit de rétractation de 14 jours. Toutefois, en démarrant une inspection (capture des photos/son/documents et lancement de l'analyse IA), vous demandez expressément l'exécution immédiate et reconnaissez PERDRE votre droit de rétractation pour toute inspection dont l'analyse a commencé (Directive 2011/83/UE ; en France, art. L221-28 du Code de la consommation).",
         "Crédits non utilisés : vous pouvez demander le remboursement des crédits non utilisés (aucune inspection démarrée) dans un délai de 14 jours suivant l'achat.",
       ] },
-      { heading: "4. Remboursements & réclamations", paragraphs: [`Demandes de remboursement et réclamations : ${CO.email}. Pour les litiges de consommation (France), vous pouvez recourir au médiateur de la consommation : ${CO.mediator}, ainsi qu'à la plateforme RLL de l'UE (ec.europa.eu/consumers/odr).`] },
+      { heading: "4. Remboursements & réclamations", paragraphs: [`Demandes de remboursement et réclamations : ${CO.email}. Les consommateurs de l'UE peuvent également recourir à la plateforme RLL de l'UE (ec.europa.eu/consumers/odr).`] },
       { heading: "5. Limites du service", paragraphs: ["CarGuard AI fournit un pré-diagnostic IA préliminaire, et non une garantie. Voir les CGU pour les avertissements et limites de responsabilité."] },
       { heading: "6. Droit applicable", paragraphs: ["Les présentes CGV sont régies par le droit français, sans préjudice des protections impératives du consommateur dans votre pays de résidence."] },
     ],
