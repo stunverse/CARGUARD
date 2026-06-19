@@ -68,3 +68,39 @@ export function faqSchema(items: { question: string; answer: string }[]): Json {
     })),
   };
 }
+
+export function articleSchema(args: {
+  headline: string;
+  description: string;
+  url: string;
+  datePublished?: string;
+  inLanguage: string;
+}): Json {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: args.headline,
+    description: args.description,
+    url: args.url,
+    inLanguage: args.inLanguage,
+    author: { "@type": "Organization", name: BRAND.name },
+    publisher: {
+      "@type": "Organization",
+      name: BRAND.name,
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
+    },
+  };
+}
+
+export function breadcrumbSchema(items: { name: string; url: string }[]): Json {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      item: it.url,
+    })),
+  };
+}

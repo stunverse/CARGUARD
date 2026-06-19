@@ -543,11 +543,13 @@ export default async function HomePage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="" aria-hidden className="size-7" /> CarGuard <span className="text-[#FF4D4D]">AI</span>
           </div>
-          <div className="flex justify-center gap-5">
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
+            <Link href="/guides" className="hover:text-white">{locale === "fr" ? "Guides" : "Guides"}</Link>
+            <Link href="/faq" className="hover:text-white">{locale === "fr" ? "FAQ" : "FAQ"}</Link>
+            <Link href="/pricing" className="hover:text-white">{t(locale, "landing.pricing")}</Link>
             <Link href="/terms" className="hover:text-white">{locale === "fr" ? "CGU" : "Terms"}</Link>
             <Link href="/cgv" className="hover:text-white">{locale === "fr" ? "CGV" : "Sales terms"}</Link>
             <Link href="/privacy" className="hover:text-white">{locale === "fr" ? "Confidentialité" : "Privacy"}</Link>
-            <Link href="/pricing" className="hover:text-white">{t(locale, "landing.pricing")}</Link>
           </div>
           <p>© {new Date().getFullYear()} CarGuard AI</p>
         </div>
