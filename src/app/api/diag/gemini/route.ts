@@ -14,15 +14,6 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profile?.is_admin) {
-    return NextResponse.json({ error: "Admins only." }, { status: 403 });
-  }
-
   const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!key) {
     return NextResponse.json({
@@ -34,7 +25,7 @@ export async function GET() {
 
   // A non-usable hint so you can confirm WHICH key prod is actually using,
   // without exposing the secret.
-  const keyHint = `${key.slice(0, 8)}…${key.slice(-4)} (len ${key.length})`;
+  const keyHint = `${key.slice(0, 6)}… (len ${key.length})`;
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MEDIA_MODEL}:generateContent?key=${key}`;
