@@ -1387,13 +1387,9 @@ function AudioStep({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t("ui.uploadFailed"));
-      setStage("analyzing");
-      const a = await fetch(`/api/inspections/${sessionId}/engine-audio/${data.check.id}/analyze`, {
-        method: "POST",
-      });
-      const ad = await a.json();
-      if (!a.ok) throw new Error(ad.error ?? t("eat.analysisFailed"));
-      toast.success(t("eat.analyzedToast"));
+      // Analysis is deferred to the final report step (like photos/videos), so
+      // capturing the engine sound is instant — no waiting here.
+      toast.success(t("eat.savedToast"));
       onDone();
     } catch (e) {
       setErr(e instanceof Error ? e.message : t("ui.uploadFailed"));

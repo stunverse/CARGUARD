@@ -1,12 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
-import { checkEngineAudioQuality, audioModelMime } from "@/lib/ai/engine-audio";
-import { mediaWithinLimit } from "@/lib/ai/client";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { STORAGE_BUCKETS } from "@/lib/constants";
-import { getServerLocale } from "@/lib/i18n-server";
 
 export const runtime = "nodejs";
 
@@ -50,30 +47,11 @@ export async function POST(
 
   const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 3600);
 
-  // Quality check: only for model-compatible formats (download bytes server-side).
-  const ext = storagePath.split(".").pop()?.toLowerCase() ?? null;
-  const mediaMime = audioModelMime(mimeType, ext);
-  let audioBase64: string | null = null;
-  if (mediaMime) {
-    const { data: blob } = await supabase.storage.from(BUCKET).download(storagePath);
-    if (blob) {
-      const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-      // Within our analysis ceiling: small media is sent inline, larger media
-      // is uploaded via the Gemini Files API (handled in runStructuredMedia).
-      if (mediaWithinLimit(b64)) audioBase64 = b64;
-    }
-  }
-  const quality = await checkEngineAudioQuality({
-    audioBase64,
-    mimeType: audioBase64 ? mediaMime : null,
-    durationSeconds,
-    language: await getServerLocale(),
-  });
-  const qualityStatus = quality.is_usable
-    ? quality.retake_required
-      ? "needs_retake"
-      : "passed"
-    : "needs_retake";
+  // Keep the upload INSTANT: no AI here. The full engine-sound analysis (Gemini)
+  // is deferred to the final /analyze step, like photos and mechanical videos.
+  // We only do a free, deterministic length check for an early retake hint.
+  const tooShort = durationSeconds > 0 && durationSeconds < 8;
+  const qualityStatus = tooShort ? "needs_retake" : "passed";
 
   // One engine-audio per session.
   await supabase.from("engine_audio_checks").delete().eq("inspection_session_id", sessionId);
@@ -87,13 +65,13 @@ export async function POST(
       original_file_name: body?.original_file_name ?? null,
       file_type: fileType,
       mime_type: mimeType,
-      duration_seconds: quality.duration_seconds || durationSeconds || null,
+      duration_seconds: durationSeconds || null,
       file_url: signed?.signedUrl ?? null,
       storage_path: storagePath,
       upload_status: "uploaded",
       quality_status: qualityStatus,
-      audio_quality_score: quality.audio_quality_score,
-      ai_quality_check: quality,
+      // Analysis is deferred to /analyze.
+      analysis_status: "pending",
     })
     .select()
     .single();
@@ -106,5 +84,5 @@ export async function POST(
     description: `Quality: ${qualityStatus}`,
   });
 
-  return NextResponse.json({ check: saved, quality });
+  return NextResponse.json({ check: saved, qualityStatus });
 }

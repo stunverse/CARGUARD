@@ -12,7 +12,7 @@ import {
   aggregateMechanical,
   buildMechanicalItemAnalysis,
 } from "@/lib/ai/mechanical";
-import { audioModelMime } from "@/lib/ai/engine-audio";
+import { analyzeEngineAudio, audioModelMime } from "@/lib/ai/engine-audio";
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
 import { isAIConfigured, mediaWithinLimit } from "@/lib/ai/client";
 import { isStripeConfigured } from "@/lib/billing";
@@ -36,6 +36,63 @@ export const maxDuration = 300;
 const BUCKET =
   process.env.STORAGE_BUCKET_INSPECTION_PHOTOS || "inspection-photos";
 const MECH_BUCKET = process.env.STORAGE_BUCKET_MECHANICAL || STORAGE_BUCKETS.mechanical;
+const AUDIO_BUCKET = process.env.STORAGE_BUCKET_ENGINE_AUDIO || STORAGE_BUCKETS.engineAudio;
+
+// Run the deferred engine-sound analysis (Gemini) captured during the wizard.
+// Kept out of the per-step flow so recording the engine sound is instant.
+async function processDeferredEngineAudio(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  sessionId: string,
+  language: string,
+) {
+  const { data: row } = await supabase
+    .from("engine_audio_checks")
+    .select("*")
+    .eq("inspection_session_id", sessionId)
+    .neq("analysis_status", "completed")
+    .maybeSingle();
+  if (!row?.storage_path) return;
+
+  try {
+    const ext = row.storage_path.split(".").pop()?.toLowerCase() ?? null;
+    const mime = audioModelMime(row.mime_type, ext);
+    let audioBase64: string | null = null;
+    if (mime) {
+      const { data: blob } = await supabase.storage.from(AUDIO_BUCKET).download(row.storage_path);
+      if (blob) {
+        const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+        if (mediaWithinLimit(b64)) audioBase64 = b64;
+      }
+    }
+    const analysis = await analyzeEngineAudio({
+      audioBase64,
+      mimeType: audioBase64 ? mime : null,
+      durationSeconds: row.duration_seconds ?? 0,
+      language,
+    });
+    await supabase
+      .from("engine_audio_checks")
+      .update({
+        analysis_status: "completed",
+        engine_audio_score: analysis.engine_audio_score,
+        startup_quality_score: analysis.startup_quality_score,
+        idle_stability_score: analysis.idle_stability_score,
+        mechanical_noise_score: analysis.mechanical_noise_score,
+        belt_chain_noise_score: analysis.belt_chain_noise_score,
+        exhaust_noise_score: analysis.exhaust_noise_score,
+        confidence_score: analysis.confidence_score,
+        risk_level: analysis.risk_level,
+        recommendation: analysis.recommendation,
+        ai_analysis: analysis,
+        detected_sounds: analysis.detected_sounds,
+        seller_questions: analysis.seller_questions,
+        mechanic_questions: analysis.mechanic_questions,
+      })
+      .eq("id", row.id);
+  } catch (err) {
+    console.error("Deferred engine-audio analysis failed:", err);
+  }
+}
 
 // Run the deferred Gemini analysis for any video mechanical checks captured
 // during the wizard (kept out of the per-step flow to keep it snappy), then
@@ -220,8 +277,12 @@ export async function POST(
     (r): r is PhotoAnalysisResult => r !== null,
   );
 
-  // Enrich any deferred mechanical video checks now (parallel internally).
-  await processDeferredMechanicalVideos(supabase, sessionId, language);
+  // Enrich the deferred media analyses (mechanical videos + engine sound) now,
+  // concurrently — this is the "generating report" wait.
+  await Promise.all([
+    processDeferredMechanicalVideos(supabase, sessionId, language),
+    processDeferredEngineAudio(supabase, sessionId, language),
+  ]);
 
   // Global analysis + scores, enriched with model knowledge when available.
   const vehicle = (session as { vehicles?: unknown }).vehicles ?? {};
