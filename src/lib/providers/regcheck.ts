@@ -12,7 +12,7 @@
 // SERVER ONLY.
 // =====================================================================
 
-import type { VehicleLookupResult } from "@/lib/vehicle-lookup";
+import type { LookupResponse, VehicleLookupResult } from "@/lib/vehicle-lookup";
 
 const REGCHECK_BASE =
   process.env.REGCHECK_API_URL || "https://www.regcheck.org.uk/api/reg.asmx";
@@ -89,20 +89,51 @@ function extractVehicleJson(xml: string): Record<string, unknown> | null {
   }
 }
 
+// Try to surface a human error from the RegCheck XML envelope. RegCheck
+// reports auth/credit/firewall problems as a text message rather than an HTTP
+// error, so without this they all look identical to "plate not found".
+function extractError(xml: string): string | undefined {
+  for (const tag of ["message", "Message", "faultstring", "ERROR", "Error"]) {
+    const m = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "i"));
+    const v = m?.[1]?.trim();
+    if (v) return v;
+  }
+  // Plain-text fault (no XML wrapper).
+  const trimmed = xml.trim();
+  if (trimmed && !trimmed.startsWith("<")) return trimmed.slice(0, 160);
+  return undefined;
+}
+
 // France plate lookup. GET /CheckFrance?RegistrationNumber=&username=
-export async function regcheckFrancePlate(
-  plate: string,
-): Promise<VehicleLookupResult | null> {
+export async function regcheckFrancePlate(plate: string): Promise<LookupResponse> {
   const username = process.env.REGCHECK_USERNAME;
-  if (!username) return null;
+  if (!username) return { ok: false, configured: false };
   try {
     const reg = encodeURIComponent(plate.replace(/\s/g, "").toUpperCase());
     const url = `${REGCHECK_BASE}/CheckFrance?RegistrationNumber=${reg}&username=${encodeURIComponent(username)}`;
     const res = await fetch(url, { headers: { Accept: "application/xml,text/xml" } });
-    if (!res.ok) return null;
     const xml = await res.text();
+    if (!res.ok) {
+      const err = extractError(xml);
+      console.error("RegCheck France HTTP error", res.status, xml.slice(0, 300));
+      return {
+        ok: false,
+        configured: true,
+        message: err
+          ? `Plate provider error: ${err}`
+          : `Plate provider returned HTTP ${res.status}.`,
+      };
+    }
     const v = extractVehicleJson(xml);
-    if (!v) return null;
+    if (!v) {
+      const err = extractError(xml);
+      console.error("RegCheck France: no vehicleJson", xml.slice(0, 300));
+      return {
+        ok: false,
+        configured: true,
+        message: err ? `Plate provider: ${err}` : "No vehicle found for that plate.",
+      };
+    }
 
     const ext = (v.ExtendedData && typeof v.ExtendedData === "object"
       ? (v.ExtendedData as Record<string, string>)
@@ -110,7 +141,7 @@ export async function regcheckFrancePlate(
 
     const make = field(v.CarMake) ?? field(v.MakeDescription);
     const model = field(v.CarModel) ?? field(v.ModelDescription) ?? (ext.libelleModele || undefined);
-    if (!make && !model) return null;
+    if (!make && !model) return { ok: false, configured: true, message: "No vehicle found for that plate." };
 
     const yearStr = field(v.RegistrationYear) ?? (ext.anneeSortie || undefined);
     const year = yearStr ? Number(yearStr.replace(/[^\d]/g, "")) : undefined;
@@ -120,7 +151,7 @@ export async function regcheckFrancePlate(
     const vinRaw = (ext.numSerieMoteur || "").trim().toUpperCase();
     const vin = /^[A-HJ-NPR-Z0-9]{17}$/.test(vinRaw) ? vinRaw : undefined;
 
-    return {
+    const data: VehicleLookupResult = {
       make: make || undefined,
       model: model || undefined,
       year: year && Number.isFinite(year) ? year : undefined,
@@ -130,8 +161,9 @@ export async function regcheckFrancePlate(
       vin,
       source: "RegCheck (FR)",
     };
+    return { ok: true, configured: true, data };
   } catch (err) {
     console.error("RegCheck France plate lookup failed:", err);
-    return null;
+    return { ok: false, configured: true, message: "Plate lookup is temporarily unavailable." };
   }
 }

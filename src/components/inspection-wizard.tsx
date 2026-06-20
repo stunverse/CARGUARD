@@ -750,7 +750,8 @@ function VinStep({
     } else if (d.configured === false) {
       setMsg(isPlate ? t("wiz.plateUnavailable") : t("wiz.noMatch"));
     } else {
-      setMsg(isPlate ? t("wiz.plateNoMatch") : t("wiz.noMatch"));
+      // Surface the provider's real reason (auth/credit/firewall) when present.
+      setMsg(d.message || (isPlate ? t("wiz.plateNoMatch") : t("wiz.noMatch")));
     }
   }
 

@@ -131,9 +131,7 @@ export async function lookupPlate(
   // generic provider if RegCheck isn't configured.
   if (cc === "FR" || cc === "FRA" || cc === "FRANCE") {
     if (isRegCheckConfigured()) {
-      const r = await regcheckFrancePlate(plate);
-      if (r) return { ok: true, configured: true, data: r };
-      return { ok: false, configured: true, message: "No vehicle found for that plate." };
+      return regcheckFrancePlate(plate);
     }
     return lookupPlateGeneric(plate, cc);
   }
