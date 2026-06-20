@@ -44,24 +44,28 @@ async function processDeferredEngineAudio(
   supabase: Awaited<ReturnType<typeof createClient>>,
   sessionId: string,
   language: string,
-) {
+): Promise<{ present: boolean; ok: boolean; reason?: string }> {
   const { data: row } = await supabase
     .from("engine_audio_checks")
     .select("*")
     .eq("inspection_session_id", sessionId)
     .neq("analysis_status", "completed")
     .maybeSingle();
-  if (!row?.storage_path) return;
+  if (!row?.storage_path) return { present: false, ok: false };
 
   try {
     const ext = row.storage_path.split(".").pop()?.toLowerCase() ?? null;
     const mime = audioModelMime(row.mime_type, ext);
     let audioBase64: string | null = null;
-    if (mime) {
+    let reason = "";
+    if (!mime) reason = `unsupported format (.${ext})`;
+    else {
       const { data: blob } = await supabase.storage.from(AUDIO_BUCKET).download(row.storage_path);
-      if (blob) {
+      if (!blob) reason = "file download failed";
+      else {
         const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-        if (mediaWithinLimit(b64)) audioBase64 = b64;
+        if (!mediaWithinLimit(b64)) reason = "audio too large (over 200 MB)";
+        else audioBase64 = b64;
       }
     }
     const analysis = await analyzeEngineAudio({
@@ -89,8 +93,12 @@ async function processDeferredEngineAudio(
         mechanic_questions: analysis.mechanic_questions,
       })
       .eq("id", row.id);
+    if (reason) console.error("Engine-audio not AI-analyzed:", reason);
+    return { present: true, ok: Boolean(audioBase64), reason: reason || undefined };
   } catch (err) {
-    console.error("Deferred engine-audio analysis failed:", err);
+    const reason = err instanceof Error ? err.message : "unknown error";
+    console.error("Deferred engine-audio analysis failed:", reason);
+    return { present: true, ok: false, reason };
   }
 }
 
@@ -101,7 +109,8 @@ async function processDeferredMechanicalVideos(
   supabase: Awaited<ReturnType<typeof createClient>>,
   sessionId: string,
   language: string,
-) {
+): Promise<{ total: number; analyzed: number; failed: number; errors: string[] }> {
+  const debug = { total: 0, analyzed: 0, failed: 0, errors: [] as string[] };
   const { data: rows } = await supabase
     .from("mechanical_checks")
     .select("*")
@@ -109,42 +118,89 @@ async function processDeferredMechanicalVideos(
     .eq("media_type", "video")
     .eq("analysis_status", "pending");
   const pending = (rows ?? []) as MechanicalCheckItem[];
-  if (pending.length === 0) return;
+  debug.total = pending.length;
+  if (pending.length === 0) return debug;
+
+  const fr = language === "fr";
+  const unanalyzed = (reason: string) =>
+    fr
+      ? `❗ Cette vidéo n'a pas pu être analysée automatiquement (${reason}). Faites-la vérifier par un mécanicien.`
+      : `❗ This video could not be analyzed automatically (${reason}). Have a mechanic review it.`;
 
   await Promise.all(
     pending.map(async (item) => {
+      const path = item.video_storage_path;
+      let reason = "";
       try {
-        const path = item.video_storage_path;
-        if (!path) return;
-        const ext = path.split(".").pop()?.toLowerCase() ?? null;
-        const mime = audioModelMime(null, ext);
-        if (!mime) return;
-        const { data: blob } = await supabase.storage.from(MECH_BUCKET).download(path);
-        if (!blob) return;
-        const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-        if (!mediaWithinLimit(b64)) return;
-
-        const ai = await analyzeMechanicalVideo(b64, mime, item.point_code, language);
-        const analysis = buildMechanicalItemAnalysis(
-          item.point_code,
-          (item.observations as Record<string, boolean> | null) ?? null,
-          ai,
-          { locale: language, analyzed: true },
-        );
-        await supabase
-          .from("mechanical_checks")
-          .update({
-            analysis_status: "completed",
-            ai_analysis: analysis,
-            detected_issues: analysis.detected_issues,
-            score: analysis.score,
-            severity: analysis.severity,
-            confidence: analysis.confidence,
-          })
-          .eq("id", item.id);
+        if (!path) {
+          reason = "no video file";
+        } else {
+          const ext = path.split(".").pop()?.toLowerCase() ?? null;
+          const mime = audioModelMime(null, ext);
+          if (!mime) {
+            reason = `unsupported format (.${ext})`;
+          } else {
+            const { data: blob } = await supabase.storage.from(MECH_BUCKET).download(path);
+            if (!blob) {
+              reason = "file download failed";
+            } else {
+              const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+              if (!mediaWithinLimit(b64)) {
+                reason = "video too large (over 200 MB)";
+              } else {
+                const aiPart = await analyzeMechanicalVideo(b64, mime, item.point_code, language);
+                const analysis = buildMechanicalItemAnalysis(
+                  item.point_code,
+                  item.observations ?? null,
+                  aiPart,
+                  { locale: language, analyzed: true },
+                );
+                await supabase
+                  .from("mechanical_checks")
+                  .update({
+                    analysis_status: "completed",
+                    ai_analysis: analysis,
+                    detected_issues: analysis.detected_issues,
+                    score: analysis.score,
+                    severity: analysis.severity,
+                    confidence: analysis.confidence,
+                  })
+                  .eq("id", item.id);
+                debug.analyzed += 1;
+                return;
+              }
+            }
+          }
+        }
       } catch (err) {
-        console.error("Deferred mechanical video analysis failed:", err);
+        reason = err instanceof Error ? err.message : "unknown error";
       }
+
+      // Reached only on failure: record the reason and DON'T leave a misleading
+      // safe-100. Mark it as needing a human check.
+      console.error(`Deferred mechanical video (${item.point_code}) failed:`, reason);
+      debug.failed += 1;
+      debug.errors.push(`${item.point_code}: ${reason}`);
+      const base = scoreFallbackForUnanalyzed(item);
+      await supabase
+        .from("mechanical_checks")
+        .update({
+          analysis_status: "completed",
+          score: base.score,
+          severity: "moderate",
+          confidence: 10,
+          ai_analysis: {
+            summary: unanalyzed(reason),
+            score: base.score,
+            severity: "moderate",
+            detected_issues: [],
+            suspicious_observations: [
+              fr ? "Vidéo non analysée automatiquement" : "Video not analyzed automatically",
+            ],
+            confidence: 10,
+          },
+        })
+        .eq("id", item.id);
     }),
   );
 
@@ -162,6 +218,15 @@ async function processDeferredMechanicalVideos(
       mechanical_recommendation: section?.recommendation ?? null,
     })
     .eq("id", sessionId);
+
+  return debug;
+}
+
+// An un-analyzed video must not read as a confident "100/safe". Cap it so the
+// report flags it for a human review without fabricating a specific fault.
+function scoreFallbackForUnanalyzed(item: MechanicalCheckItem): { score: number } {
+  const obs = item.score ?? 100;
+  return { score: Math.min(obs, 60) };
 }
 
 function worstSeverity(issues: DetectedIssue[]): Severity {
@@ -279,10 +344,11 @@ export async function POST(
 
   // Enrich the deferred media analyses (mechanical videos + engine sound) now,
   // concurrently — this is the "generating report" wait.
-  await Promise.all([
+  const [videoDebug, audioDebug] = await Promise.all([
     processDeferredMechanicalVideos(supabase, sessionId, language),
     processDeferredEngineAudio(supabase, sessionId, language),
   ]);
+  const mediaDebug = { videos: videoDebug, engineAudio: audioDebug };
 
   // Global analysis + scores, enriched with model knowledge when available.
   const vehicle = (session as { vehicles?: unknown }).vehicles ?? {};
@@ -353,5 +419,5 @@ export async function POST(
     description: `Risk: ${global.risk_level}, score ${scores.global_score}`,
   });
 
-  return NextResponse.json({ global, scores, followUps: followUps.length });
+  return NextResponse.json({ global, scores, followUps: followUps.length, mediaDebug });
 }

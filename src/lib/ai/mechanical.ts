@@ -124,9 +124,10 @@ export async function analyzeMechanicalVideo(
       confidence: 35,
     };
   }
-  try {
-    return await runStructuredMedia<PhotoAiPart>({
-      system: `${AI_RULES}
+  // NOTE: errors propagate to the caller (the deferred /analyze step) so the
+  // real failure reason can be recorded instead of silently scoring 100.
+  return runStructuredMedia<PhotoAiPart>({
+    system: `${AI_RULES}
 
 TASK: Analyze the VIDEO (its images AND its soundtrack) for the mechanical check "${point?.title ?? code}". Consider what is visible (e.g. exhaust smoke colour, warning lights, leaks, fluid colour, vibrations) AND any audible cues (engine note, knocking, rattles, whistles).
 Look for: ${(point?.ai_targets ?? []).join(", ") || "relevant mechanical signs"}.
@@ -137,19 +138,10 @@ Be cautious and non-diagnostic. Return JSON exactly:
  "summary": string,
  "confidence": number
 }${languageDirective(language)}`,
-      userText: `Mechanical point: ${code}. Analyze the full video and return the JSON.`,
-      base64: videoBase64,
-      mimeType,
-    });
-  } catch (err) {
-    console.error("analyzeMechanicalVideo failed, falling back:", err);
-    return {
-      detected_issues: [],
-      suspicious_observations: [],
-      summary: "Automated video analysis was unavailable for this step.",
-      confidence: 20,
-    };
-  }
+    userText: `Mechanical point: ${code}. Analyze the full video and return the JSON.`,
+    base64: videoBase64,
+    mimeType,
+  });
 }
 
 // Combine the buyer's observations with the optional AI photo pass.

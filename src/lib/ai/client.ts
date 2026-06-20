@@ -26,9 +26,9 @@ export const MEDIA_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 // ~20 MB). Larger media is uploaded via the Files API and referenced by URI.
 const INLINE_MEDIA_LIMIT = 18 * 1024 * 1024;
 // Hard ceiling we enforce for uploaded media (Gemini Files API allows up to
-// 2 GB/file, but we cap well below that to bound serverless memory + cost —
-// the bytes are held in memory as a buffer + base64 string during upload).
-const MAX_MEDIA_LIMIT = 100 * 1024 * 1024;
+// 2 GB/file, but we cap to bound serverless memory + cost — the bytes are held
+// in memory as a buffer + base64 string during upload).
+const MAX_MEDIA_LIMIT = 200 * 1024 * 1024;
 
 export function isVisionConfigured(): boolean {
   return Boolean(anthropicKey());
