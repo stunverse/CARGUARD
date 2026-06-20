@@ -20,7 +20,9 @@ export const VISION_MODEL = process.env.ANTHROPIC_VISION_MODEL || "claude-opus-4
 export const INTERACTIVE_VISION_MODEL =
   process.env.ANTHROPIC_INTERACTIVE_MODEL || "claude-haiku-4-5";
 // Gemini model for video + audio. Override with GEMINI_MODEL.
-export const MEDIA_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+// NOTE: gemini-2.0-flash was retired by Google (404 "no longer available"),
+// so we default to the current stable 2.5 Flash (video + audio capable).
+export const MEDIA_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 // Inline-data ceiling for Gemini (the whole request must stay well under
 // ~20 MB). Larger media is uploaded via the Files API and referenced by URI.
