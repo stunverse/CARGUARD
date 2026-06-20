@@ -11,6 +11,7 @@ import {
   FileText,
   Lock,
   Mic,
+  Plus,
   RefreshCw,
   ShieldCheck,
   Sparkles,
@@ -1203,34 +1204,85 @@ function MechStep({
 }) {
   const { t, locale } = useI18n();
   const L = localizedMechPoint(point, locale);
-  const [file, setFile] = useState<File | null>(null);
-  const camRef = useRef<HTMLInputElement>(null);
-  const libRef = useRef<HTMLInputElement>(null);
-  const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const mt = point.media_type;
+
+  const [primaryFile, setPrimaryFile] = useState<File | null>(null);
+  const [secondaryFile, setSecondaryFile] = useState<File | null>(null);
+  const [docFiles, setDocFiles] = useState<File[]>([]);
+  const [obs, setObs] = useState<Record<string, boolean>>({});
+
+  const primCamRef = useRef<HTMLInputElement>(null);
+  const primLibRef = useRef<HTMLInputElement>(null);
+  const secCamRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLInputElement>(null);
+
+  // Audio recording (idle noise — sound only).
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const [recording, setRecording] = useState(false);
+
+  const pickInto = (setter: (f: File) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) setFile(f);
+    if (f) setter(f);
     e.target.value = "";
   };
+  const toggleObs = (key: string) => setObs((o) => ({ ...o, [key]: !o[key] }));
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data);
+      mr.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setPrimaryFile(new File([blob], `idle-${Date.now()}.webm`, { type: "audio/webm" }));
+      };
+      mediaRef.current = mr;
+      mr.start();
+      setRecording(true);
+    } catch {
+      toast.error(t("eat.micDenied"));
+    }
+  }
+  function stopRecording() {
+    mediaRef.current?.stop();
+    setRecording(false);
+  }
 
   async function save() {
     setBusy(true);
     try {
-      let primary_path: string | undefined;
-      if (file) {
-        const userId = await getUserId();
-        if (!userId) throw new Error("Please sign in again.");
-        const isImg = file.type.startsWith("image/");
-        const f = isImg ? await compressImage(file) : file;
-        primary_path = `${userId}/${sessionId}/${point.code}.${fileExt(f)}`;
-        await uploadToStorage(STORAGE_BUCKETS.mechanical, primary_path, f);
+      const userId = await getUserId();
+      if (!userId) throw new Error("Please sign in again.");
+      const up = async (f: File, suffix: string) => {
+        const out = f.type.startsWith("image/") ? await compressImage(f) : f;
+        const path = `${userId}/${sessionId}/${point.code}${suffix}.${fileExt(out)}`;
+        await uploadToStorage(STORAGE_BUCKETS.mechanical, path, out);
+        return path;
+      };
+      const payload: Record<string, unknown> = { observations: obs };
+      if (mt === "photo_pair") {
+        if (primaryFile) payload.primary_path = await up(primaryFile, "");
+        if (secondaryFile) payload.secondary_path = await up(secondaryFile, "-2");
+      } else if (mt === "docs") {
+        const paths: string[] = [];
+        for (let i = 0; i < docFiles.length; i++) paths.push(await up(docFiles[i], `-doc${i}`));
+        payload.doc_paths = paths;
+      } else if (mt !== "questionnaire") {
+        if (primaryFile) {
+          payload.primary_path = await up(primaryFile, "");
+          payload.primary_mime = primaryFile.type;
+        }
       }
       const res = await fetch(`/api/inspections/${sessionId}/mechanical/${point.code}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ observations: {}, primary_path }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("save failed");
-      setFile(null);
       onSaved();
     } catch {
       toast.error("Could not save this step.");
@@ -1238,9 +1290,6 @@ function MechStep({
       setBusy(false);
     }
   }
-
-  const captureMode: CaptureMode =
-    point.media_type === "video" || point.media_type === "questionnaire" ? "video" : "photo";
 
   return (
     <StepShell kicker={`${t("wiz.engineCheck")} ${point.order_index}`} question={L.title}>
@@ -1250,50 +1299,131 @@ function MechStep({
         {L.why}
       </p>
 
-      {hasCaptureGuide(point.code) && (
+      {mt !== "questionnaire" && hasCaptureGuide(point.code) && (
         <div className="mx-auto mt-3 w-40 sm:w-48">
           <CaptureGuide code={point.code} />
         </div>
       )}
 
-      <input
-        ref={camRef}
-        type="file"
-        accept={captureMode === "video" ? "video/*" : "image/*"}
-        hidden
-        onChange={pick}
-      />
-      <input
-        ref={libRef}
-        type="file"
-        accept={captureMode === "video" ? "video/*" : "image/*"}
-        hidden
-        onChange={pick}
-      />
+      {/* QUESTIONNAIRE — tap the answers that apply (no media) */}
+      {mt === "questionnaire" && (
+        <div className="mt-4 space-y-2">
+          {L.observations.map((o) => {
+            const active = !!obs[o.key];
+            return (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() => toggleObs(o.key)}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-xl border p-4 text-left text-sm transition-colors",
+                  active ? "border-[#E50914] bg-[rgba(229,9,20,0.05)]" : "border-[#E5E7EB] hover:bg-secondary",
+                )}
+              >
+                {o.label}
+                {active && <CheckCircle2 className="size-5 shrink-0 text-[#E50914]" aria-hidden />}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={() => camRef.current?.click()}
-        className={cn(
-          "mt-4 flex w-full items-center gap-2 rounded-xl border border-dashed p-3 text-left text-sm",
-          file ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB]",
-        )}
-      >
-        <span className={cn("flex size-9 items-center justify-center rounded-lg", file ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]")}>
-          {file ? <CheckCircle2 className="size-5" /> : captureMode === "video" ? <Video className="size-5" /> : <Camera className="size-5" />}
-        </span>
-        <span className="font-medium text-[#111827]">
-          {file ? t("wiz.captured") : captureMode === "video" ? t("wiz.film") : t("wiz.openCamera")}
-        </span>
-      </button>
+      {/* AUDIO — record or import a sound clip (no video/photo) */}
+      {mt === "audio" && (
+        <div className="mt-4">
+          <input ref={audioRef} type="file" accept="audio/*" hidden onChange={pickInto(setPrimaryFile)} />
+          {primaryFile ? (
+            <div className="flex items-center gap-2 rounded-xl border border-risk-low/50 bg-risk-low/5 p-3 text-sm">
+              <CheckCircle2 className="size-5 text-risk-low" />
+              <span className="font-medium text-[#111827]">{t("wiz.captured")}</span>
+            </div>
+          ) : recording ? (
+            <Button variant="accent" className="w-full" onClick={stopRecording}>
+              <Square className="size-4" /> {t("eat.stopRecording")}
+            </Button>
+          ) : (
+            <Button variant="accent" className="w-full" onClick={startRecording}>
+              <Mic className="size-4" /> {t("eat.recordAudio")}
+            </Button>
+          )}
+          <button
+            type="button"
+            onClick={() => audioRef.current?.click()}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium text-[#6B7280]"
+          >
+            <Upload className="size-4" aria-hidden /> {t("cap.useUpload")}
+          </button>
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={() => libRef.current?.click()}
-        className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium text-[#6B7280]"
-      >
-        <Upload className="size-4" aria-hidden /> {t("cap.useUpload")}
-      </button>
+      {/* PHOTO PAIR — two photos */}
+      {mt === "photo_pair" && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <input ref={primCamRef} type="file" accept="image/*" hidden onChange={pickInto(setPrimaryFile)} />
+          <input ref={secCamRef} type="file" accept="image/*" hidden onChange={pickInto(setSecondaryFile)} />
+          <MediaTile label={t("mct.ignitionOn")} done={!!primaryFile} onClick={() => primCamRef.current?.click()} />
+          <MediaTile label={t("mct.engineRunning")} done={!!secondaryFile} onClick={() => secCamRef.current?.click()} />
+        </div>
+      )}
+
+      {/* DOCS — multiple files */}
+      {mt === "docs" && (
+        <div className="mt-4">
+          <input
+            ref={docRef}
+            type="file"
+            accept="image/*,application/pdf"
+            multiple
+            hidden
+            onChange={(e) => {
+              if (e.target.files) setDocFiles((d) => [...d, ...Array.from(e.target.files!)]);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => docRef.current?.click()}
+            className="flex w-full items-center gap-2 rounded-xl border border-dashed border-[#E5E7EB] p-3 text-left text-sm"
+          >
+            <span className="flex size-9 items-center justify-center rounded-lg bg-[rgba(229,9,20,0.10)] text-[#E50914]">
+              <Plus className="size-5" />
+            </span>
+            <span className="font-medium text-[#111827]">
+              {docFiles.length ? `${docFiles.length} ${t("mct.docsSelected")}` : t("mct.addDocs")}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* PHOTO / VIDEO — single capture */}
+      {(mt === "photo" || mt === "video") && (
+        <>
+          <input ref={primCamRef} type="file" accept={mt === "video" ? "video/*" : "image/*"} hidden onChange={pickInto(setPrimaryFile)} />
+          <input ref={primLibRef} type="file" accept={mt === "video" ? "video/*" : "image/*"} hidden onChange={pickInto(setPrimaryFile)} />
+          <button
+            type="button"
+            onClick={() => primCamRef.current?.click()}
+            className={cn(
+              "mt-4 flex w-full items-center gap-2 rounded-xl border border-dashed p-3 text-left text-sm",
+              primaryFile ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB]",
+            )}
+          >
+            <span className={cn("flex size-9 items-center justify-center rounded-lg", primaryFile ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]")}>
+              {primaryFile ? <CheckCircle2 className="size-5" /> : mt === "video" ? <Video className="size-5" /> : <Camera className="size-5" />}
+            </span>
+            <span className="font-medium text-[#111827]">
+              {primaryFile ? t("wiz.captured") : mt === "video" ? t("wiz.film") : t("wiz.openCamera")}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => primLibRef.current?.click()}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 py-2 text-sm font-medium text-[#6B7280]"
+          >
+            <Upload className="size-4" aria-hidden /> {t("cap.useUpload")}
+          </button>
+        </>
+      )}
 
       <Button className="mt-5 w-full" onClick={save} disabled={busy}>
         {busy ? t("wiz.saving") : t("wiz.saveContinue")}
@@ -1309,6 +1439,24 @@ function MechStep({
         </button>
       )}
     </StepShell>
+  );
+}
+
+function MediaTile({ label, done, onClick }: { label: string; done: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed p-4 text-center text-sm transition-colors",
+        done ? "border-risk-low/50 bg-risk-low/5" : "border-[#E5E7EB] hover:bg-secondary",
+      )}
+    >
+      <span className={cn("flex size-9 items-center justify-center rounded-lg", done ? "bg-risk-low/15 text-risk-low" : "bg-[rgba(229,9,20,0.10)] text-[#E50914]")}>
+        {done ? <CheckCircle2 className="size-5" /> : <Camera className="size-5" />}
+      </span>
+      <span className="font-medium text-[#111827]">{label}</span>
+    </button>
   );
 }
 

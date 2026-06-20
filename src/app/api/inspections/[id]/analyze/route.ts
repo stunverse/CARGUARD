@@ -115,7 +115,7 @@ async function processDeferredMechanicalVideos(
     .from("mechanical_checks")
     .select("*")
     .eq("inspection_session_id", sessionId)
-    .eq("media_type", "video")
+    .in("media_type", ["video", "audio"])
     .eq("analysis_status", "pending");
   const pending = (rows ?? []) as MechanicalCheckItem[];
   debug.total = pending.length;

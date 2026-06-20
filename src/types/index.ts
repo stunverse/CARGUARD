@@ -648,7 +648,6 @@ export type MechanicalPointCode =
   | "idle_noise"
   | "acceleration"
   | "engine_temperature"
-  | "turbo"
   | "fluid_after_test"
   | "road_test"
   | "maintenance_records";
@@ -657,6 +656,7 @@ export type MechanicalMediaType =
   | "photo"
   | "photo_pair"
   | "video"
+  | "audio"
   | "questionnaire"
   | "docs";
 

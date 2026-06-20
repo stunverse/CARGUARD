@@ -245,7 +245,13 @@ function StepCard({
   }
 
   const captureMode =
-    point.media_type === "video" || point.media_type === "questionnaire" ? "video" : "photo";
+    point.media_type === "audio"
+      ? "audio"
+      : point.media_type === "video" || point.media_type === "questionnaire"
+        ? "video"
+        : "photo";
+  const captureAccept =
+    captureMode === "audio" ? "audio/*" : captureMode === "video" ? "video/*" : "image/*";
 
   return (
     <Card className={cn(result && "border-accent/30")}>
@@ -356,14 +362,14 @@ function StepCard({
             <input
               ref={camRef}
               type="file"
-              accept={captureMode === "video" ? "video/*" : "image/*"}
+              accept={captureAccept}
               hidden
               onChange={onCaptured}
             />
             <input
               ref={libRef}
               type="file"
-              accept={captureMode === "video" ? "video/*" : "image/*"}
+              accept={captureAccept}
               hidden
               onChange={onCaptured}
             />

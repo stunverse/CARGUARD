@@ -114,14 +114,14 @@ const MECH_FR: Partial<Record<string, MechFr>> = {
     obs: { oil_on_ground: "Huile au sol", colored_coolant: "Liquide vert/rose/orange", greasy_traces: "Traces grasses", suspiciously_clean_engine: "Moteur anormalement propre pour l'âge/kilométrage", no_leak: "Aucune fuite visible" },
   },
   idle_noise: {
-    title: "Bruits au ralenti (vidéo)",
-    instruction: "Filmez 30 s au ralenti, capot ouvert. Écoutez claquements, frottements, sifflements ou grincements.",
-    why: "Des bruits qui augmentent avec le régime, un claquement à chaud ou des tremblements excessifs traduisent une usure mécanique.",
-    obs: { metallic_knock: "Claquement métallique", rubbing: "Bruit de frottement", loud_whistle: "Sifflement fort", belt_squeal: "Couinement de courroie", engine_shakes: "Moteur qui tremble", unstable_idle: "Ralenti instable", smooth_idle: "Ralenti régulier et stable" },
+    title: "Bruits au ralenti (son)",
+    instruction: "Enregistrez 20–30 s du moteur au ralenti, capot ouvert. Un enregistrement sonore suffit — ni vidéo ni photo. Téléphone stable, sans musique.",
+    why: "Des bruits qui augmentent avec le régime, un claquement à chaud ou un ralenti instable traduisent une usure mécanique.",
+    obs: { metallic_knock: "Claquement métallique", rubbing: "Bruit de frottement", loud_whistle: "Sifflement fort", belt_squeal: "Couinement de courroie", unstable_idle: "Ralenti instable", smooth_idle: "Ralenti régulier et stable" },
   },
   acceleration: {
     title: "Accélération à l'arrêt (vidéo)",
-    instruction: "Demandez au vendeur de monter doucement à ~2 500–3 000 tr/min pendant que vous filmez. Observez fumée, bruit et montée en régime.",
+    instruction: "Placez-vous derrière la voiture, l'ÉCHAPPEMENT dans le cadre. Demandez au vendeur de monter doucement à ~2 500–3 000 tr/min pendant que vous filmez l'échappement et écoutez.",
     why: "Fumée bleue/noire, à-coups, bruit métallique ou régime instable en charge révèlent des problèmes invisibles au ralenti.",
     obs: { blue_black_smoke: "Fumée bleue ou noire", engine_stumbles: "Le moteur broute / hésite", metallic_noise: "Bruit métallique", unstable_rpm: "Régime instable", smooth_pull: "Montée en régime fluide et propre" },
   },
@@ -131,12 +131,6 @@ const MECH_FR: Partial<Record<string, MechFr>> = {
     why: "La température doit se stabiliser vers la normale (~90 °C sur beaucoup de voitures). Une montée rapide ou un message de surchauffe est un signal d'alerte.",
     obs: { temp_above_normal: "Température au-dessus de la normale", rising_fast: "Température qui monte vite", overheat_message: "Message de surchauffe affiché", fan_loud: "Ventilateur tournant anormalement fort", stable_normal: "Stable autour de la normale" },
   },
-  turbo: {
-    title: "Contrôle turbo (questions)",
-    instruction: "Pour les voitures turbo (diesel ou essence), répondez à ceci. Ignorez si pas de turbo.",
-    why: "Sifflement, perte de puissance, fumée bleue, huile autour des durites ou mode dégradé indiquent une usure du turbo.",
-    obs: { loud_whistle: "Fort sifflement", lacks_power: "La voiture manque de puissance", blue_black_smoke: "Fumée bleue ou noire", oil_around_hoses: "Huile autour des durites / du turbo", limp_mode: "Le moteur passe en mode dégradé", not_turbo_or_ok: "Pas de turbo, ou aucun souci turbo constaté" },
-  },
   fluid_after_test: {
     title: "Liquide sous la voiture après l'essai (photo)",
     instruction: "Après l'essai, laissez la voiture une minute, puis photographiez le sol en dessous.",
@@ -145,9 +139,9 @@ const MECH_FR: Partial<Record<string, MechFr>> = {
   },
   road_test: {
     title: "Essai routier (optionnel)",
-    instruction: "Si vous pouvez conduire la voiture, notez ce que vous observez.",
+    instruction: "Si vous pouvez conduire la voiture, sélectionnez ce que vous avez remarqué pendant l'essai.",
     why: "Le comportement en charge réelle révèle perte de puissance, à-coups, surchauffe ou voyants.",
-    obs: { car_sluggish: "Voiture qui semble molle", power_loss: "Perte de puissance", jerks: "À-coups / hésitations", smoke_in_mirror: "Fumée visible dans le rétroviseur", temp_rising: "Température qui monte anormalement", warning_light_appears: "Un voyant apparaît en roulant", burning_smell: "Odeur de brûlé", all_good: "A bien roulé, aucun souci" },
+    obs: { power_loss: "Perte de puissance / voiture molle", jerks: "À-coups ou hésitations", warning_light_appears: "Un voyant est apparu en roulant", temp_or_smell: "Température anormale ou odeur de brûlé", all_good: "A bien roulé, rien d'anormal" },
   },
   maintenance_records: {
     title: "Factures d'entretien (optionnel)",

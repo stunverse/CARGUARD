@@ -208,6 +208,62 @@ function Docs() {
   );
 }
 
+// Audio-only step (idle noise): phone microphone held near the running engine.
+function AudioGuide() {
+  return (
+    <svg viewBox="0 0 200 150" width="100%" height="100%" role="img" aria-hidden>
+      {/* engine block */}
+      <rect x={26} y={66} width={84} height={46} rx={8} fill="#fff" stroke={INK} strokeWidth={3} />
+      <rect x={36} y={56} width={24} height={12} rx={3} fill={INK} />
+      <rect x={76} y={56} width={24} height={12} rx={3} fill={INK} />
+      {/* phone held above, mic pointing down */}
+      <rect x={128} y={38} width={34} height={62} rx={7} fill="#fff" stroke={INK} strokeWidth={3} />
+      <circle cx={145} cy={92} r={2.4} fill={INK} />
+      <rect x={138} y={46} width={18} height={3} rx={1.5} fill={LINE} />
+      {/* sound waves from engine to phone */}
+      {[0, 1, 2].map((i) => (
+        <path
+          key={i}
+          d={`M112 ${78 - i * 8} q10 ${-6 - i * 2} 20 0`}
+          fill="none"
+          stroke={RED}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+        />
+      ))}
+      <circle cx={145} cy={70} r={7} fill={RED} />
+      <rect x={143} y={64} width={4} height={8} rx={2} fill="#fff" />
+      <text x={100} y={130} fontSize={10} fill={GREY} textAnchor="middle" fontFamily="Helvetica, Arial">record the engine sound (no video)</text>
+    </svg>
+  );
+}
+
+// Acceleration step: stand BEHIND the car and film the exhaust while revving.
+function AccelerationGuide() {
+  return (
+    <svg viewBox="0 0 200 150" width="100%" height="100%" role="img" aria-hidden>
+      {/* rear of the car */}
+      <rect x={40} y={40} width={120} height={56} rx={10} fill="#fff" stroke={INK} strokeWidth={3} />
+      <rect x={52} y={48} width={96} height={22} rx={5} fill="#EEF1F4" stroke={LINE} strokeWidth={2} />
+      {/* bumper + tail lights */}
+      <rect x={40} y={84} width={120} height={12} rx={4} fill="#EEF1F4" stroke={LINE} strokeWidth={2} />
+      <rect x={48} y={74} width={16} height={9} rx={2} fill={RED} />
+      <rect x={136} y={74} width={16} height={9} rx={2} fill={RED} />
+      {/* exhaust pipe + smoke (highlighted) */}
+      <rect x={120} y={97} width={16} height={7} rx={3} fill={INK} />
+      {[0, 1, 2].map((i) => (
+        <circle key={i} cx={128 + i * 9} cy={108 - i * 2} r={4 + i} fill={GREY} opacity={0.5 - i * 0.12} />
+      ))}
+      <circle cx={128} cy={104} r={15} fill="none" stroke={RED} strokeWidth={3} />
+      {/* camera position behind */}
+      <circle cx={100} cy={132} r={9} fill={RED} />
+      <rect x={95} y={128} width={10} height={8} rx={2} fill="#fff" />
+      <circle cx={100} cy={132} r={2.4} fill={RED} />
+      <text x={100} y={26} fontSize={10} fill={GREY} textAnchor="middle" fontFamily="Helvetica, Arial">film from behind — frame the exhaust</text>
+    </svg>
+  );
+}
+
 function VideoGuide() {
   return (
     <svg viewBox="0 0 200 150" width="100%" height="100%" role="img" aria-hidden>
@@ -234,10 +290,8 @@ const MECH: Record<string, () => ReactElement> = {
   fluid_after_test: Drop,
   maintenance_records: Docs,
   cold_start: VideoGuide,
-  idle_noise: VideoGuide,
-  acceleration: VideoGuide,
-  road_test: VideoGuide,
-  turbo: VideoGuide,
+  idle_noise: AudioGuide,
+  acceleration: AccelerationGuide,
 };
 
 export function CaptureGuide({ code, className }: { code: string; className?: string }) {

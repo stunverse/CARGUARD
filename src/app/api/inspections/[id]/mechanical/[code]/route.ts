@@ -86,7 +86,8 @@ export async function POST(
   }
 
   const isPhoto = point.media_type === "photo" || point.media_type === "photo_pair";
-  const isVideo = point.media_type === "video";
+  // Video and audio both go to Gemini (deferred to the final /analyze step).
+  const isVideo = point.media_type === "video" || point.media_type === "audio";
 
   const update: Partial<MechanicalCheckItem> & Record<string, unknown> = {
     user_id: user.id,

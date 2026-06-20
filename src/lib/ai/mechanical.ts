@@ -129,7 +129,7 @@ export async function analyzeMechanicalVideo(
   return runStructuredMedia<PhotoAiPart>({
     system: `${AI_RULES}
 
-TASK: Analyze the VIDEO (its images AND its soundtrack) for the mechanical check "${point?.title ?? code}". Consider what is visible (e.g. exhaust smoke colour, warning lights, leaks, fluid colour, vibrations) AND any audible cues (engine note, knocking, rattles, whistles).
+TASK: Analyze the RECORDING for the mechanical check "${point?.title ?? code}". It may be a video (frames + soundtrack) or an audio-only clip. Consider anything visible if present (e.g. exhaust smoke colour, warning lights, leaks, fluid colour, vibrations) AND any audible cues (engine note, knocking, rattles, whistles, idle stability). For an audio-only clip, base the analysis entirely on the sound.
 Look for: ${(point?.ai_targets ?? []).join(", ") || "relevant mechanical signs"}.
 Be cautious and non-diagnostic. Return JSON exactly:
 {
