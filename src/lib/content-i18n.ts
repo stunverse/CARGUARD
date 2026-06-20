@@ -84,10 +84,10 @@ const MECH_FR: Partial<Record<string, MechFr>> = {
     obs: { engine_light_stays_on: "Voyant moteur allumé après démarrage", oil_light_on: "Voyant de pression d'huile allumé", battery_light_on: "Voyant batterie / charge allumé", temp_light_on: "Voyant de température allumé", dpf_light_on: "Voyant FAP / dépollution allumé", no_lights_at_ignition: "Aucun voyant au contact (peut-être masqué)", lights_normal: "Voyants apparus au contact puis éteints" },
   },
   exhaust_smoke: {
-    title: "Fumée à l'échappement (vidéo)",
-    instruction: "Filmez l'échappement au démarrage, au ralenti et lors d'un léger coup d'accélérateur. C'est la fumée épaisse persistante qui est suspecte.",
-    why: "Blanche (joint de culasse/liquide), bleue (huile/turbo) ou noire (injecteurs/EGR/FAP) : chaque couleur indique un risque différent.",
-    obs: { white_thick_persistent: "Fumée blanche épaisse et persistante", blue_smoke: "Fumée bleue", black_excessive: "Fumée noire excessive", light_vapor_cold: "Juste une légère vapeur blanche par temps froid (normal)", no_smoke: "Aucune fumée visible" },
+    title: "Échappement & montée en régime (vidéo)",
+    instruction: "Placez-vous derrière la voiture, l'ÉCHAPPEMENT dans le cadre. Filmez pendant que le vendeur passe du ralenti à ~2 500–3 000 tr/min. Observez la couleur de la fumée ET son comportement en charge.",
+    why: "Blanche (joint de culasse/liquide), bleue (huile/turbo) ou noire (injecteurs/EGR/FAP) : chaque couleur indique un risque différent — et une fumée qui s'épaissit, des à-coups ou un bruit métallique en charge révèlent des problèmes invisibles au ralenti.",
+    obs: { white_thick_persistent: "Fumée blanche épaisse et persistante", blue_smoke: "Fumée bleue", black_excessive: "Fumée noire excessive", smoke_increases_under_rev: "La fumée s'épaissit en accélérant", engine_stumbles: "Le moteur broute / hésite en accélérant", metallic_noise: "Bruit métallique en accélérant", light_vapor_cold: "Juste une légère vapeur blanche par temps froid (normal)", no_smoke: "Aucune fumée, montée en régime propre" },
   },
   oil_dipstick: {
     title: "Huile moteur — jauge (photo)",
@@ -118,12 +118,6 @@ const MECH_FR: Partial<Record<string, MechFr>> = {
     instruction: "Enregistrez 20–30 s du moteur au ralenti, capot ouvert. Un enregistrement sonore suffit — ni vidéo ni photo. Téléphone stable, sans musique.",
     why: "Des bruits qui augmentent avec le régime, un claquement à chaud ou un ralenti instable traduisent une usure mécanique.",
     obs: { metallic_knock: "Claquement métallique", rubbing: "Bruit de frottement", loud_whistle: "Sifflement fort", belt_squeal: "Couinement de courroie", unstable_idle: "Ralenti instable", smooth_idle: "Ralenti régulier et stable" },
-  },
-  acceleration: {
-    title: "Accélération à l'arrêt (vidéo)",
-    instruction: "Placez-vous derrière la voiture, l'ÉCHAPPEMENT dans le cadre. Demandez au vendeur de monter doucement à ~2 500–3 000 tr/min pendant que vous filmez l'échappement et écoutez.",
-    why: "Fumée bleue/noire, à-coups, bruit métallique ou régime instable en charge révèlent des problèmes invisibles au ralenti.",
-    obs: { blue_black_smoke: "Fumée bleue ou noire", engine_stumbles: "Le moteur broute / hésite", metallic_noise: "Bruit métallique", unstable_rpm: "Régime instable", smooth_pull: "Montée en régime fluide et propre" },
   },
   engine_temperature: {
     title: "Température moteur (photo après conduite)",

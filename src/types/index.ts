@@ -646,7 +646,6 @@ export type MechanicalPointCode =
   | "coolant"
   | "leaks_under_engine"
   | "idle_noise"
-  | "acceleration"
   | "engine_temperature"
   | "fluid_after_test"
   | "road_test"

@@ -68,26 +68,29 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
   },
   {
     code: "exhaust_smoke",
-    title: "Exhaust smoke (video)",
+    title: "Exhaust & rev-up (video)",
     order_index: 3,
     media_type: "video",
     required: true,
     instruction:
-      "Film the exhaust at start, at idle, and during a light rev. Thick smoke that persists is the suspicious part.",
+      "Stand behind the car, framing the EXHAUST. Film while the seller goes from idle up to ~2,500–3,000 rpm. Watch the smoke colour AND how it behaves under load.",
     why_it_matters:
-      "White (head gasket/coolant), blue (oil burning/turbo), or black (injectors/EGR/DPF) smoke each point to different risks.",
+      "White (head gasket/coolant), blue (oil/turbo) or black (injectors/EGR/DPF) smoke each point to different risks — and smoke that thickens, stumbling or metallic noise under load reveals problems a static idle hides.",
     ai_targets: [
       "exhaust_smoke_color",
-      "smoke_density_thick_or_light",
-      "persistent_vs_brief_smoke",
-      "smoke_visible_at_tailpipe",
+      "white_blue_or_black_smoke",
+      "smoke_density_increase_under_load",
+      "unstable_revs_or_metallic_noise_under_rev",
     ],
     observations: [
       { key: "white_thick_persistent", label: "Thick white smoke that persists", kind: "suspect", weight: 32 },
       { key: "blue_smoke", label: "Blue smoke", kind: "suspect", weight: 30 },
-      { key: "black_excessive", label: "Excessive black smoke", kind: "suspect", weight: 22 },
+      { key: "black_excessive", label: "Excessive black smoke", kind: "suspect", weight: 24 },
+      { key: "smoke_increases_under_rev", label: "Smoke thickens when revving", kind: "suspect", weight: 24 },
+      { key: "engine_stumbles", label: "Engine stumbles / hesitates when revving", kind: "suspect", weight: 22 },
+      { key: "metallic_noise", label: "Metallic noise when revving", kind: "suspect", weight: 26 },
       { key: "light_vapor_cold", label: "Only light white vapor in cold weather (normal)", kind: "good", weight: 0 },
-      { key: "no_smoke", label: "No visible smoke", kind: "good", weight: 0 },
+      { key: "no_smoke", label: "No visible smoke, clean rev", kind: "good", weight: 0 },
     ],
   },
   {
@@ -189,33 +192,9 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
     ],
   },
   {
-    code: "acceleration",
-    title: "Acceleration at standstill (video)",
-    order_index: 9,
-    media_type: "video",
-    required: true,
-    instruction:
-      "Stand behind the car, framing the EXHAUST in view. Have the seller gently rev to ~2,500–3,000 rpm while you film the exhaust and listen.",
-    why_it_matters:
-      "Blue/black smoke, stumbling, metallic noise or unstable revs under load reveal problems a static idle hides.",
-    ai_targets: [
-      "exhaust_smoke_color_under_rev",
-      "black_or_blue_smoke_when_revving",
-      "smoke_density_increase_under_load",
-      "dashboard_warning_lights",
-    ],
-    observations: [
-      { key: "blue_black_smoke", label: "Blue or black smoke", kind: "suspect", weight: 28 },
-      { key: "engine_stumbles", label: "Engine stumbles / hesitates", kind: "suspect", weight: 22 },
-      { key: "metallic_noise", label: "Metallic noise", kind: "suspect", weight: 26 },
-      { key: "unstable_rpm", label: "Unstable revs", kind: "suspect", weight: 20 },
-      { key: "smooth_pull", label: "Smooth, clean rev climb", kind: "good", weight: 0 },
-    ],
-  },
-  {
     code: "engine_temperature",
     title: "Engine temperature (photo after driving)",
-    order_index: 10,
+    order_index: 9,
     media_type: "photo",
     required: true,
     instruction:
@@ -234,7 +213,7 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
   {
     code: "fluid_after_test",
     title: "Fluid under the car after the test drive (photo)",
-    order_index: 11,
+    order_index: 10,
     media_type: "photo",
     required: true,
     instruction: "After the drive, let the car sit a minute, then photograph the ground underneath.",
@@ -252,7 +231,7 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
   {
     code: "road_test",
     title: "Road test (optional)",
-    order_index: 12,
+    order_index: 11,
     media_type: "questionnaire",
     required: false,
     instruction: "If you can drive the car, select what you noticed during the drive.",
@@ -268,7 +247,7 @@ export const MECHANICAL_POINTS: MechanicalPoint[] = [
   {
     code: "maintenance_records",
     title: "Maintenance records (optional)",
-    order_index: 13,
+    order_index: 12,
     media_type: "docs",
     required: false,
     instruction: "Upload photos of service invoices / the maintenance logbook if available.",
