@@ -9,6 +9,7 @@
 // =====================================================================
 
 import {
+  INTERACTIVE_VISION_MODEL,
   isVisionConfigured as isAIConfigured,
   runStructuredVision,
 } from "./client";
@@ -62,6 +63,8 @@ export async function checkPhotoQuality(
       system: qualityCheckPrompt() + languageDirective(language),
       userText: `Requested angle: ${requestedCode}. Quality-check this photo and return the JSON schema.`,
       imageUrls: [imageUrl],
+      // Fast model: a usability/angle check doesn't need the heavy model.
+      model: INTERACTIVE_VISION_MODEL,
     });
   } catch (err) {
     console.error("checkPhotoQuality failed, falling back:", err);

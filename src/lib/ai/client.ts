@@ -14,6 +14,11 @@ const geminiKey = () => process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
 // Claude vision model. Override with ANTHROPIC_VISION_MODEL (e.g. a cheaper
 // Sonnet for high-volume image analysis).
 export const VISION_MODEL = process.env.ANTHROPIC_VISION_MODEL || "claude-opus-4-8";
+// Fast, cheap model for INTERACTIVE per-step checks during the wizard (photo
+// quality control, mechanical photo) where latency matters more than depth.
+// The final report synthesis still uses VISION_MODEL.
+export const INTERACTIVE_VISION_MODEL =
+  process.env.ANTHROPIC_INTERACTIVE_MODEL || "claude-haiku-4-5";
 // Gemini model for video + audio. Override with GEMINI_MODEL.
 export const MEDIA_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
@@ -64,6 +69,8 @@ interface VisionCallOptions {
   userText: string;
   imageUrls?: string[];
   temperature?: number;
+  /** Override the model (e.g. a fast model for interactive checks). */
+  model?: string;
 }
 
 export async function runStructuredVision<T>(opts: VisionCallOptions): Promise<T> {
@@ -87,7 +94,7 @@ export async function runStructuredVision<T>(opts: VisionCallOptions): Promise<T
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: VISION_MODEL,
+      model: opts.model || VISION_MODEL,
       max_tokens: 4096,
       system: opts.system,
       messages: [{ role: "user", content }],

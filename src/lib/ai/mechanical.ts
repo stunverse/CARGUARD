@@ -5,7 +5,7 @@
 // All scores: higher = safer. SERVER ONLY.
 // =====================================================================
 
-import { isMediaConfigured, isVisionConfigured, runStructuredMedia, runStructuredVision } from "./client";
+import { INTERACTIVE_VISION_MODEL, isMediaConfigured, isVisionConfigured, runStructuredMedia, runStructuredVision } from "./client";
 import { AI_RULES, languageDirective } from "./prompts";
 import {
   DEFAULT_MECHANICAL_MECHANIC_QUESTIONS,
@@ -92,6 +92,7 @@ Be cautious and non-diagnostic. Return JSON exactly:
 }${languageDirective(language)}`,
       userText: `Mechanical point: ${code}. Analyze and return the JSON.`,
       imageUrls,
+      model: INTERACTIVE_VISION_MODEL,
     });
   } catch (err) {
     console.error("analyzeMechanicalPhoto failed, falling back:", err);

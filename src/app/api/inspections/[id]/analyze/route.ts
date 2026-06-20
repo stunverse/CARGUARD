@@ -7,21 +7,105 @@ import {
   calculateInspectionScores,
   generateFollowUpPhotoRequests,
 } from "@/lib/ai/functions";
+import {
+  analyzeMechanicalVideo,
+  aggregateMechanical,
+  buildMechanicalItemAnalysis,
+} from "@/lib/ai/mechanical";
+import { audioModelMime } from "@/lib/ai/engine-audio";
 import { getModelKnowledge } from "@/lib/ai/model-knowledge";
-import { isAIConfigured } from "@/lib/ai/client";
+import { isAIConfigured, mediaWithinLimit } from "@/lib/ai/client";
 import { isStripeConfigured } from "@/lib/billing";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { getServerLocale } from "@/lib/i18n-server";
+import { STORAGE_BUCKETS } from "@/lib/constants";
 import type {
   DetectedIssue,
   InspectionPhoto,
+  MechanicalCheckItem,
   PhotoAnalysisResult,
   Severity,
 } from "@/types";
 
+export const runtime = "nodejs";
+// Heavy step: deep photo analysis + deferred video analysis run here (in
+// parallel). Give the function a generous budget so it never times out.
+export const maxDuration = 300;
+
 const BUCKET =
   process.env.STORAGE_BUCKET_INSPECTION_PHOTOS || "inspection-photos";
+const MECH_BUCKET = process.env.STORAGE_BUCKET_MECHANICAL || STORAGE_BUCKETS.mechanical;
+
+// Run the deferred Gemini analysis for any video mechanical checks captured
+// during the wizard (kept out of the per-step flow to keep it snappy), then
+// re-aggregate the session's mechanical score.
+async function processDeferredMechanicalVideos(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  sessionId: string,
+  language: string,
+) {
+  const { data: rows } = await supabase
+    .from("mechanical_checks")
+    .select("*")
+    .eq("inspection_session_id", sessionId)
+    .eq("media_type", "video")
+    .eq("analysis_status", "pending");
+  const pending = (rows ?? []) as MechanicalCheckItem[];
+  if (pending.length === 0) return;
+
+  await Promise.all(
+    pending.map(async (item) => {
+      try {
+        const path = item.video_storage_path;
+        if (!path) return;
+        const ext = path.split(".").pop()?.toLowerCase() ?? null;
+        const mime = audioModelMime(null, ext);
+        if (!mime) return;
+        const { data: blob } = await supabase.storage.from(MECH_BUCKET).download(path);
+        if (!blob) return;
+        const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
+        if (!mediaWithinLimit(b64)) return;
+
+        const ai = await analyzeMechanicalVideo(b64, mime, item.point_code, language);
+        const analysis = buildMechanicalItemAnalysis(
+          item.point_code,
+          (item.observations as Record<string, boolean> | null) ?? null,
+          ai,
+          { locale: language, analyzed: true },
+        );
+        await supabase
+          .from("mechanical_checks")
+          .update({
+            analysis_status: "completed",
+            ai_analysis: analysis,
+            detected_issues: analysis.detected_issues,
+            score: analysis.score,
+            severity: analysis.severity,
+            confidence: analysis.confidence,
+          })
+          .eq("id", item.id);
+      } catch (err) {
+        console.error("Deferred mechanical video analysis failed:", err);
+      }
+    }),
+  );
+
+  // Re-aggregate the session mechanical score from the enriched items.
+  const { data: items } = await supabase
+    .from("mechanical_checks")
+    .select("*")
+    .eq("inspection_session_id", sessionId);
+  const section = aggregateMechanical((items ?? []) as MechanicalCheckItem[]);
+  await supabase
+    .from("inspection_sessions")
+    .update({
+      mechanical_score: section?.mechanical_score ?? null,
+      mechanical_risk_level: section?.risk_level ?? null,
+      mechanical_recommendation: section?.recommendation ?? null,
+    })
+    .eq("id", sessionId);
+}
 
 function worstSeverity(issues: DetectedIssue[]): Severity {
   const order: Severity[] = ["none", "low", "moderate", "high", "critical"];
@@ -102,39 +186,42 @@ export async function POST(
     .update({ status: "analysis_in_progress" })
     .eq("id", sessionId);
 
-  // Analyze each photo (fresh signed URL).
-  const results: PhotoAnalysisResult[] = [];
-  for (const photo of usable) {
-    const { data: signed } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(photo.storage_path!, 3600);
-    if (!signed?.signedUrl || !photo.photo_point_code) continue;
+  // Analyze all photos IN PARALLEL (fresh signed URL each), plus the deferred
+  // mechanical videos — concurrently — so the report screen isn't a long
+  // sequential wait.
+  const photoResultsRaw = await Promise.all(
+    usable.map(async (photo) => {
+      const { data: signed } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(photo.storage_path!, 3600);
+      if (!signed?.signedUrl || !photo.photo_point_code) return null;
 
-    const analysis = await analyzeInspectionPhoto(
-      signed.signedUrl,
-      photo.photo_point_code,
-      language,
-    );
-    results.push(analysis);
+      const analysis = await analyzeInspectionPhoto(
+        signed.signedUrl,
+        photo.photo_point_code,
+        language,
+      );
 
-    await supabase
-      .from("inspection_photos")
-      .update({
-        analysis_status: "completed",
-        ai_analysis: analysis,
-        detected_issues: analysis.detected_issues,
-        severity: worstSeverity(analysis.detected_issues),
-        confidence: analysis.confidence,
-      })
-      .eq("id", photo.id);
+      await supabase
+        .from("inspection_photos")
+        .update({
+          analysis_status: "completed",
+          ai_analysis: analysis,
+          detected_issues: analysis.detected_issues,
+          severity: worstSeverity(analysis.detected_issues),
+          confidence: analysis.confidence,
+        })
+        .eq("id", photo.id);
 
-    await logActivity(supabase, {
-      userId: user.id,
-      sessionId,
-      action: "photo_analyzed",
-      description: `${photo.photo_point_code} analyzed`,
-    });
-  }
+      return analysis;
+    }),
+  );
+  const results: PhotoAnalysisResult[] = photoResultsRaw.filter(
+    (r): r is PhotoAnalysisResult => r !== null,
+  );
+
+  // Enrich any deferred mechanical video checks now (parallel internally).
+  await processDeferredMechanicalVideos(supabase, sessionId, language);
 
   // Global analysis + scores, enriched with model knowledge when available.
   const vehicle = (session as { vehicles?: unknown }).vehicles ?? {};

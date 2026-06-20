@@ -3,12 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
 import {
   analyzeMechanicalPhoto,
-  analyzeMechanicalVideo,
   aggregateMechanical,
   buildMechanicalItemAnalysis,
 } from "@/lib/ai/mechanical";
-import { audioModelMime } from "@/lib/ai/engine-audio";
-import { mediaWithinLimit } from "@/lib/ai/client";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
@@ -82,7 +79,6 @@ export async function POST(
   const secondaryPath = body?.secondary_path as string | undefined;
   const docPaths = (body?.doc_paths ?? []) as string[];
   const framePaths = (body?.frame_paths ?? []) as string[];
-  const primaryMime = (body?.primary_mime as string) ?? "";
 
   const own = (p?: string) => !p || p.startsWith(`${user.id}/`);
   if (!own(primaryPath) || !own(secondaryPath) || !docPaths.every(own) || !framePaths.every(own)) {
@@ -133,26 +129,18 @@ export async function POST(
 
   const locale = await getServerLocale();
 
-  // AI pass: full video (images + soundtrack) → Gemini; photos → Claude vision.
+  // AI pass. Photos are quick (fast vision model) → analyze inline so the score
+  // shows immediately. VIDEO analysis (Gemini, with full soundtrack) is slow, so
+  // it is DEFERRED to the final /analyze step to keep the wizard snappy: we save
+  // an observation-based score now and mark it "pending" for later enrichment.
   let ai = null;
   let analyzed = false;
-  if (isVideo && primaryPath) {
-    const ext = primaryPath.split(".").pop()?.toLowerCase() ?? null;
-    const videoMime = audioModelMime(primaryMime, ext);
-    if (videoMime) {
-      const { data: blob } = await supabase.storage.from(BUCKET).download(primaryPath);
-      if (blob) {
-        const b64 = Buffer.from(await blob.arrayBuffer()).toString("base64");
-        if (mediaWithinLimit(b64)) {
-          ai = await analyzeMechanicalVideo(b64, videoMime, code as MechanicalPointCode, locale);
-          analyzed = true;
-        }
-      }
-    }
-  } else if (imageUrlsForAi.length) {
+  const deferVideo = isVideo && Boolean(update.video_storage_path);
+  if (!deferVideo && imageUrlsForAi.length) {
     ai = await analyzeMechanicalPhoto(imageUrlsForAi, code as MechanicalPointCode, locale);
     analyzed = true;
   }
+  if (deferVideo) update.analysis_status = "pending";
 
   const analysis = buildMechanicalItemAnalysis(code as MechanicalPointCode, observations, ai, {
     locale,
