@@ -82,23 +82,37 @@ export interface WizardResume {
   audioDone?: boolean;
 }
 
-function resumeStart(r: WizardResume): { phase: Phase; pIndex: number; mIndex: number; vIndex: number } {
-  const lastV = VEHICLE_STEPS.length - 1;
+// The manual questionnaire (everything except the VIN/plate entry). It is only
+// required when the buyer has neither a VIN nor a licence plate.
+const QUESTIONNAIRE_STEPS: VStepDef[] = VEHICLE_STEPS.filter((s) => s.kind !== "vin");
+
+type VehicleStage = "entry" | "questionnaire" | "validation";
+
+function resumeStart(r: WizardResume): {
+  phase: Phase;
+  pIndex: number;
+  mIndex: number;
+  vIndex: number;
+  vehicleStage: VehicleStage;
+} {
+  const lastV = QUESTIONNAIRE_STEPS.length - 1;
   // Paid but the vehicle wasn't entered yet (payment now happens first) →
-  // resume at the vehicle questions.
-  if (!r.vehicle.make) return { phase: "vehicle", pIndex: 0, mIndex: 0, vIndex: 0 };
+  // resume at the VIN/plate entry.
+  if (!r.vehicle.make)
+    return { phase: "vehicle", pIndex: 0, mIndex: 0, vIndex: 0, vehicleStage: "entry" };
   const firstPhoto = PHOTO_POINTS.findIndex(
     (p) => !["passed", "skipped"].includes(r.photoStatuses[p.code] ?? ""),
   );
-  if (firstPhoto !== -1) return { phase: "photos", pIndex: firstPhoto, mIndex: 0, vIndex: lastV };
+  if (firstPhoto !== -1)
+    return { phase: "photos", pIndex: firstPhoto, mIndex: 0, vIndex: lastV, vehicleStage: "validation" };
   const firstMech = MECHANICAL_POINTS.findIndex((p) => !r.mechDoneCodes.includes(p.code));
   if (firstMech !== -1)
-    return { phase: "mech", pIndex: PHOTO_POINTS.length - 1, mIndex: firstMech, vIndex: lastV };
+    return { phase: "mech", pIndex: PHOTO_POINTS.length - 1, mIndex: firstMech, vIndex: lastV, vehicleStage: "validation" };
   // Mechanical done — the engine-sound step is mandatory, so resume there
   // until it's been provided or explicitly marked unavailable.
   if (!r.audioDone)
-    return { phase: "audio", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1, vIndex: lastV };
-  return { phase: "review", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1, vIndex: lastV };
+    return { phase: "audio", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1, vIndex: lastV, vehicleStage: "validation" };
+  return { phase: "review", pIndex: PHOTO_POINTS.length - 1, mIndex: MECHANICAL_POINTS.length - 1, vIndex: lastV, vehicleStage: "validation" };
 }
 
 export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
@@ -110,6 +124,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
   // plate/VIN lookup must only run on a paid inspection.
   const [phase, setPhase] = useState<Phase>(init ? init.phase : "payment");
   const [vIndex, setVIndex] = useState(init ? init.vIndex : 0);
+  const [vehicleStage, setVehicleStage] = useState<VehicleStage>(
+    init ? init.vehicleStage : "entry",
+  );
   const [vehicle, setVehicle] = useState<Record<string, string>>(resume?.vehicle ?? {});
   const [sessionId, setSessionId] = useState<string | null>(resume?.sessionId ?? null);
 
@@ -142,7 +159,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       case "payment":
         return 0;
       case "vehicle":
-        return 1 + vIndex;
+        if (vehicleStage === "entry") return 1;
+        if (vehicleStage === "validation") return vehicleStepCount;
+        return Math.min(2 + vIndex, vehicleStepCount); // questionnaire
       case "photos":
         return 1 + vehicleStepCount + pIndex;
       case "mech":
@@ -155,7 +174,7 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       case "finishing":
         return total - 1;
     }
-  }, [phase, vIndex, pIndex, mIndex, vehicleStepCount, total]);
+  }, [phase, vehicleStage, vIndex, pIndex, mIndex, vehicleStepCount, total]);
 
   const progress = Math.round(((stepNumber + 1) / total) * 100);
 
@@ -169,14 +188,22 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     if (phase === "payment") {
       router.push("/dashboard");
     } else if (phase === "vehicle") {
-      // The inspection is already paid; going back from the first question
-      // exits to the saved drafts rather than the (already-paid) payment step.
-      if (vIndex === 0) router.push("/inspections");
-      else setVIndex((i) => i - 1);
+      // The inspection is already paid; going back from the entry step exits to
+      // the saved drafts rather than the (already-paid) payment step.
+      if (vehicleStage === "entry") {
+        router.push("/inspections");
+      } else if (vehicleStage === "questionnaire") {
+        if (vIndex === 0) setVehicleStage("entry");
+        else setVIndex((i) => i - 1);
+      } else {
+        // validation → back to the VIN/plate entry.
+        setVehicleStage("entry");
+      }
     } else if (phase === "photos") {
       if (pIndex === 0) {
         setPhase("vehicle");
-        setVIndex(vehicleStepCount - 1);
+        // Return to the consolidated review (or entry if nothing captured yet).
+        setVehicleStage(vehicle.make ? "validation" : "entry");
       } else setPIndex((i) => i - 1);
     } else if (phase === "mech") {
       if (mIndex === 0) {
@@ -226,11 +253,12 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
     }
   }
 
-  function nextVehicle(override?: Record<string, string>) {
+  // Step-by-step questionnaire (only used when the buyer has no VIN/plate).
+  function nextQuestionnaire(override?: Record<string, string>) {
     setError(null);
     const merged = override ? { ...vehicle, ...override } : vehicle;
     if (override) setVehicle(merged);
-    if (vIndex < vehicleStepCount - 1) {
+    if (vIndex < QUESTIONNAIRE_STEPS.length - 1) {
       setVIndex((i) => i + 1);
     } else {
       void finishVehicle(merged);
@@ -400,14 +428,36 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
 
       {/* Body */}
       <div className="flex flex-1 flex-col">
-        {phase === "vehicle" && (
-          <VehicleStep
-            vIndex={vIndex}
+        {phase === "vehicle" && vehicleStage === "entry" && (
+          <VinStep
             vehicle={vehicle}
             sessionId={sessionId}
             setField={setField}
             onAutoFill={(data) => setVehicle((v) => ({ ...v, ...data }))}
-            onPick={(updates) => nextVehicle(updates)}
+            onIdentified={() => setVehicleStage("validation")}
+            onNoId={() => {
+              setVIndex(0);
+              setVehicleStage("questionnaire");
+            }}
+          />
+        )}
+
+        {phase === "vehicle" && vehicleStage === "questionnaire" && (
+          <VehicleStep
+            step={QUESTIONNAIRE_STEPS[vIndex]}
+            vehicle={vehicle}
+            onPick={(updates) => nextQuestionnaire(updates)}
+          />
+        )}
+
+        {phase === "vehicle" && vehicleStage === "validation" && (
+          <VehicleReviewStep
+            vehicle={vehicle}
+            busy={busy}
+            onValidate={(v) => {
+              setVehicle(v);
+              void finishVehicle(v);
+            }}
           />
         )}
 
@@ -480,11 +530,11 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       <div className="sticky bottom-0 -mx-5 mt-4 border-t border-[#EFEFEF] bg-white/90 px-5 py-4 backdrop-blur">
         <Footer
           phase={phase}
-          vehicle={vehicle}
+          vehicleStage={vehicleStage}
           vIndex={vIndex}
           busy={busy}
           photoStatus={phase === "photos" ? photoState[PHOTO_POINTS[pIndex].code]?.status ?? "pending" : undefined}
-          onVehicleNext={() => nextVehicle()}
+          onVehicleNext={() => nextQuestionnaire()}
           onPhotoNext={nextPhoto}
           onPhotoSkip={() => skipPhoto(PHOTO_POINTS[pIndex].code)}
           onFinish={finish}
@@ -496,25 +546,15 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
 
 // ---------------------------------------------------------------------
 function VehicleStep({
-  vIndex,
+  step,
   vehicle,
-  sessionId,
-  setField,
-  onAutoFill,
   onPick,
 }: {
-  vIndex: number;
+  step: VStepDef;
   vehicle: Record<string, string>;
-  sessionId: string | null;
-  setField: (k: string, v: string) => void;
-  onAutoFill: (data: Record<string, string>) => void;
   onPick: (updates: Record<string, string>) => void;
 }) {
   const { t, currency, unit } = useI18n();
-  const step = VEHICLE_STEPS[vIndex];
-
-  if (step.kind === "vin")
-    return <VinStep vehicle={vehicle} sessionId={sessionId} setField={setField} onAutoFill={onAutoFill} />;
 
   if (step.kind === "make") {
     return (
@@ -668,11 +708,15 @@ function VinStep({
   sessionId,
   setField,
   onAutoFill,
+  onIdentified,
+  onNoId,
 }: {
   vehicle: Record<string, string>;
   sessionId: string | null;
   setField: (k: string, v: string) => void;
   onAutoFill: (data: Record<string, string>) => void;
+  onIdentified: () => void;
+  onNoId: () => void;
 }) {
   const { t, locale } = useI18n();
   const [mode, setMode] = useState<"vin" | "plate">("vin");
@@ -680,6 +724,9 @@ function VinStep({
   const [msg, setMsg] = useState<string | null>(null);
   const [plate, setPlate] = useState("");
   const [country, setCountry] = useState(locale === "fr" ? "FR" : "GB");
+
+  // The buyer has identified the car as soon as a VIN or plate is provided.
+  const hasIdentifier = Boolean(vehicle.vin?.trim() || plate.trim());
 
   const regionName = (code: string) => {
     try {
@@ -696,8 +743,10 @@ function VinStep({
         if (d.data[k] != null) data[k] = String(d.data[k]);
       }
       onAutoFill(data);
-      setMsg(t("wiz.prefilled"));
       toast.success(t("wiz.prefilledToast"));
+      // Identified → jump straight to the consolidated validation block.
+      onIdentified();
+      return;
     } else if (d.configured === false) {
       setMsg(isPlate ? t("wiz.plateUnavailable") : t("wiz.noMatch"));
     } else {
@@ -793,6 +842,146 @@ function VinStep({
         </>
       )}
       {msg && <p className="mt-2 text-xs text-[#6B7280]">{msg}</p>}
+
+      {/* Continue with the entered VIN/plate (manual review), or declare none. */}
+      <Button
+        type="button"
+        className="mt-5 w-full"
+        onClick={onIdentified}
+        disabled={!hasIdentifier || looking}
+      >
+        {t("wiz.continueToReview")}
+      </Button>
+      <button
+        type="button"
+        onClick={onNoId}
+        className="mt-2 w-full py-2 text-sm font-medium text-[#6B7280]"
+      >
+        {t("wiz.noVinPlate")}
+      </button>
+    </StepShell>
+  );
+}
+
+// Consolidated "validate the vehicle data" block, shown after a VIN/plate has
+// been provided. All fields are editable in a single screen; make/model/year
+// are required, the rest are optional.
+function VehicleReviewStep({
+  vehicle,
+  busy,
+  onValidate,
+}: {
+  vehicle: Record<string, string>;
+  busy: boolean;
+  onValidate: (v: Record<string, string>) => void;
+}) {
+  const { t, currency, unit } = useI18n();
+  const [v, setV] = useState<Record<string, string>>(vehicle);
+  const set = (k: string, val: string) => setV((prev) => ({ ...prev, [k]: val }));
+
+  const canSubmit =
+    Boolean(v.make?.trim()) && Boolean(v.model?.trim()) && Boolean(v.year?.trim());
+
+  const selects: { key: string; group: string; options: readonly { value: string }[] }[] = [
+    { key: "fuel_type", group: "fuel", options: FUEL_OPTIONS },
+    { key: "transmission", group: "transmission", options: TRANSMISSION_OPTIONS },
+    { key: "seller_type", group: "seller", options: SELLER_TYPE_OPTIONS },
+    { key: "goal", group: "goal", options: INSPECTION_GOAL_OPTIONS },
+  ];
+
+  const Label = ({ k, required }: { k: string; required?: boolean }) => (
+    <label className="mb-1 block text-xs font-medium text-[#6B7280]">
+      {t(`veh.q.${k}`)}
+      {!required && <span className="ml-1 text-[#9AA3AF]">({t("wiz.fieldOptional")})</span>}
+    </label>
+  );
+
+  return (
+    <StepShell
+      kicker={t("wiz.vehicle")}
+      question={t("wiz.validate.title")}
+      helper={t("wiz.validate.subtitle")}
+    >
+      <div className="space-y-3">
+        {vehicle.vin?.trim() && (
+          <div className="rounded-xl bg-[#F7F8FA] px-3 py-2 text-xs text-[#6B7280]">
+            VIN: <span className="font-medium text-[#111827]">{vehicle.vin}</span>
+          </div>
+        )}
+
+        <div>
+          <Label k="make" required />
+          <Input value={v.make ?? ""} onChange={(e) => set("make", e.target.value)} className="h-12" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label k="model" required />
+            <Input value={v.model ?? ""} onChange={(e) => set("model", e.target.value)} className="h-12" />
+          </div>
+          <div>
+            <Label k="year" required />
+            <Input
+              inputMode="numeric"
+              value={v.year ?? ""}
+              onChange={(e) => set("year", e.target.value.replace(/[^\d]/g, ""))}
+              className="h-12"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label k="mileage" />
+            <div className="flex items-center gap-1 rounded-md border border-input px-2">
+              <Input
+                inputMode="numeric"
+                value={v.mileage ?? ""}
+                onChange={(e) => set("mileage", e.target.value.replace(/[^\d]/g, ""))}
+                className="h-12 border-0 px-1 shadow-none focus-visible:ring-0"
+              />
+              <span className="shrink-0 text-xs text-[#6B7280]">{unit}</span>
+            </div>
+          </div>
+          <div>
+            <Label k="asking_price" />
+            <div className="flex items-center gap-1 rounded-md border border-input px-2">
+              <Input
+                inputMode="numeric"
+                value={v.asking_price ?? ""}
+                onChange={(e) => set("asking_price", e.target.value.replace(/[^\d]/g, ""))}
+                className="h-12 border-0 px-1 shadow-none focus-visible:ring-0"
+              />
+              <span className="shrink-0 text-xs text-[#6B7280]">{currency}</span>
+            </div>
+          </div>
+        </div>
+
+        {selects.map(({ key, group, options }) => (
+          <div key={key}>
+            <Label k={key} />
+            <select
+              value={v[key] ?? ""}
+              onChange={(e) => set(key, e.target.value)}
+              className="h-12 w-full rounded-md border border-input bg-white px-3 text-sm"
+            >
+              <option value="">—</option>
+              {options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {t(`opt.${group}.${o.value}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      <Button
+        className="mt-5 w-full"
+        onClick={() => onValidate(v)}
+        disabled={!canSubmit || busy}
+      >
+        {busy ? t("wiz.starting") : t("wiz.validateContinue")}
+      </Button>
     </StepShell>
   );
 }
@@ -1608,7 +1797,7 @@ function StepShell({
 
 function Footer({
   phase,
-  vehicle,
+  vehicleStage,
   vIndex,
   busy,
   photoStatus,
@@ -1618,7 +1807,7 @@ function Footer({
   onFinish,
 }: {
   phase: Phase;
-  vehicle: Record<string, string>;
+  vehicleStage: VehicleStage;
   vIndex: number;
   busy: boolean;
   photoStatus?: string;
@@ -1629,6 +1818,8 @@ function Footer({
 }) {
   const { t } = useI18n();
   if (phase === "vehicle") {
+    // Entry and validation stages render their own actions in-body.
+    if (vehicleStage !== "questionnaire") return null;
     if (busy) {
       return (
         <PrimaryButton onClick={() => {}} disabled loading>
@@ -1636,14 +1827,7 @@ function Footer({
         </PrimaryButton>
       );
     }
-    const step = VEHICLE_STEPS[vIndex];
-    if (step.kind === "vin") {
-      return (
-        <PrimaryButton onClick={onVehicleNext}>
-          {vehicle.vin?.trim() ? t("wiz.continue") : t("wiz.skipNoVin")}
-        </PrimaryButton>
-      );
-    }
+    const step = QUESTIONNAIRE_STEPS[vIndex];
     // Option steps auto-advance on tap. Required → no button; optional → Skip.
     if (step.required) return null;
     return (
