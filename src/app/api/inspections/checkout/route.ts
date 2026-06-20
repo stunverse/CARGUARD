@@ -104,6 +104,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // 0) Admin bypass — owners/admins create FREE inspections for testing,
+    //    even when Stripe is live. Gated strictly to profiles.is_admin.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.is_admin) {
+      const { session } = await createSession(true, null);
+      return NextResponse.json({ sessionId: session.id, paid: true, admin: true });
+    }
+
     // 1) Demo mode — no payments configured: free, immediate.
     if (!stripeOn) {
       const { session } = await createSession(true, null);
