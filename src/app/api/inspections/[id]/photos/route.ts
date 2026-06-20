@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isInspectionLocked, lockedResponse } from "@/lib/inspection-lock";
-import { checkPhotoQuality } from "@/lib/ai/functions";
 import { rateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
 import { PHOTO_POINTS, STORAGE_BUCKETS } from "@/lib/constants";
@@ -59,12 +58,10 @@ export async function POST(
   const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(storagePath, 3600);
   const imageUrl = signed?.signedUrl ?? null;
 
-  const quality = imageUrl ? await checkPhotoQuality(imageUrl, code) : null;
-  const qualityStatus = quality
-    ? quality.is_usable && quality.matches_requested_angle
-      ? "passed"
-      : "needs_retake"
-    : "pending";
+  // No per-step AI here — keep capture INSTANT. The photo is accepted on upload
+  // and the full vision analysis (which also judges usability) runs in the final
+  // /analyze step, like videos and engine sound.
+  const qualityStatus = "passed";
 
   const point = PHOTO_POINTS.find((p) => p.code === code)!;
   const { data: pointRow } = await supabase
@@ -93,8 +90,8 @@ export async function POST(
       file_size: body?.file_size ?? null,
       upload_status: "uploaded",
       quality_status: qualityStatus,
-      quality_feedback: quality?.retake_instructions || null,
-      ai_quality_check: quality,
+      quality_feedback: null,
+      ai_quality_check: null,
     })
     .select()
     .single();
@@ -109,7 +106,7 @@ export async function POST(
     metadata: { code, qualityStatus },
   });
 
-  return NextResponse.json({ photo, quality, imageUrl });
+  return NextResponse.json({ photo, imageUrl });
 }
 
 // PUT — mark a photo point as skipped.

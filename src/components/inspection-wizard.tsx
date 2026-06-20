@@ -329,10 +329,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Upload failed.");
-      const status = data.photo.quality_status as string;
+      const status = (data.photo.quality_status as string) || "passed";
       setPhotoState((s) => ({ ...s, [code]: { status, url: data.imageUrl ?? data.photo.image_url } }));
-      if (status === "passed") toast.success("Photo looks good.");
-      else if (status === "needs_retake") toast.error("This photo needs a retake.");
+      toast.success(t("wiz.photoAdded"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Upload failed.";
       setError(msg);

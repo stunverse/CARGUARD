@@ -19,7 +19,7 @@ export async function getUserId(): Promise<string | null> {
 export async function compressImage(
   file: File,
   maxDim = 2400,
-  quality = 0.92,
+  quality = 0.85,
 ): Promise<File> {
   if (!file.type.startsWith("image/")) return file;
   try {
