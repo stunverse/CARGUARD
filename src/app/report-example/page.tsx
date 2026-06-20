@@ -5,6 +5,7 @@ import { ReportPreview } from "@/components/report-preview";
 import { getServerLocale } from "@/lib/i18n-server";
 import { t } from "@/lib/i18n";
 import { getDemoReport } from "@/lib/demo-report";
+import { getScenarioReport, SCENARIO_LIST } from "@/lib/demo-scenarios";
 
 export const metadata = {
   title: "Sample report — CarGuard AI",
@@ -14,15 +15,23 @@ export const metadata = {
 
 const RED_GRADIENT = "linear-gradient(90deg,#FF2A2A,#E50914)";
 
-export default async function ReportExamplePage() {
+export default async function ReportExamplePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ scenario?: string }>;
+}) {
   const locale = await getServerLocale();
-  const report = getDemoReport(locale);
+  const { scenario } = await searchParams;
+  const report = (scenario && getScenarioReport(scenario, locale)) || getDemoReport(locale);
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const startHref = user ? "/inspections/new" : "/signup";
+
+  const cleanLabel = locale === "fr" ? "Véhicule sain" : "Clean car";
+  const chips = [{ id: "", label: cleanLabel }, ...SCENARIO_LIST.map((s) => ({ id: s.id, label: s.label[locale] }))];
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,6 +63,27 @@ export default async function ReportExamplePage() {
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
             {t(locale, "example.subtitle")}
           </p>
+        </div>
+
+        {/* Scenario switcher */}
+        <div className="mb-6 flex flex-wrap justify-center gap-2">
+          {chips.map((c) => {
+            const active = (scenario ?? "") === c.id;
+            return (
+              <Link
+                key={c.id || "clean"}
+                href={c.id ? `/report-example?scenario=${c.id}` : "/report-example"}
+                className={
+                  "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors " +
+                  (active
+                    ? "border-[#E50914] bg-[rgba(229,9,20,0.06)] text-[#E50914]"
+                    : "border-[#E5E7EB] text-muted-foreground hover:bg-secondary")
+                }
+              >
+                {c.label}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Sample notice */}
