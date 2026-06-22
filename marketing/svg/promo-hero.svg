@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF2A2A"/>
+      <stop offset="1" stop-color="#E50914"/>
+    </linearGradient>
+    <radialGradient id="bgGlow" cx="50%" cy="38%" r="60%">
+      <stop offset="0" stop-color="#1a0a12"/>
+      <stop offset="100" stop-color="#0B0B12"/>
+    </radialGradient>
+    <style>
+      .t{fill:#fff}
+      .muted{fill:#9AA3AF}
+      g, text, rect, circle, path { transform-box: fill-box; transform-origin: center; }
+      @keyframes pulse  {0%,100%{opacity:.30} 50%{opacity:.6}}
+      @keyframes popIn  {0%{opacity:0;transform:scale(.6)} 8%{opacity:1;transform:scale(1)} 92%{opacity:1;transform:scale(1)} 100%{opacity:1}}
+      @keyframes riseIn {0%,12%{opacity:0;transform:translateY(40px)} 22%{opacity:1;transform:translateY(0)} 92%{opacity:1} 100%{opacity:1;transform:translateY(0)}}
+      @keyframes riseIn2{0%,28%{opacity:0;transform:translateY(40px)} 40%{opacity:1;transform:translateY(0)} 92%{opacity:1} 100%{opacity:1;transform:translateY(0)}}
+      @keyframes scan   {0%{transform:translateY(-280px);opacity:0} 10%{opacity:1} 60%{transform:translateY(280px);opacity:1} 70%{opacity:0} 100%{opacity:0}}
+      .glow{animation:pulse 7s ease-in-out infinite}
+      .logo{animation:popIn 7s ease-in-out infinite}
+      .h1{animation:riseIn 7s ease-in-out infinite}
+      .h2{animation:riseIn2 7s ease-in-out infinite}
+      .scan{animation:scan 7s ease-in-out infinite}
+    </style>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#bgGlow)"/>
+  <circle class="glow" cx="540" cy="700" r="420" fill="#E50914" opacity="0.35"/>
+
+  <!-- Scanner frame + sweeping line -->
+  <g transform="translate(540,700)">
+    <rect x="-300" y="-300" width="600" height="600" rx="40" fill="none" stroke="#2a2a35" stroke-width="6"/>
+    <!-- corner brackets -->
+    <path d="M-300,-240 v-20 a40,40 0 0 1 40,-40 h20" fill="none" stroke="url(#red)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M300,-240 v-20 a40,40 0 0 0 -40,-40 h-20" fill="none" stroke="url(#red)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M-300,240 v20 a40,40 0 0 0 40,40 h20" fill="none" stroke="url(#red)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M300,240 v20 a40,40 0 0 1 -40,40 h-20" fill="none" stroke="url(#red)" stroke-width="10" stroke-linecap="round"/>
+
+    <!-- car silhouette -->
+    <g fill="#3a3a47">
+      <path d="M-210,40 q30,-110 90,-120 l60,-8 q70,-40 150,-30 q70,8 120,60 l70,8 q40,8 40,50 l0,30 q0,18 -18,18 l-512,0 q-18,0 -18,-18 z"/>
+    </g>
+    <circle cx="-110" cy="120" r="46" fill="#23232c"/><circle cx="-110" cy="120" r="22" fill="#3a3a47"/>
+    <circle cx="150" cy="120" r="46" fill="#23232c"/><circle cx="150" cy="120" r="22" fill="#3a3a47"/>
+
+    <!-- scan line -->
+    <rect class="scan" x="-296" y="-4" width="592" height="8" rx="4" fill="url(#red)"/>
+  </g>
+
+  <!-- Logo / key mark -->
+  <g class="logo" transform="translate(540,1160)">
+    <circle r="70" fill="url(#red)"/>
+    <g stroke="#fff" stroke-width="14" stroke-linecap="round" fill="none">
+      <circle cx="-12" cy="-12" r="20"/>
+      <path d="M2,2 L34,34 M22,34 L34,34 M34,22 L34,34"/>
+    </g>
+  </g>
+
+  <text class="t h1" x="540" y="1330" font-size="92" font-weight="800" text-anchor="middle" letter-spacing="2">CARGUARD AI</text>
+  <text class="muted h2" x="540" y="1410" font-size="46" font-weight="600" text-anchor="middle">Inspecte avant d'acheter</text>
+  <text class="t h2" x="540" y="1520" font-size="40" font-weight="700" text-anchor="middle" opacity="0.9">Photos · Vidéos · Son moteur · IA</text>
+</svg>

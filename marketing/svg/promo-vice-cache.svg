@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF2A2A"/><stop offset="1" stop-color="#E50914"/>
+    </linearGradient>
+    <style>
+      g, text, rect, circle, path { transform-box: fill-box; transform-origin: center; }
+      .t{fill:#fff} .muted{fill:#9AA3AF}
+      /* 8s loop, sequential reveal */
+      @keyframes hook {0%{opacity:0;transform:translateY(-30px)} 6%{opacity:1;transform:translateY(0)} 30%{opacity:1} 38%{opacity:0} 100%{opacity:0}}
+      @keyframes carIn {0%{opacity:0;transform:scale(.9)} 8%{opacity:1;transform:scale(1)} 100%{opacity:1}}
+      @keyframes scan {0%,8%{transform:translateY(-220px);opacity:0} 12%{opacity:1} 40%{transform:translateY(220px)} 46%{opacity:0} 100%{opacity:0}}
+      @keyframes alert {0%,46%{opacity:0;transform:scale(.5)} 54%{opacity:1;transform:scale(1.08)} 58%{transform:scale(1)} 100%{opacity:1;transform:scale(1)}}
+      @keyframes ring  {0%,52%{stroke-dashoffset:880} 80%{stroke-dashoffset:600} 100%{stroke-dashoffset:600}}
+      @keyframes scoreN{0%,52%{opacity:0} 60%{opacity:1} 100%{opacity:1}}
+      @keyframes cta   {0%,80%{opacity:0;transform:translateY(20px)} 88%{opacity:1;transform:translateY(0)} 100%{opacity:1}}
+      @keyframes shake {0%,49%,100%{transform:translate(0,0)} 50%{transform:translate(-6px,0)} 52%{transform:translate(6px,0)} 54%{transform:translate(-4px,0)} 56%{transform:translate(0,0)}}
+      .hook{animation:hook 8s ease-in-out infinite}
+      .car{animation:carIn 8s ease-in-out infinite}
+      .scan{animation:scan 8s ease-in-out infinite}
+      .alert{animation:alert 8s ease-in-out infinite}
+      .ring{animation:ring 8s ease-in-out infinite}
+      .score{animation:scoreN 8s ease-in-out infinite}
+      .cta{animation:cta 8s ease-in-out infinite}
+    </style>
+  </defs>
+
+  <rect width="1080" height="1920" fill="#0B0B12"/>
+
+  <text class="t hook" x="540" y="220" font-size="70" font-weight="800" text-anchor="middle">Elle a l'air parfaite…</text>
+
+  <!-- car + scan -->
+  <g class="car" transform="translate(540,560)">
+    <rect x="-320" y="-200" width="640" height="400" rx="36" fill="none" stroke="#23232c" stroke-width="6"/>
+    <g fill="#3a3a47" transform="translate(0,30)">
+      <path d="M-230,40 q32,-120 98,-130 l66,-9 q76,-44 164,-33 q76,9 131,66 l76,9 q44,9 44,55 l0,33 q0,20 -20,20 l-560,0 q-20,0 -20,-20 z"/>
+    </g>
+    <circle cx="-120" cy="150" r="50" fill="#23232c"/><circle cx="-120" cy="150" r="24" fill="#3a3a47"/>
+    <circle cx="165" cy="150" r="50" fill="#23232c"/><circle cx="165" cy="150" r="24" fill="#3a3a47"/>
+    <rect class="scan" x="-316" y="-4" width="632" height="8" rx="4" fill="url(#red)"/>
+  </g>
+
+  <!-- ALERT badge -->
+  <g class="alert" transform="translate(540,920)">
+    <g class="shakeWrap" style="animation:shake 8s ease-in-out infinite">
+      <rect x="-300" y="-70" width="600" height="140" rx="28" fill="#1a0a0e" stroke="url(#red)" stroke-width="5"/>
+      <text x="-220" y="18" font-size="80" text-anchor="middle">⚠️</text>
+      <text class="t" x="40" y="-2" font-size="48" font-weight="800" text-anchor="middle">VICE CACHÉ</text>
+      <text class="muted" x="40" y="42" font-size="34" font-weight="600" text-anchor="middle">Turbo suspecté HS · fumée bleue</text>
+    </g>
+  </g>
+
+  <!-- Score ring -->
+  <g transform="translate(540,1280)">
+    <circle r="140" fill="none" stroke="#23232c" stroke-width="26"/>
+    <circle class="ring" r="140" fill="none" stroke="url(#red)" stroke-width="26" stroke-linecap="round"
+            stroke-dasharray="880" stroke-dashoffset="880" transform="rotate(-90)"/>
+    <text class="t score" x="0" y="10" font-size="96" font-weight="800" text-anchor="middle">47</text>
+    <text class="muted score" x="0" y="70" font-size="34" font-weight="600" text-anchor="middle">/ 100</text>
+  </g>
+  <text class="t score" x="540" y="1500" font-size="44" font-weight="700" text-anchor="middle">Risque élevé — inspection conseillée</text>
+
+  <!-- CTA -->
+  <g class="cta" transform="translate(540,1700)">
+    <rect x="-330" y="-58" width="660" height="116" rx="58" fill="url(#red)"/>
+    <text class="t" x="0" y="16" font-size="52" font-weight="800" text-anchor="middle">CarGuard AI</text>
+  </g>
+  <text class="muted cta" x="540" y="1820" font-size="34" text-anchor="middle">L'IA voit (et entend) ce que tu ne perçois pas</text>
+</svg>
