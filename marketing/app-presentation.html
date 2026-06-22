@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CarGuard AI — App promo</title>
+<style>
+  :root{ --s:1; --red:#E50914; --red2:#FF2A2A; --bg:#0B0B12; --ink:#fff; --muted:#9AA3AF; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#06060a;overflow:hidden;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+  .viewport{position:fixed;inset:0;display:grid;place-items:center}
+  .stage{position:relative;width:1080px;height:1920px;background:
+      radial-gradient(60% 45% at 50% 32%, #1a0a12 0%, var(--bg) 70%);
+      transform:scale(var(--s));transform-origin:center;overflow:hidden;border-radius:8px}
+
+  /* glow */
+  .glow{position:absolute;left:50%;top:34%;width:760px;height:760px;margin:-380px 0 0 -380px;border-radius:50%;
+        background:var(--red);filter:blur(40px);opacity:.25;animation:pulse 6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.18}50%{opacity:.4}}
+
+  /* headline + caption */
+  .headline{position:absolute;left:0;right:0;top:120px;text-align:center;color:var(--ink);
+            font-weight:800;font-size:78px;line-height:1.1;padding:0 70px}
+  .caption{position:absolute;left:0;right:0;bottom:150px;text-align:center;color:var(--muted);
+           font-weight:600;font-size:44px;padding:0 80px}
+
+  /* phone */
+  .phone{position:absolute;left:50%;top:50%;width:560px;height:1140px;margin:-570px 0 0 -280px;
+         background:#000;border-radius:72px;border:14px solid #1b1b22;box-shadow:0 40px 120px rgba(0,0,0,.6)}
+  .screen{position:absolute;inset:14px;border-radius:58px;overflow:hidden;background:var(--bg)}
+  .notch{position:absolute;left:50%;top:26px;width:150px;height:34px;margin-left:-75px;background:#000;border-radius:20px;z-index:5}
+
+  /* scenes (crossfade on a 24s loop) */
+  .sc{position:absolute;inset:0;opacity:0}
+  .s1{animation:f1 24s ease-in-out infinite}
+  .s2{animation:f2 24s ease-in-out infinite}
+  .s3{animation:f3 24s ease-in-out infinite}
+  .s4{animation:f4 24s ease-in-out infinite}
+  .s5{animation:f5 24s ease-in-out infinite}
+  .s6{animation:f6 24s ease-in-out infinite}
+  @keyframes f1{0%{opacity:0;transform:translateY(24px)}2%{opacity:1;transform:none}15%{opacity:1}16.6%{opacity:0}100%{opacity:0}}
+  @keyframes f2{0%,16.6%{opacity:0;transform:translateY(24px)}18.6%{opacity:1;transform:none}31.6%{opacity:1}33.3%{opacity:0}100%{opacity:0}}
+  @keyframes f3{0%,33.3%{opacity:0;transform:translateY(24px)}35.3%{opacity:1;transform:none}48.3%{opacity:1}50%{opacity:0}100%{opacity:0}}
+  @keyframes f4{0%,50%{opacity:0;transform:translateY(24px)}52%{opacity:1;transform:none}65%{opacity:1}66.6%{opacity:0}100%{opacity:0}}
+  @keyframes f5{0%,66.6%{opacity:0;transform:translateY(24px)}68.6%{opacity:1;transform:none}81.6%{opacity:1}83.3%{opacity:0}100%{opacity:0}}
+  @keyframes f6{0%,83.3%{opacity:0;transform:scale(.9)}85.3%{opacity:1;transform:scale(1)}98.5%{opacity:1}100%{opacity:0}}
+
+  /* in-screen UI */
+  .scrn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:60px}
+  .key{width:150px;height:150px;border-radius:50%;background:linear-gradient(135deg,var(--red2),var(--red));display:grid;place-items:center}
+  .key svg{width:78px;height:78px}
+  .brand{color:#fff;font-weight:800;font-size:60px;letter-spacing:1px}
+  .sub{color:var(--muted);font-weight:600;font-size:38px;text-align:center}
+
+  /* scan screen */
+  .car{width:380px;height:230px;position:relative}
+  .carbody{position:absolute;inset:0;background:#3a3a47;border-radius:30px;
+           clip-path:polygon(8% 70%,18% 30%,40% 18%,62% 18%,82% 34%,96% 50%,100% 70%,100% 92%,0 92%,0 70%)}
+  .wheel{position:absolute;bottom:-18px;width:90px;height:90px;border-radius:50%;background:#23232c;border:18px solid #14141a}
+  .wheel.l{left:50px}.wheel.r{right:50px}
+  .scanline{position:absolute;left:0;right:0;height:8px;background:linear-gradient(90deg,transparent,var(--red2),transparent);
+            animation:scan 2.2s ease-in-out infinite}
+  @keyframes scan{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+
+  /* alert */
+  .alert{width:440px;background:#1a0a0e;border:5px solid var(--red);border-radius:32px;padding:40px;text-align:center;
+         animation:shake 2.4s ease-in-out infinite}
+  .alert .ic{font-size:96px}
+  .alert .t{color:#fff;font-weight:800;font-size:52px;margin-top:6px}
+  .alert .d{color:var(--muted);font-weight:600;font-size:34px;margin-top:8px}
+  @keyframes shake{0%,92%,100%{transform:translateX(0)}94%{transform:translateX(-8px)}96%{transform:translateX(8px)}98%{transform:translateX(-4px)}}
+
+  /* score ring */
+  .ring{position:relative;width:360px;height:360px}
+  .ring .num{position:absolute;inset:0;display:grid;place-items:center;flex-direction:column;color:#fff;font-weight:800;font-size:120px}
+  .ring .num small{display:block;color:var(--muted);font-size:40px;font-weight:600;text-align:center}
+  .risk{color:#fff;font-weight:700;font-size:40px}
+
+  /* feature list */
+  .feat{display:flex;flex-direction:column;gap:26px;width:440px}
+  .row{display:flex;align-items:center;gap:24px;background:#15151d;border:2px solid #23232c;border-radius:24px;padding:26px}
+  .row .e{font-size:54px}
+  .row .x{color:#fff;font-weight:800;font-size:42px}
+
+  .hint{position:fixed;left:0;right:0;bottom:10px;text-align:center;color:#444;font-size:13px}
+</style>
+</head>
+<body>
+<div class="viewport">
+  <div class="stage">
+    <div class="glow"></div>
+
+    <!-- SCENE 1 — accroche -->
+    <div class="sc s1">
+      <div class="headline">Tu achètes une occasion&nbsp;?</div>
+      <div class="phone"><div class="notch"></div><div class="screen"><div class="scrn">
+        <div class="key"><svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"><circle cx="19" cy="19" r="11"/><path d="M27 27 L40 40 M33 40 L40 40 M40 33 L40 40"/></svg></div>
+        <div class="brand">CarGuard AI</div>
+        <div class="sub">Inspecte avant d'acheter</div>
+      </div></div></div>
+      <div class="caption">Ne te fie pas qu'à l'apparence.</div>
+    </div>
+
+    <!-- SCENE 2 — scan -->
+    <div class="sc s2">
+      <div class="headline">Scanne-la avant 📲</div>
+      <div class="phone"><div class="notch"></div><div class="screen"><div class="scrn">
+        <div class="car"><div class="carbody"></div><div class="wheel l"></div><div class="wheel r"></div><div class="scanline"></div></div>
+        <div class="sub">Photos · vidéos · son moteur</div>
+      </div></div></div>
+      <div class="caption">L'IA passe tout au crible.</div>
+    </div>
+
+    <!-- SCENE 3 — vice caché -->
+    <div class="sc s3">
+      <div class="headline">Vice caché détecté</div>
+      <div class="phone"><div class="notch"></div><div class="screen"><div class="scrn">
+        <div class="alert"><div class="ic">⚠️</div><div class="t">Turbo HS</div><div class="d">Sifflement + fumée bleue</div></div>
+        <div class="sub">Réparation : jusqu'à 1&nbsp;800&nbsp;€</div>
+      </div></div></div>
+      <div class="caption">Ce que l'œil et l'oreille ne captent pas.</div>
+    </div>
+
+    <!-- SCENE 4 — score -->
+    <div class="sc s4">
+      <div class="headline">Score de confiance</div>
+      <div class="phone"><div class="notch"></div><div class="screen"><div class="scrn">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" width="360" height="360">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#23232c" stroke-width="12"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="url(#g)" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="327" stroke-dashoffset="173" transform="rotate(-90 60 60)"/>
+            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF2A2A"/><stop offset="1" stop-color="#E50914"/></linearGradient></defs>
+          </svg>
+          <div class="num">47<small>/ 100</small></div>
+        </div>
+        <div class="risk">Risque élevé 🔴</div>
+      </div></div></div>
+      <div class="caption">Un verdict clair, en quelques minutes.</div>
+    </div>
+
+    <!-- SCENE 5 — fonctionnalités -->
+    <div class="sc s5">
+      <div class="headline">Tout est analysé</div>
+      <div class="phone"><div class="notch"></div><div class="screen"><div class="scrn">
+        <div class="feat">
+          <div class="row"><span class="e">📸</span><span class="x">Carrosserie</span></div>
+          <div class="row"><span class="e">🎥</span><span class="x">Moteur (vidéo)</span></div>
+          <div class="row"><span class="e">🎙️</span><span class="x">Son moteur</span></div>
+          <div class="row"><span class="e">💬</span><span class="x">Négociation</span></div>
+        </div>
+      </div></div></div>
+      <div class="caption">Pas besoin d'être mécanicien.</div>
+    </div>
+
+    <!-- SCENE 6 — CTA -->
+    <div class="sc s6">
+      <div class="headline" style="top:760px">CarGuard&nbsp;AI</div>
+      <div class="caption" style="bottom:880px;color:#fff;font-size:52px;font-weight:800">Inspecte. Décide. Négocie.</div>
+      <div style="position:absolute;left:50%;top:50%;margin:-90px 0 0 -90px;width:180px;height:180px;border-radius:50%;background:linear-gradient(135deg,var(--red2),var(--red));display:grid;place-items:center">
+        <svg viewBox="0 0 48 48" width="96" height="96" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"><circle cx="19" cy="19" r="11"/><path d="M27 27 L40 40 M33 40 L40 40 M40 33 L40 40"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="hint">Ouvre en plein écran (F11) puis enregistre l'écran. Boucle de 24 s.</div>
+<script>
+  function fit(){document.documentElement.style.setProperty('--s', Math.min(innerWidth/1080, innerHeight/1920));}
+  addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>
