@@ -19,13 +19,27 @@ const RED_GRADIENT = "linear-gradient(90deg,#FF2A2A,#E50914)";
 export default async function ReportExamplePage({
   searchParams,
 }: {
-  searchParams: Promise<{ scenario?: string; lang?: string }>;
+  searchParams: Promise<{ scenario?: string; lang?: string; bare?: string }>;
 }) {
-  const { scenario, lang } = await searchParams;
+  const { scenario, lang, bare } = await searchParams;
   // ?lang=fr|en overrides the cookie locale so the page is fully shareable
   // in either language (data + labels).
   const locale: Locale = lang === "fr" || lang === "en" ? lang : await getServerLocale();
   const report = (scenario && getScenarioReport(scenario, locale)) || getDemoReport(locale);
+
+  // ?bare=1 → clean capture mode: just the report, no header/CTA/switcher.
+  // Ideal for screen-recording the example reports for social content.
+  if (bare === "1" || bare === "true") {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="mx-auto w-full max-w-3xl px-5 py-6">
+          <I18nProvider locale={locale}>
+            <ReportPreview report={report} />
+          </I18nProvider>
+        </main>
+      </div>
+    );
+  }
 
   const supabase = await createClient();
   const {
