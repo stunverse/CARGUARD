@@ -523,6 +523,65 @@ const SCENARIOS: Scenario[] = [
       { code: "front_view", risk_score: 46, severity: "moderate", issue_type: "bumper_misalignment", location: { en: "Front bumper", fr: "Pare-chocs avant" }, explanation: { en: "The front bumper sits unevenly with a larger gap on the left — consistent with a past repair.", fr: "Le pare-chocs avant est mal ajusté avec un jeu plus large à gauche — cohérent avec une réparation passée." } },
     ],
   },
+
+  // ---------- 14. Chevrolet Captiva — engine knock ----------
+  {
+    id: "captiva_knock",
+    label: { en: "Chevrolet Captiva — knock", fr: "Chevrolet Captiva — claquement" },
+    vehicle: { make: "Chevrolet", model: "Captiva", year: 2013, generation: "C140", trim: "LT 7 places", engine: "2.2 VCDi 184", fuel_type: "diesel", transmission: "manual", mileage: 187000, asking_price: 6990, city: "Lyon", vin: "KL1CG2669DB032190" },
+    risk_level: "very_high", recommendation: "avoid", global_score: 27, mechanical_score: 21, confidence: 86,
+    market: { low: 4500, high: 6200, verdict: "overpriced" },
+    ai_summary: {
+      en: "This Captiva looks honest for a 7-seater SUV, but the engine recording is alarming: a loud, regular metallic knock from cold start that stays at idle and doesn't fade as it warms up. On the 2.2 VCDi this points to bottom-end wear (bearings / con-rod) — potentially an engine rebuild or replacement that exceeds the car's value. Do not buy before a mechanic locates the knock.",
+      fr: "Ce Captiva paraît honnête pour un SUV 7 places, mais l'enregistrement moteur est alarmant : un claquement métallique fort et régulier dès le démarrage à froid, présent au ralenti et qui ne disparaît pas à la montée en température. Sur le 2.2 VCDi, cela évoque une usure du bas moteur (coussinets / bielle) — potentiellement une réfection ou un remplacement moteur qui dépasse la valeur de la voiture. N'achetez pas avant qu'un mécanicien ait localisé le claquement.",
+    },
+    positive: { en: ["Body straight, no obvious accident repair.", "Roomy 7-seat interior, usable condition."], fr: ["Carrosserie droite, pas de réparation d'accident évidente.", "Intérieur 7 places spacieux, état exploitable."] },
+    suspicious: { en: ["Loud, regular metallic knock at cold start.", "Knock persists at warm idle (does not fade).", "Very high mileage for the engine.", "Price well above value given the noise."], fr: ["Claquement métallique fort et régulier au démarrage à froid.", "Le claquement persiste au ralenti chaud (ne disparaît pas).", "Kilométrage très élevé pour le moteur.", "Prix très au-dessus de la valeur compte tenu du bruit."] },
+    seller_q: { en: ["When did the knock start and is it getting louder?", "What's the full oil-service history?", "Has the engine ever been opened or rebuilt?", "Why are you selling it?"], fr: ["Depuis quand le claquement est-il là et s'aggrave-t-il ?", "Quel est l'historique complet des vidanges ?", "Le moteur a-t-il déjà été ouvert ou refait ?", "Pourquoi le vendez-vous ?"] },
+    negotiation: { en: ["Suspected bottom-end wear — an engine swap can exceed the car's value; buy only at a salvage-level price, or walk away.", "Require a professional diagnosis before any deposit."], fr: ["Usure du bas moteur suspectée — un remplacement moteur peut dépasser la valeur de la voiture ; à n'acheter qu'à un prix « pour pièces », ou pas du tout.", "Exigez un diagnostic professionnel avant tout acompte."] },
+    next_steps: { en: ["Do NOT buy before a mechanic locates the knock (stethoscope / oil-pressure test).", "Request an oil analysis if records are missing."], fr: ["N'achetez PAS avant qu'un mécanicien localise le claquement (stéthoscope / test de pression d'huile).", "Demandez une analyse d'huile si l'historique manque."] },
+    audio: { score: 17, risk: "very_high", rec: "avoid_without_diagnosis", sound_type: "knocking", severity: "critical", summary: { en: "A loud, regular knock is clearly audible from cold and remains at idle. A deep rhythmic knock that doesn't fade with temperature is commonly linked to bearing/con-rod wear and warrants an immediate professional diagnosis before driving further.", fr: "Un claquement fort et régulier est nettement audible à froid et persiste au ralenti. Un claquement profond et rythmé qui ne s'atténue pas avec la température est souvent lié à une usure des coussinets/de la bielle et impose un diagnostic professionnel immédiat avant de rouler davantage." } },
+    mech: {
+      score: 21, risk: "very_high", rec: "avoid_without_diagnosis",
+      summary: { en: "The dominant finding is a loud bottom-end knock from cold and at idle — a potentially terminal engine issue. Everything else is secondary until this is diagnosed.", fr: "Le constat dominant est un fort claquement de bas moteur à froid et au ralenti — un problème moteur potentiellement fatal. Tout le reste est secondaire tant que ce point n'est pas diagnostiqué." },
+      items: [
+        { code: "cold_start", title: { en: "Cold start", fr: "Démarrage à froid" }, score: 16, sev: "critical", sus: { en: ["Loud regular knocking"], fr: ["Claquement fort et régulier"] }, sum: { en: "Loud metallic knock from the first seconds — major red flag.", fr: "Claquement métallique fort dès les premières secondes — signal majeur." } },
+        { code: "idle_noise", title: { en: "Idle noise", fr: "Bruits au ralenti" }, score: 20, sev: "critical", sus: { en: ["Metallic knock persists when warm"], fr: ["Le claquement métallique persiste à chaud"] }, sum: { en: "Knock does not fade as it warms up.", fr: "Le claquement ne disparaît pas à la montée en température." } },
+        { code: "oil_dipstick", title: { en: "Engine oil", fr: "Huile moteur" }, score: 44, sev: "moderate", sus: { en: ["Oil very dark / overdue"], fr: ["Huile très foncée / en retard"] }, sum: { en: "Poor lubrication accelerates bearing wear.", fr: "Une mauvaise lubrification accélère l'usure des coussinets." } },
+      ],
+    },
+    history_note: { en: "High-mileage 2.2 VCDi diesels are sensitive to oil-service neglect; bottom-end noise is a serious sign.", fr: "Les diesels 2.2 VCDi à fort kilométrage sont sensibles à un entretien d'huile négligé ; un bruit de bas moteur est un signe sérieux." },
+  },
+
+  // ---------- 15. Fiat 500 — head gasket ----------
+  {
+    id: "fiat500_gasket",
+    label: { en: "Fiat 500 — head gasket", fr: "Fiat 500 — joint de culasse" },
+    vehicle: { make: "Fiat", model: "500", year: 2014, generation: "312", trim: "Lounge", engine: "1.2 8v 69", fuel_type: "gasoline", transmission: "manual", mileage: 119000, asking_price: 6490, city: "Nice", vin: "ZFA31200000J12345" },
+    risk_level: "very_high", recommendation: "avoid", global_score: 32, mechanical_score: 25, confidence: 87,
+    market: { low: 4800, high: 6100, verdict: "overpriced" },
+    ai_summary: {
+      en: "A cute, clean little 500 — but several checks line up toward a head-gasket problem: a beige 'mayonnaise' emulsion under the oil filler cap, white smoke that lingers from the exhaust, and a coolant level the seller admits topping up. These are classic signs of coolant and oil mixing. On a small city car, the repair often approaches the car's value. Avoid unless a compression / CO₂-in-coolant test clears it.",
+      fr: "Une petite 500 mignonne et propre — mais plusieurs contrôles convergent vers un problème de joint de culasse : une émulsion beige « mayonnaise » sous le bouchon d'huile, une fumée blanche persistante à l'échappement et un niveau de liquide de refroidissement que le vendeur reconnaît compléter. Ce sont des signes classiques d'un mélange eau/huile. Sur une petite citadine, la réparation approche souvent la valeur de la voiture. À éviter sans test de compression / CO₂ dans le liquide de refroidissement.",
+    },
+    positive: { en: ["Tidy body and interior.", "Electronics and equipment functional."], fr: ["Carrosserie et intérieur soignés.", "Électronique et équipements fonctionnels."] },
+    suspicious: { en: ["Beige 'mayonnaise' under the oil filler cap.", "Persistent white smoke from the exhaust.", "Coolant topped up regularly (admitted).", "Asking price assumes a healthy engine."], fr: ["« Mayonnaise » beige sous le bouchon d'huile.", "Fumée blanche persistante à l'échappement.", "Appoints réguliers de liquide de refroidissement (reconnus).", "Le prix suppose un moteur sain."] },
+    seller_q: { en: ["How often do you add coolant, and since when?", "Has the head gasket or head ever been worked on?", "Does it overheat in traffic; does the heater always blow hot?", "Do you have recent service invoices?"], fr: ["À quelle fréquence ajoutez-vous du liquide de refroidissement, et depuis quand ?", "Le joint de culasse ou la culasse a-t-il déjà été touché ?", "Chauffe-t-elle dans les bouchons ; le chauffage souffle-t-il toujours chaud ?", "Avez-vous des factures d'entretien récentes ?"] },
+    negotiation: { en: ["Suspected head-gasket failure — get a repair quote and deduct it fully; on a small 500 this can approach the car's value.", "No deposit before a compression / CO₂ test."], fr: ["Joint de culasse suspecté HS — obtenez un devis et déduisez-le entièrement ; sur une petite 500, cela peut approcher la valeur de la voiture.", "Aucun acompte avant un test de compression / CO₂."] },
+    next_steps: { en: ["Have a CO₂-in-coolant test and a compression / leak-down test performed.", "Inspect oil and coolant for cross-contamination.", "Check for overheating on a longer drive."], fr: ["Faites réaliser un test de CO₂ dans le liquide de refroidissement et un test de compression / étanchéité.", "Inspectez l'huile et le liquide de refroidissement (contamination croisée).", "Vérifiez la surchauffe sur un trajet plus long."] },
+    audio: { score: 52, risk: "moderate", rec: "professional_inspection", sound_type: "rough_idle", severity: "moderate", summary: { en: "Idle is slightly uneven with the odd miss; nothing conclusive on sound alone, but combined with the visual coolant/oil signs a head-gasket test is strongly advised.", fr: "Le ralenti est légèrement irrégulier avec un raté occasionnel ; rien de concluant au son seul, mais associé aux indices visuels eau/huile, un test de joint de culasse est fortement conseillé." } },
+    mech: {
+      score: 25, risk: "very_high", rec: "avoid_without_diagnosis",
+      summary: { en: "Multiple checks converge on a head-gasket problem: mayonnaise under the cap, white exhaust smoke and coolant loss. This is a major repair risk on a small car.", fr: "Plusieurs contrôles convergent vers un problème de joint de culasse : mayonnaise sous le bouchon, fumée blanche à l'échappement et perte de liquide de refroidissement. C'est un risque de réparation majeur sur une petite voiture." },
+      items: [
+        { code: "oil_cap", title: { en: "Oil filler cap", fr: "Bouchon d'huile" }, score: 14, sev: "critical", sus: { en: ["Beige mayonnaise deposit"], fr: ["Dépôt de mayonnaise beige"] }, sum: { en: "Emulsion under the cap — classic oil/coolant mixing sign.", fr: "Émulsion sous le bouchon — signe classique de mélange eau/huile." } },
+        { code: "exhaust_smoke", title: { en: "Exhaust & rev-up", fr: "Échappement & montée en régime" }, score: 30, sev: "high", sus: { en: ["Persistent white smoke"], fr: ["Fumée blanche persistante"] }, sum: { en: "White smoke that lingers is consistent with burning coolant.", fr: "Une fumée blanche qui persiste est compatible avec la combustion de liquide de refroidissement." } },
+        { code: "coolant", title: { en: "Coolant reservoir", fr: "Liquide de refroidissement" }, score: 34, sev: "high", sus: { en: ["Oily film / low level"], fr: ["Film huileux / niveau bas"] }, sum: { en: "Traces of oil and low level — consistent with a breach.", fr: "Traces d'huile et niveau bas — cohérent avec une fuite interne." } },
+        { code: "engine_temperature", title: { en: "Engine temperature", fr: "Température moteur" }, score: 50, sev: "moderate", sus: { en: ["Temp rises in slow traffic"], fr: ["La température monte dans les bouchons"] }, sum: { en: "Tendency to run warm at low speed.", fr: "Tendance à chauffer à basse vitesse." } },
+      ],
+    },
+    history_note: { en: "Small petrol engines can mix oil and coolant when the head gasket fails; the visual signs are decisive here.", fr: "Les petits moteurs essence peuvent mélanger huile et liquide de refroidissement quand le joint de culasse lâche ; les signes visuels sont décisifs ici." },
+  },
 ];
 
 export const SCENARIO_LIST = SCENARIOS.map((s) => ({ id: s.id, label: s.label }));
