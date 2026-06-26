@@ -582,6 +582,53 @@ const SCENARIOS: Scenario[] = [
     },
     history_note: { en: "Small petrol engines can mix oil and coolant when the head gasket fails; the visual signs are decisive here.", fr: "Les petits moteurs essence peuvent mélanger huile et liquide de refroidissement quand le joint de culasse lâche ; les signes visuels sont décisifs ici." },
   },
+
+  // ---------- 16. Chevrolet Captiva — healthy / clean ----------
+  {
+    id: "captiva_clean",
+    label: { en: "Chevrolet Captiva — healthy", fr: "Chevrolet Captiva — état sain" },
+    vehicle: { make: "Chevrolet", model: "Captiva", year: 2013, generation: "C140", trim: "LT 7 places", engine: "2.2 VCDi 184", fuel_type: "diesel", transmission: "manual", mileage: 138000, asking_price: 9990, city: "Lyon", vin: "KL1CG2669DB032190" },
+    risk_level: "low", recommendation: "buy", global_score: 89, mechanical_score: 91, confidence: 92,
+    market: { low: 9200, high: 10800, verdict: "fair" },
+    ai_summary: {
+      en: "Excellent result for this Captiva. The body is clean and consistent with no repaint or accident indicators, the engine starts cleanly and idles smoothly, and the guided mechanical checks all came back reassuring — no warning lights, correct fluid levels, no leaks and a clean exhaust. The asking price sits within the fair-market range. A well-kept example; just confirm the service history and you're in good shape.",
+      fr: "Excellent résultat pour ce Captiva. La carrosserie est propre et cohérente, sans réfection de peinture ni indice d'accident ; le moteur démarre proprement et tourne rond au ralenti, et les contrôles mécaniques guidés sont tous rassurants — aucun voyant, niveaux de fluides corrects, pas de fuite et échappement propre. Le prix demandé est dans la fourchette de marché. Un exemplaire bien entretenu ; confirmez simplement l'historique d'entretien et vous êtes tranquille.",
+    },
+    positive: {
+      en: ["Even panel gaps and consistent paint — no repaint detected.", "Clean cold start, stable idle, no abnormal engine noise.", "No dashboard warning lights; fluids at correct levels.", "No leaks under the engine; clean exhaust (no blue/white smoke).", "Asking price within the fair-market range."],
+      fr: ["Jeux de carrosserie réguliers et peinture cohérente — aucune réfection détectée.", "Démarrage à froid propre, ralenti stable, aucun bruit moteur anormal.", "Aucun voyant au tableau de bord ; niveaux de fluides corrects.", "Aucune fuite sous le moteur ; échappement propre (pas de fumée bleue/blanche).", "Prix demandé dans la fourchette de marché."],
+    },
+    suspicious: {
+      en: ["Service history to confirm with invoices (good practice).", "High-ish mileage — keep up the maintenance going forward."],
+      fr: ["Historique d'entretien à confirmer avec les factures (bonne pratique).", "Kilométrage assez élevé — poursuivez bien l'entretien à l'avenir."],
+    },
+    seller_q: {
+      en: ["Can you show the complete service book and invoices?", "When were the timing belt and major service last done?", "Has the car ever been in an accident, even minor?", "Are there two keys and the full handbook?"],
+      fr: ["Pouvez-vous montrer le carnet d'entretien complet et les factures ?", "Quand la distribution et la grande révision ont-elles été faites ?", "La voiture a-t-elle déjà été accidentée, même légèrement ?", "Y a-t-il deux clés et le carnet complet ?"],
+    },
+    negotiation: {
+      en: ["Price is fair, so leverage is limited — a small reduction for an immediate purchase is reasonable.", "If the timing belt isn't documented, ask for it to be done or adjust the price slightly."],
+      fr: ["Le prix est correct, la marge est donc limitée — une petite remise pour un achat immédiat reste raisonnable.", "Si la distribution n'est pas documentée, demandez qu'elle soit faite ou ajustez légèrement le prix."],
+    },
+    next_steps: {
+      en: ["Confirm the full service history and the next major service due date.", "Take a 15-20 min test drive (town + motorway), watching temperature.", "Order a VIN history check for peace of mind."],
+      fr: ["Confirmez l'historique d'entretien complet et l'échéance de la prochaine grande révision.", "Faites un essai de 15-20 min (ville + autoroute) en surveillant la température.", "Commandez un contrôle d'historique VIN pour être tout à fait serein."],
+    },
+    audio: { score: 90, risk: "low", rec: "normal_sound", sound_type: "normal_startup", severity: "low", summary: { en: "Cold start is prompt and clean, idle is stable, and no knocking, rattle, whistle or rough idle was detected in the recording. Engine sound is reassuring.", fr: "Le démarrage à froid est rapide et propre, le ralenti est stable, et aucun claquement, cliquetis, sifflement ni ralenti irrégulier n'a été détecté dans l'enregistrement. Le son moteur est rassurant." } },
+    mech: {
+      score: 91, risk: "low", rec: "normal",
+      summary: { en: "All guided engine & mechanical checks are reassuring: clean start, stable idle, no warning lights, correct fluids, no leaks and a clean exhaust.", fr: "Tous les contrôles moteur & mécanique guidés sont rassurants : démarrage propre, ralenti stable, aucun voyant, fluides corrects, pas de fuite et échappement propre." },
+      items: [
+        { code: "cold_start", title: { en: "Cold start", fr: "Démarrage à froid" }, score: 92, sev: "low", sus: { en: [], fr: [] }, sum: { en: "Started promptly with no excessive cranking, shake or smoke.", fr: "Démarrage rapide, sans lancement prolongé, tremblement ni fumée." } },
+        { code: "dashboard_lights", title: { en: "Dashboard lights", fr: "Voyants tableau de bord" }, score: 94, sev: "low", sus: { en: [], fr: [] }, sum: { en: "All lights cleared after start; none stayed on.", fr: "Tous les voyants se sont éteints après le démarrage ; aucun resté allumé." } },
+        { code: "exhaust_smoke", title: { en: "Exhaust & rev-up", fr: "Échappement & montée en régime" }, score: 90, sev: "low", sus: { en: [], fr: [] }, sum: { en: "Clean rev, no blue/white/black smoke, steady note.", fr: "Montée en régime propre, pas de fumée bleue/blanche/noire, note régulière." } },
+        { code: "oil_dipstick", title: { en: "Engine oil", fr: "Huile moteur" }, score: 88, sev: "low", sus: { en: [], fr: [] }, sum: { en: "Level between min/max, normal colour, no mayonnaise.", fr: "Niveau entre min/max, couleur normale, pas de mayonnaise." } },
+        { code: "coolant", title: { en: "Coolant reservoir", fr: "Liquide de refroidissement" }, score: 90, sev: "low", sus: { en: [], fr: [] }, sum: { en: "Correct level, clean coolant, no oil traces.", fr: "Niveau correct, liquide propre, aucune trace d'huile." } },
+        { code: "leaks_under_engine", title: { en: "Leaks under engine", fr: "Fuites sous le moteur" }, score: 90, sev: "low", sus: { en: [], fr: [] }, sum: { en: "No active drips or wet residue observed.", fr: "Aucune fuite active ni résidu humide observé." } },
+      ],
+    },
+    history_note: { en: "A documented, well-maintained example is the best protection on a higher-mileage diesel.", fr: "Un exemplaire documenté et bien entretenu est la meilleure protection sur un diesel à fort kilométrage." },
+  },
 ];
 
 export const SCENARIO_LIST = SCENARIOS.map((s) => ({ id: s.id, label: s.label }));
