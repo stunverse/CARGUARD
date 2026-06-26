@@ -231,19 +231,19 @@ export const RECOMMENDATION_COPY: Record<
   { label: string; text: string }
 > = {
   buy: {
-    label: "Low risk",
+    label: "Buyable",
     text: "No obvious sign of previous accident or major body repair was detected from the provided photos. The vehicle appears visually consistent. However, this does not guarantee the vehicle has never been damaged. A professional inspection and vehicle history report are still recommended.",
   },
   negotiate: {
-    label: "Moderate risk",
+    label: "Negotiate",
     text: "Some visual elements should be verified before purchase. Ask the seller about previous body repairs, repainting, or accident history. Use the highlighted points as negotiation arguments.",
   },
   professional_inspection: {
-    label: "High risk",
+    label: "Pro inspection advised",
     text: "Several visual signs may suggest previous repairs or possible accident damage. Do not make a deposit before a professional inspection or body shop review.",
   },
   avoid: {
-    label: "Very high risk",
+    label: "Avoid",
     text: "The photos show multiple concerning signs compatible with previous accident damage or body repairs. It may be safer to avoid this vehicle unless a professional inspection confirms otherwise.",
   },
   insufficient_photos: {

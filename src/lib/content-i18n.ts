@@ -172,10 +172,10 @@ export const RISK_LEVEL_FR: Record<RiskLevel, string> = {
 };
 
 export const RECOMMENDATION_LABEL_FR: Record<Recommendation, string> = {
-  buy: "Risque faible",
-  negotiate: "Risque modéré",
-  professional_inspection: "Risque élevé",
-  avoid: "Risque très élevé",
+  buy: "Achat envisageable",
+  negotiate: "À négocier",
+  professional_inspection: "Inspection pro conseillée",
+  avoid: "À éviter",
   insufficient_photos: "Photos insuffisantes",
 };
 

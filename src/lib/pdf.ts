@@ -326,7 +326,6 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
           dot: riskColor(report.summary.risk_level),
         },
         { label: "RECOMMENDATION", value: humanize(report.summary.recommendation) },
-        { label: "AI CONFIDENCE", value: `${report.summary.confidence ?? "—"}%` },
       ];
       const colW = CW / cells.length;
       cells.forEach((c, i) => {
@@ -420,7 +419,6 @@ export function buildReportPdf(report: FinalReport): Promise<Buffer> {
         ["Overall consistency", s.overall_consistency_score],
         ...(s.mechanical_score != null ? ([["Engine & mechanical", s.mechanical_score]] as [string, number][]) : []),
         ["Model risk", s.model_risk_score],
-        ...(report.summary.confidence != null ? ([["AI confidence", report.summary.confidence]] as [string, number][]) : []),
       ];
       const cardH = Math.max(150, bars.length * 17 + 40);
       ensure(30 + cardH + 10);

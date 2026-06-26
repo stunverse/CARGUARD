@@ -65,11 +65,6 @@ export function ReportPreview({ report }: { report: FinalReport }) {
               {report.summary.photos_analyzed} {t("rep.photosAnalyzed")} ·{" "}
               {report.summary.photo_quality_summary}
             </p>
-            {report.summary.confidence != null && (
-              <p className="text-center text-xs font-medium text-accent">
-                {t("rep.aiConfidence")}: {report.summary.confidence}%
-              </p>
-            )}
           </div>
           <div className="flex-1">
             <ScoreBreakdown
