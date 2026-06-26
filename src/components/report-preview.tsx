@@ -402,6 +402,13 @@ export function ReportPreview({ report }: { report: FinalReport }) {
         <strong className="text-foreground">{t("rep.disclaimer")} </strong>
         {report.disclaimer}
       </div>
+
+      {/* Analysis reliability — discreet meta-info, not a vehicle score */}
+      {report.summary.confidence != null && (
+        <p className="text-center text-xs text-muted-foreground">
+          {t("rep.reliability")}: {report.summary.confidence}%
+        </p>
+      )}
     </div>
   );
 }
