@@ -3,6 +3,7 @@ import "./globals.css";
 import { BRAND, SITE_URL } from "@/lib/constants";
 import { Toaster } from "@/components/ui/toaster";
 import { I18nProvider } from "@/components/i18n-provider";
+import { MetaPixel } from "@/components/meta-pixel";
 import { getServerLocale } from "@/lib/i18n-server";
 
 const TITLE = `${BRAND.name} — ${BRAND.tagline}`;
@@ -81,6 +82,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <body>
+        <MetaPixel />
         <I18nProvider locale={locale}>
           {children}
           <Toaster />
