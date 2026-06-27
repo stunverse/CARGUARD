@@ -40,7 +40,8 @@ import {
 } from "@/lib/vehicle-catalog";
 import { MECHANICAL_POINTS } from "@/lib/mechanical";
 import { documentsForRegion } from "@/lib/documents";
-import { INSPECTION_PACKS } from "@/lib/billing";
+import { INSPECTION_PACKS, packById } from "@/lib/billing";
+import { fbqTrack } from "@/lib/fbq";
 import { compressImage, fileExt, getUserId, uploadToStorage } from "@/lib/upload";
 import { toast } from "@/lib/toast";
 import { useI18n } from "@/components/i18n-provider";
@@ -236,6 +237,9 @@ export function InspectionWizard({ resume }: { resume?: WizardResume } = {}) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not start the payment.");
       if (data.url) {
+        // Conversion funnel: user is heading to Stripe Checkout.
+        const chosen = packById(opts.pack) ?? INSPECTION_PACKS[0];
+        fbqTrack("InitiateCheckout", { value: chosen.price, currency: "EUR", num_items: chosen.credits });
         // Stripe Checkout — the draft is created and marked paid on return,
         // which resumes the wizard at the vehicle questions.
         window.location.href = data.url;

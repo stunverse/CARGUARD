@@ -1,16 +1,20 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { InspectionWizard, type WizardResume } from "@/components/inspection-wizard";
+import { ConversionTracker } from "@/components/conversion-tracker";
 import type { InspectionPhoto, MechanicalCheckItem, Vehicle } from "@/types";
 
 export const metadata = { title: "Resume inspection — CarGuard AI" };
 
 export default async function ContinueInspectionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ paid?: string }>;
 }) {
   const { id } = await params;
+  const { paid } = await searchParams;
   const supabase = await createClient();
 
   const { data: s } = await supabase
@@ -78,5 +82,16 @@ export default async function ContinueInspectionPage({
     audioDone: (audio ?? []).length > 0,
   };
 
-  return <InspectionWizard resume={resume} />;
+  return (
+    <>
+      {paid === "success" && s.payment_amount_cents ? (
+        <ConversionTracker
+          event="Purchase"
+          value={(s.payment_amount_cents as number) / 100}
+          currency={(s.payment_currency as string) ?? "eur"}
+        />
+      ) : null}
+      <InspectionWizard resume={resume} />
+    </>
+  );
 }

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DisclaimerBanner } from "@/components/disclaimer-banner";
 import { createClient } from "@/lib/supabase/client";
+import { fbqTrack } from "@/lib/fbq";
 import { SIGNUP_DISCLAIMER } from "@/lib/constants";
 
 export default function SignupPage() {
@@ -63,6 +64,9 @@ export default function SignupPage() {
         { user_id: data.user.id, consent_type: "disclaimer", consent_text: SIGNUP_DISCLAIMER },
       ]);
     }
+
+    // Conversion: a new account was created.
+    fbqTrack("CompleteRegistration");
 
     if (data.session) {
       router.push("/dashboard");
